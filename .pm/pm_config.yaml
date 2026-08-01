@@ -1,0 +1,13 @@
+name: starfall
+idWidth: 4
+idPrefix: SF
+accent: teal
+nextIdServiceUrl: https://pm-next-id.chronium.workers.dev
+taskStates:
+  todo: To Do
+  in-progress: In Progress
+  done: Done
+tracks:
+  SF: SF
+milestones: {}
+milestonePriorities: {}
