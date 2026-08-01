@@ -9,5 +9,20 @@ taskStates:
   done: Done
 tracks:
   SF: SF
-milestones: {}
-milestonePriorities: {}
+  BUILD: Repository and build
+  ARCH: Architecture
+  CLIENT: Client and presentation
+  SERVER: Headless server
+  SIM: Authoritative simulation
+  PROTOCOL: Protocol and replication
+  CONTENT: World and content
+  EDITOR: Editor and Balance Lab
+  GAME: MMO vertical slice
+milestones:
+  M0: Repository foundation
+  M1: Shared character presentation
+  M2: First playable zone
+milestonePriorities:
+  M0: low
+  M1: medium
+  M2: low
