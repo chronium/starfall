@@ -1,0 +1,7 @@
+version: 1
+parent:
+  projectId: prj_E7QP3LUocfY7k3PYM-EQOlqc
+  alias: chronofall
+  repositoryUrl: https://github.com/chronium/chronofall.git
+  pathHint: ..
+children: []
