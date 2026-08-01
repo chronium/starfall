@@ -22,6 +22,7 @@ milestones:
   M0: Repository foundation
   M1: Shared character presentation
   M2: First playable zone
+  M3: Deferred transformations and companions
 milestonePriorities:
   M0: low
   M1: medium

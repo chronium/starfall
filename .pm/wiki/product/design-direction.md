@@ -1,7 +1,7 @@
 ---
 title: Product Design Direction
 createdAt: 2026-08-01T05:48:09.1092000Z
-modifiedAt: 2026-08-01T05:48:09.1092000Z
+modifiedAt: 2026-08-01T06:16:07.2105700Z
 ---
 
 ## Approved direction
@@ -20,4 +20,4 @@ The coordinator design document remains the current full product-design source o
 
 ## Kickoff scope
 
-M0 establishes repository and architecture boundaries. M1 integrates proven shared character presentation when ready. M2 proves one playable zone and headless balance simulation. Broader economy, stands, reputation/PvP, prestige class, wings, mounts/companions, events, and territory remain design inputs rather than near-term implementation commitments.
+M0 establishes repository and architecture boundaries. M1 integrates proven shared character presentation for the initial class, equipment, and skills when both shared and Starfall-domain inputs are ready. M2 proves one playable zone and headless balance simulation. M3 records deferred content, authority, and presentation contracts for wings, mounts, and companions; it has no milestone priority and is outside the bootstrap critical path. Broader economy, stands, reputation/PvP, prestige class, transformations, events, and territory remain design inputs rather than near-term implementation commitments.
