@@ -29,6 +29,8 @@ Prefer a focused follow-up on the most recently completed task over a new review
 
 Create a new task when a finding adds independent product or architecture scope, needs a new dependency or contract decision, represents substantial deferred work, crosses ownership, or no longer belongs coherently to the most recently completed task. Never use review continuation to absorb unrelated work or bypass a required owner planning decision.
 
+For an owner-approved grooming task whose reviewed canonical dependencies could only be allocated by a later coordinator-owned grooming cycle, reopen that same completed grooming task instead of creating ceremonial dependency-wiring work. Record the review reason and mutation receipts, add only the already-approved canonical dependencies and matching roadmap corrections, validate the family graph, return the task to `done`, commit with the same task ID, and stop. Do not use this exception for feature implementation, independent contracts, unrelated backlog changes, or automatic task selection.
+
 ## Mutate Safely
 
 Never edit `.pm/` directly. Use the narrowest PM MCP mutation and inspect every receipt:

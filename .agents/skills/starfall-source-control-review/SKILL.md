@@ -33,6 +33,8 @@ Run the repository's documented validation and inspect the staged file list befo
 
 For an owner-requested review continuation that remains inside the most recently completed task's scope, reopen that task and create a second focused commit under the same task ID. Do not manufacture a separate review task. Use a new task when the finding changes ownership, adds a dependency or contract decision, introduces independent scope, or is intentionally deferred.
 
+The same focused-commit rule applies when an owner-approved grooming task is reopened solely to wire canonical coordinator dependencies that were allocated by the planned later grooming cycle. The follow-up commit must use the original grooming task ID and may contain only recorded dependency receipts and matching roadmap corrections; it must not absorb feature work or unrelated grooming.
+
 ## Commit And Hand Off
 
 Commit only Starfall-owned files with a subject beginning `[TASK-ID]`. Do not stage coordinator files or the gitlink from inside the child task.
