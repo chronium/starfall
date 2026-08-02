@@ -68,7 +68,10 @@ Inspect both Starfall and coordinator status before implementation. Preserve all
 
 - Commit child work inside Starfall with a subject beginning `[TASK-ID]`.
 - Do not include coordinator source, Royale, or a gitlink update in a Starfall commit.
-- After a Starfall task is committed, the coordinator requires a separately selected and approved `SUBMODULE` task to advance the gitlink.
+- After a Starfall task is complete and committed, return to the verified coordinator checkout in the same approved cycle. Do not create or activate a coordinator PM task for the mechanical handoff.
+- The coordinator verifies stable linked identity, reciprocal declarations, path hint and gitlink ownership, clean child and sibling worktrees, the expected Starfall `HEAD`, ancestry from the recorded pin, and absence of unrelated coordinator changes.
+- If every check passes, stage only the Starfall gitlink and create a pointer-only coordinator commit whose subject begins with the Starfall task ID and whose body records the canonical task URI, stable Starfall project ID, and pinned commit.
+- If a check fails, stop and report it; resume the same mechanical handoff after resolution without creating a ceremonial `SUBMODULE` task. Pushing remains owner-directed and ordered Starfall first, coordinator second.
 - Never reset, discard, absorb, or hide unrelated child or coordinator work.
 
 ## Validation
@@ -92,6 +95,6 @@ Load the smallest useful set:
 - `starfall-pm-workflow`: task selection, linked ownership, PM mutations, receipts, notes, wiki, and completion.
 - `starfall-architecture-boundaries`: project graph, authority, service availability, headless separation, and dependency decisions.
 - `starfall-build-validation`: .NET restore/build/test, architecture gates, artifact inspection, and validation evidence.
-- `starfall-source-control-review`: dirty-tree handling, focused child commits, review, and coordinator gitlink separation.
+- `starfall-source-control-review`: dirty-tree handling, focused child commits, review, and automatic coordinator gitlink handoff.
 
 Create specialized domain skills only after real implementation workflows demonstrate reusable guidance.

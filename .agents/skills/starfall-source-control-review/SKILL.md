@@ -35,4 +35,8 @@ Run the repository's documented validation and inspect the staged file list befo
 
 Commit only Starfall-owned files with a subject beginning `[TASK-ID]`. Do not stage coordinator files or the gitlink from inside the child task.
 
-After the child commit, report its hash and leave coordinator pointer advancement to a separate approved coordinator `SUBMODULE` task. Do not automatically push, advance the gitlink, or begin another Starfall task.
+After the child task is complete and committed, return to the verified coordinator checkout in the same approved cycle. Do not create, select, activate, complete, or mutate a coordinator PM task for this mechanical handoff.
+
+Before advancing the pointer, verify the Starfall stable project ID and reciprocal parent declaration, committed path hint and tracked gitlink, expected child `HEAD`, ancestry from the recorded pin, clean Starfall and sibling worktrees, and no unrelated coordinator changes. Stage only the Starfall gitlink. Inspect the complete staged submodule diff, then create a pointer-only coordinator commit whose subject begins with the Starfall task ID and whose body records the canonical task URI, stable project ID, and pinned commit.
+
+If any check fails, stop and report it. Resume the same mechanical handoff after resolution without creating a `SUBMODULE` task. Do not automatically push or begin another Starfall task. When the owner requests a push, publish Starfall before the coordinator.

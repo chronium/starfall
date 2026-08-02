@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-02T09:49:09.5075740Z
+modifiedAt: 2026-08-02T11:53:18.5761270Z
 ---
 
 ## Purpose
@@ -70,7 +70,7 @@ Starfall tasks and wiki pages are owned by stable project `prj_pkIpzx0fzFD4URjvq
 - Move only an approved task to `in-progress`.
 - Inspect every mutation receipt for the Starfall project ID and Starfall-only changed paths.
 - Update task notes and durable wiki documentation before completion.
-- Complete, validate, commit inside Starfall, and stop.
+- Complete, validate, and commit inside Starfall; then perform the verified pointer-only coordinator handoff in the same approved cycle and stop.
 
 Never edit `.pm/` manually. Plain task IDs are Starfall-local; cross-project references use canonical `pm://project/<stable-project-id>/...` URIs.
 
@@ -87,4 +87,4 @@ Specialized domain skills should be added only when real implementation creates 
 
 ## Coordinator handoff
 
-A Starfall task commits only in this repository. The coordinator's gitlink remains unchanged until a separately selected and approved coordinator `SUBMODULE` task advances it to the reviewed child commit. Starfall commits never include coordinator source or Royale changes.
+A Starfall task commits only Starfall-owned files in this repository. After the task is complete and committed, return to the verified coordinator checkout in the same approved cycle; do not create or mutate a coordinator PM task for the mechanical handoff. Verify the stable Starfall project ID, reciprocal declarations, committed path hint and tracked gitlink, expected child `HEAD`, ancestry from the recorded pin, clean Starfall and sibling worktrees, and absence of unrelated coordinator changes. If every check passes, stage only the Starfall gitlink and create a pointer-only coordinator commit whose subject begins with the Starfall task ID and whose body records `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/task/<task-id>`, the stable project ID, and the pinned commit. If any check fails, stop and resume the same handoff after resolution without creating a `SUBMODULE` task. Pushing remains owner-directed and ordered Starfall first, coordinator second. Starfall commits never include coordinator source or Royale changes.

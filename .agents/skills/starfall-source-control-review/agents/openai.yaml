@@ -1,4 +1,4 @@
 interface:
   display_name: "Starfall Source Control and Review"
   short_description: "Commit and review Starfall changes"
-  default_prompt: "Use $starfall-source-control-review to inspect, review, and commit one focused Starfall task without mixing the coordinator gitlink."
+  default_prompt: "Use $starfall-source-control-review to inspect and commit one focused Starfall task, then perform its verified pointer-only coordinator handoff without a second PM task."
