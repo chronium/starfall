@@ -58,6 +58,8 @@ Every implementation change requires one Starfall-owned PM task managed through 
 5. Move the task to `done` only when implementation, validation, documentation, and required owner validation are complete.
 6. Commit the focused Starfall change and stop. Do not select another task automatically.
 
+When owner-requested code review follows a completed task and no unrelated task has superseded it, continue that task instead of creating review bookkeeping when the findings are directly attributable to its implementation, documentation, or tests and remain inside its approved contracts. Re-read and reopen the task, record the findings, apply and validate the corrections, return it to `done`, and commit a focused `[TASK-ID]` review follow-up. Create a new task when a finding introduces independent product or architecture scope, a new dependency or contract decision, substantial deferred work, different ownership, or no longer belongs coherently to the most recently completed task. Never absorb unrelated findings into a convenient prior task.
+
 Never edit `.pm/` manually. Use an explicit `project: starfall` selector when mutating Starfall from the coordinator. Verify each receipt identifies project `prj_pkIpzx0fzFD4URjvqBuYrGZF` and only Starfall paths. Persist cross-project references only as canonical `pm://project/<stable-id>/...` URIs.
 
 The PM wiki is the durable source of truth for architecture, protocols, formats, content contracts, setup, validation, and workflows. Update it with the task that changes a contract.

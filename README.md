@@ -2,7 +2,7 @@
 
 Starfall is a server-authoritative MMORPG inspired by classic MU Online. It is an independently useful child repository in the ChronoFall project family and owns its simulation, protocol, content, presentation integration, editor and Balance Lab, build, and release lifecycle.
 
-The repository contains the approved library boundaries, architecture tests, and bounded executable shells for the player client and authoritative world host. The shells currently prove process startup only: they print a deterministic readiness message and exit without starting gameplay, networking, rendering, or a world loop.
+The repository contains the approved library boundaries, architecture tests, a native shared-character preview in the player client, and a bounded executable shell for the authoritative world host. Gameplay, networking, and the authoritative world loop remain future task-owned work.
 
 ## Foundation commands
 
@@ -14,15 +14,31 @@ dotnet build Starfall.slnx --no-restore
 dotnet test Starfall.slnx --no-restore --no-build
 ```
 
-## Foundation process smoke
+## Foundation runtime checks
 
-After the solution build, run the two composition roots independently:
+First stage the selected character-presentation cook from the ChronoFall coordinator root:
+
+```sh
+scripts/cook-character-presentation-for-client.sh \
+  --project-id prj_pkIpzx0fzFD4URjvqBuYrGZF
+```
+
+After restoring and building Starfall, run the headless world shell and non-graphical client content probe independently:
 
 ```sh
 dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build
+dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build -- \
+  --validate-character-content
+```
+
+Launch the persistent native SDL GPU preview with no client arguments:
+
+```sh
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. Both foundation shells currently accept no arguments and exit immediately after confirming startup. Later tasks own the fixed-step world lifecycle and client presentation runtime.
+The preview loads the staged Quaternius humanoid, continuously samples `Idle_Loop`, and exits through Escape or the window close control. The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
+
+`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It still exits after its bounded startup probe. Later tasks own its fixed-step world lifecycle and all gameplay and networking.
 
 Read `AGENTS.md` before beginning work. Durable architecture and workflow documentation lives in Starfall's PM wiki.

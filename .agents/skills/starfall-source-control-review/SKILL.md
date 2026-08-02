@@ -31,6 +31,8 @@ Review the complete Starfall diff for:
 
 Run the repository's documented validation and inspect the staged file list before committing.
 
+For an owner-requested review continuation that remains inside the most recently completed task's scope, reopen that task and create a second focused commit under the same task ID. Do not manufacture a separate review task. Use a new task when the finding changes ownership, adds a dependency or contract decision, introduces independent scope, or is intentionally deferred.
+
 ## Commit And Hand Off
 
 Commit only Starfall-owned files with a subject beginning `[TASK-ID]`. Do not stage coordinator files or the gitlink from inside the child task.

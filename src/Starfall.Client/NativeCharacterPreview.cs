@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.SdlGpu;
@@ -96,10 +97,26 @@ internal static unsafe class NativeCharacterPreview
                     DepthFormat,
                     LoadShaders(shaderFormat));
                 SDL_GPUCommandBuffer* uploadCommand = AcquireCommand();
-                mesh = renderer.UploadMesh(uploadCommand, sourceMesh);
-                palette = renderer.CreatePalette(sourceMesh.Skin.Skeleton.JointCount);
-                if (!SDL_SubmitGPUCommandBuffer(uploadCommand))
-                    throw new InvalidOperationException($"SDL GPU mesh submission failed: {SDL_GetError()}");
+                try
+                {
+                    mesh = renderer.UploadMesh(uploadCommand, sourceMesh);
+                    palette = renderer.CreatePalette(sourceMesh.Skin.Skeleton.JointCount);
+                    Exception? submissionFailure = TrySubmitCommand(ref uploadCommand, "mesh upload");
+                    if (submissionFailure is not null)
+                        throw submissionFailure;
+                }
+                catch (Exception exception)
+                {
+                    Exception? cancellationFailure = TryCancelCommand(ref uploadCommand, "mesh upload");
+                    if (cancellationFailure is not null)
+                    {
+                        throw new AggregateException(
+                            "Starfall mesh upload failed and its GPU command buffer could not be cancelled.",
+                            exception,
+                            cancellationFailure);
+                    }
+                    throw;
+                }
             }
             catch
             {
@@ -189,67 +206,107 @@ internal static unsafe class NativeCharacterPreview
             SkinningPalette sourcePalette = SkeletonPoseEvaluator.CreateSkinningPalette(skin, global);
 
             SDL_GPUCommandBuffer* command = AcquireCommand();
-            renderer!.UploadPalette(command, palette!, sourcePalette);
-
-            SDL_GPUTexture* swapchain;
-            uint swapchainWidth;
-            uint swapchainHeight;
-            if (!SDL_WaitAndAcquireGPUSwapchainTexture(
-                    command,
-                    window,
-                    &swapchain,
-                    &swapchainWidth,
-                    &swapchainHeight))
+            SDL_GPURenderPass* pass = null;
+            bool requiresSubmission = false;
+            Exception? failure = null;
+            try
             {
-                throw new InvalidOperationException($"SDL GPU swapchain acquisition failed: {SDL_GetError()}");
-            }
+                renderer!.UploadPalette(command, palette!, sourcePalette);
 
-            if (swapchain is not null)
-            {
-                EnsureDepth(swapchainWidth, swapchainHeight);
-                Matrix4x4 viewProjection = CreateViewProjection(bounds, swapchainWidth, swapchainHeight);
-                var colorTarget = new SDL_GPUColorTargetInfo
-                {
-                    texture = swapchain,
-                    clear_color = ClearColor,
-                    load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
-                };
-                var depthTarget = new SDL_GPUDepthStencilTargetInfo
-                {
-                    texture = depth,
-                    clear_depth = 1.0f,
-                    load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-                    stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
-                    stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-                };
-                SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
-                if (pass is null)
-                    throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
-
-                for (int section = 0; section < mesh!.SectionCount; section++)
-                {
-                    Vector4 color = section % 2 == 0
-                        ? new Vector4(0.76f, 0.23f, 0.17f, 1.0f)
-                        : new Vector4(0.16f, 0.48f, 0.72f, 1.0f);
-                    renderer.DrawSection(
+                SDL_GPUTexture* swapchain;
+                uint swapchainWidth;
+                uint swapchainHeight;
+                if (!SDL_WaitAndAcquireGPUSwapchainTexture(
                         command,
-                        pass,
-                        mesh,
-                        palette!,
-                        section,
-                        new SkinnedCharacterDraw(
-                            Matrix4x4.Identity,
-                            viewProjection,
-                            color,
-                            new Vector3(-0.35f, -0.70f, -0.62f)));
+                        window,
+                        &swapchain,
+                        &swapchainWidth,
+                        &swapchainHeight))
+                {
+                    throw new InvalidOperationException($"SDL GPU swapchain acquisition failed: {SDL_GetError()}");
                 }
-                SDL_EndGPURenderPass(pass);
+                // Resolve every successful acquisition attempt by submission. SDL forbids cancellation
+                // once the command buffer has acquired a non-null swapchain texture.
+                requiresSubmission = true;
+
+                if (swapchain is not null)
+                {
+                    EnsureDepth(swapchainWidth, swapchainHeight);
+                    Matrix4x4 viewProjection = CreateViewProjection(bounds, swapchainWidth, swapchainHeight);
+                    var colorTarget = new SDL_GPUColorTargetInfo
+                    {
+                        texture = swapchain,
+                        clear_color = ClearColor,
+                        load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                        store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                    };
+                    var depthTarget = new SDL_GPUDepthStencilTargetInfo
+                    {
+                        texture = depth,
+                        clear_depth = 1.0f,
+                        load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                        store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
+                        stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
+                        stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
+                    };
+                    pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
+                    if (pass is null)
+                        throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
+
+                    for (int section = 0; section < mesh!.SectionCount; section++)
+                    {
+                        Vector4 color = section % 2 == 0
+                            ? new Vector4(0.76f, 0.23f, 0.17f, 1.0f)
+                            : new Vector4(0.16f, 0.48f, 0.72f, 1.0f);
+                        renderer.DrawSection(
+                            command,
+                            pass,
+                            mesh,
+                            palette!,
+                            section,
+                            new SkinnedCharacterDraw(
+                                Matrix4x4.Identity,
+                                viewProjection,
+                                color,
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                failure = exception;
+            }
+            finally
+            {
+                if (pass is not null)
+                {
+                    try
+                    {
+                        SDL_EndGPURenderPass(pass);
+                    }
+                    catch (Exception exception)
+                    {
+                        failure = CombineFailures(
+                            failure,
+                            exception,
+                            "Starfall frame rendering and render-pass cleanup both failed.");
+                    }
+                }
+
+                Exception? resolutionFailure = requiresSubmission
+                    ? TrySubmitCommand(ref command, "frame")
+                    : TryCancelCommand(ref command, "frame");
+                if (resolutionFailure is not null)
+                {
+                    failure = CombineFailures(
+                        failure,
+                        resolutionFailure,
+                        "Starfall frame processing and GPU command-buffer resolution both failed.");
+                }
             }
 
-            if (!SDL_SubmitGPUCommandBuffer(command))
-                throw new InvalidOperationException($"SDL GPU frame submission failed: {SDL_GetError()}");
+            if (failure is not null)
+                ExceptionDispatchInfo.Capture(failure).Throw();
         }
 
         private SDL_GPUCommandBuffer* AcquireCommand()
@@ -259,6 +316,36 @@ internal static unsafe class NativeCharacterPreview
                 throw new InvalidOperationException($"SDL GPU command acquisition failed: {SDL_GetError()}");
             return command;
         }
+
+        private static Exception? TryCancelCommand(
+            ref SDL_GPUCommandBuffer* command,
+            string operation)
+        {
+            SDL_GPUCommandBuffer* ownedCommand = command;
+            command = null;
+            if (ownedCommand is null || SDL_CancelGPUCommandBuffer(ownedCommand))
+                return null;
+            return new InvalidOperationException(
+                $"SDL GPU {operation} command-buffer cancellation failed: {SDL_GetError()}");
+        }
+
+        private static Exception? TrySubmitCommand(
+            ref SDL_GPUCommandBuffer* command,
+            string operation)
+        {
+            SDL_GPUCommandBuffer* ownedCommand = command;
+            command = null;
+            if (ownedCommand is null || SDL_SubmitGPUCommandBuffer(ownedCommand))
+                return null;
+            return new InvalidOperationException(
+                $"SDL GPU {operation} submission failed: {SDL_GetError()}");
+        }
+
+        private static Exception CombineFailures(
+            Exception? primary,
+            Exception secondary,
+            string message) =>
+            primary is null ? secondary : new AggregateException(message, primary, secondary);
 
         private void EnsureDepth(uint width, uint height)
         {

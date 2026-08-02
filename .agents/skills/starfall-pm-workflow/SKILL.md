@@ -23,6 +23,12 @@ Use `project: starfall` for one-project reads and every Starfall mutation from t
 - Complete only after implementation, tests, durable notes/wiki, and required owner validation.
 - Commit the task in Starfall and stop. Do not begin the next recommendation.
 
+## Continue A Reviewed Task
+
+Prefer a focused follow-up on the most recently completed task over a new review task when the owner requests it, no unrelated task has superseded it, and every finding is directly attributable to that task's implementation, documentation, or tests. Re-read the completed task and dependencies, reopen only that task, record the review findings, correct and validate them, return the task to `done`, and commit with the same task ID.
+
+Create a new task when a finding adds independent product or architecture scope, needs a new dependency or contract decision, represents substantial deferred work, crosses ownership, or no longer belongs coherently to the most recently completed task. Never use review continuation to absorb unrelated work or bypass a required owner planning decision.
+
 ## Mutate Safely
 
 Never edit `.pm/` directly. Use the narrowest PM MCP mutation and inspect every receipt:

@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-02T12:39:46.6050900Z
+modifiedAt: 2026-08-02T14:35:40.7867540Z
 ---
 
 ## Purpose
@@ -94,6 +94,8 @@ Starfall tasks and wiki pages are owned by stable project `prj_pkIpzx0fzFD4URjvq
 - Inspect every mutation receipt for the Starfall project ID and Starfall-only changed paths.
 - Update task notes and durable wiki documentation before completion.
 - Complete, validate, and commit inside Starfall; then perform the verified pointer-only coordinator handoff in the same approved cycle and stop.
+
+When owner-requested code review follows a completed task and no unrelated task has superseded it, continue the same task when the findings are directly attributable to its implementation, documentation, or tests and remain inside its approved contracts. Re-read and reopen that task, record the review findings, correct and validate them, return it to `done`, and create a focused follow-up commit under the same task ID. Create a new task when review introduces independent product or architecture scope, a new dependency or contract decision, substantial deferred work, different ownership, or no longer belongs coherently to the most recently completed task. Never absorb unrelated findings into a convenient prior task.
 
 Never edit `.pm/` manually. Plain task IDs are Starfall-local; cross-project references use canonical `pm://project/<stable-project-id>/...` URIs.
 
