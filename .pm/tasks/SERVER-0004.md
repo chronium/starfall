@@ -5,9 +5,9 @@ track: SERVER
 milestone: M2
 dependsOn:
 - SERVER-0002
-- CONTENT-0006
+- CONTENT-0014
 createdAt: 2026-08-02T07:29:12.8441180Z
-modifiedAt: 2026-08-02T15:52:42.6603910Z
+modifiedAt: 2026-08-02T18:27:28.8702100Z
 ---
 
 Load and host the deterministic Draft 0 zone in one authoritative world/channel.

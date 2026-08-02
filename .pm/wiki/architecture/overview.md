@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-02T15:54:34.8616320Z
+modifiedAt: 2026-08-02T18:32:39.6882710Z
 ---
 
 ## Purpose
@@ -48,13 +48,17 @@ Literal parent traversal, absolute checkout paths, arbitrary property-rooted dep
 
 The M2 technical vertical slice is now defined by the provisional Draft 0 brief: one approximately 200 x 200 metre zone, a protected town, three shaped camps, a dark-elf archer, Basic Arrow, Fire Arrow, Arrow Rain, bounded starter-flyer behavior, deterministic progression and drops, visible Ranger/leather equipment, and Balance Lab scenarios using the same authoritative rules.
 
-Authoritative resources use integer internal units and time uses fixed ticks. Basic Arrow, Fire Arrow, and Arrow Rain resolve at explicit authoritative ticks; their rendered arrows and effects are presentation and never determine collision, victims, damage, mana, or success. Monsters remain ground-plane world entities even when their temporary presentation hovers. The town rejects hostile player actions, excludes monsters, and owns the configured defeat/respawn return anchor.
+Authoritative spatial and physics state uses finite Box3D-native single-precision metres; deterministic content authoring uses BCL-only `System.Numerics.Vector3`-backed values with the same units and precision. Discrete resources remain integer and time uses fixed ticks. Stable entity identities and explicit ordering isolate gameplay outcomes from native physics/query iteration order, while clients reconcile authoritative float corrections. Initial protocol work carries actual finite IEEE-754 spatial values; quantization remains a later measured protocol decision.
+
+Basic Arrow, Fire Arrow, and Arrow Rain resolve at explicit authoritative ticks; their rendered arrows and effects are presentation and never determine collision, victims, damage, mana, or success. Monsters remain ground-plane world entities even when their temporary presentation hovers. The town rejects hostile player actions, excludes monsters, and owns the configured defeat/respawn return anchor.
 
 Starfall owns game content, rules, protocol, world state, and presentation integration. ChronoFall owns only proven reusable presentation/cooking contracts, supplied-source provenance, and stable-ID staging. Exact selections precede acquisition; no whole pack enters a runtime cook. Prospective sources remain evidence-gated until physically supplied and reviewed.
 
 Identity/lobby, chat, operations, and persistence implementation depth remain deferred even though their ownership and availability boundaries are defined. Trade stands, the full economy, wings progression, territory, and the complete public release also remain deferred.
 
 Draft 0: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`.
+
+Zone contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract`.
 
 Starfall service contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/service-availability-and-ownership`.
 

@@ -10,5 +10,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Starfall.Architecture.Tests/Starfall.Architecture.Tests.csproj" />
+    <Project Path="tests/Starfall.Content.Tests/Starfall.Content.Tests.csproj" />
   </Folder>
 </Solution>

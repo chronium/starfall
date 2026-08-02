@@ -22,6 +22,7 @@ public sealed class FoundationDependencyTests
     [
         .. ExpectedProductReferences.Keys,
         "Starfall.Architecture.Tests",
+        "Starfall.Content.Tests",
     ];
 
     private static readonly IReadOnlySet<string> ExpectedExecutableProjects =

@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-02T15:54:34.7409020Z
+modifiedAt: 2026-08-02T18:32:23.2112950Z
 ---
 
 ## Status and purpose
@@ -24,6 +24,8 @@ One clear exit reaches a junction with three experimental branches:
 
 Flat terrain is acceptable. Grass and dirt-path surfaces, rocks/boulders, sparse nature props, and landmark buildings make routes and spaces readable. Collision, navigation, camp shapes, and respawn anchors are deterministic gameplay/authoring inputs; visual meshes never replace them. This slice does not require streaming, terrain deformation, a biome system, or a general world format.
 
+The regional envelope and experimental targets are the durable `CONTENT-0006` contract documented at [Draft 0 Zone Contract](../content/draft-0-zone-contract.md). Exact coordinates, polygons, path centre lines, camp extents, respawn placement, and collision/navigation inputs belong to the focused follow-up `CONTENT-0014`; approximate dimensions and travel distances here do not pretend that layout is already authored.
+
 ## Provisional class and combat kit
 
 The first class fantasy is a dark-elf archer. The character begins in an appropriate non-equipment underlayer with a basic wooden bow, visually presented arrows, and no equipped armour. Arrows are unlimited for Draft 0; there is no ammunition inventory or purchasing. The first armour family is a visibly meaningful Ranger/leather set that may be earned piece by piece.
@@ -40,7 +42,9 @@ Input is intent only. The server decides range, facing requirements, valid targe
 
 ## Deterministic numerical contracts
 
-One displayed health or mana point equals 100 authoritative internal units. The player begins with 2,500 health units (25 displayed HP). Primary attributes use ordinary integers, probabilities use an explicit integer representation such as basis points, and authoritative time uses fixed simulation ticks. Authoritative gameplay state does not use floating point merely because presentation does.
+Authoritative spatial and physics state uses finite Box3D-native single-precision floating-point metres. Content authoring uses BCL-only immutable ground-plane values backed by `System.Numerics.Vector3`, with a one-to-one unit-and-precision conversion at the later simulation boundary. Spatial-query or physics iteration order is never trusted as gameplay ordering: stable entity identities and explicit sorting are required wherever order can affect outcomes. Clients must tolerate authoritative float corrections through reconciliation.
+
+Discrete gameplay state remains integer. One displayed health or mana point equals 100 authoritative internal units, and the player begins with 2,500 health units (25 displayed HP). Primary attributes use ordinary integers, probabilities use an explicit integer representation such as basis points, and authoritative time uses fixed simulation ticks. Initial protocol work carries the actual finite IEEE-754 spatial values; quantization is deferred to a measured protocol-boundary decision.
 
 Level 2 requires 40 XP. Each later requirement uses nearest-integer half-up arithmetic:
 

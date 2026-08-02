@@ -5,13 +5,13 @@ track: CLIENT
 milestone: M2
 dependsOn:
 - CLIENT-0009
-- CONTENT-0006
+- CONTENT-0014
 - CONTENT-0012
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0018
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0019
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0007
 createdAt: 2026-08-02T15:49:18.0890200Z
-modifiedAt: 2026-08-02T16:32:42.2523220Z
+modifiedAt: 2026-08-02T18:27:28.9018310Z
 ---
 
 Render the bounded Draft 0 scene from synchronized Starfall zone content: flat grass treatment, dirt-path material inputs, protected-town landmarks, three readable branch/camp spaces, and selected rocks, vegetation, and props. Preserve deterministic collision/navigation as separate authoritative content.

@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-02T16:33:20.3593410Z
+modifiedAt: 2026-08-02T18:33:10.6550510Z
 ---
 
 ## Execution standard
@@ -29,12 +29,15 @@ M1 uses only the central `$(ChronoFallFamilyRoot)` property for approved coordin
 
 ## M2 — First playable zone
 
-Draft 0 is the provisional M2 technical vertical slice. Its durable design input is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`; exact tuning remains Content and Balance Lab input rather than final balance.
+Draft 0 is the provisional M2 technical vertical slice. Its durable design input is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`; the regional spatial contract is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract`. Exact tuning remains Content and Balance Lab input rather than final balance.
+
+Spatial and physics state uses finite Box3D-native single-precision metres. Discrete gameplay state remains integer and timing remains fixed integer ticks. Stable entity identities plus explicit ordering isolate gameplay outcomes from native query order. Initial protocol work preserves actual finite IEEE-754 spatial values; quantization is deferred until protocol evidence justifies it. `CONTENT-0006` does not select or integrate Box3D.
 
 Content and evidence-gated selection are split into focused contracts:
 
 - `CONTENT-0003`: provisional dark-elf archer and Basic Arrow, Fire Arrow, and Arrow Rain identities;
-- `CONTENT-0006`: exact Draft 0 zone, protected town, branches, camp geometry, collision, and navigation inputs;
+- `CONTENT-0006`: deterministic regional envelope, protected-town targets, ordered branch identities/distances, camp-geometry intent, and surface/boundary identities;
+- `CONTENT-0014`: exact Draft 0 graybox coordinates, polygons, paths, camp extents, respawn anchor, collision/navigation inputs, and authored placements;
 - `CONTENT-0007`: neutral starter-flyer identities, health, and camp compositions;
 - `CONTENT-0008`: levels 1-20, deterministic XP, starter bow/underlayer, first Ranger/leather family, and drop inputs;
 - `CONTENT-0011`: exact archer, outfit, bow/arrow, and minimum compatible bow-clip selection;
@@ -60,8 +63,9 @@ The connected world spine remains:
 ```text
 BUILD-0003 -> SERVER-0002  headless fixed-step world lifecycle
 PROTOCOL-0002 -> PROTOCOL-0003 -> PROTOCOL-0004  deterministic Draft 0 facts and serialization
-CONTENT-0006 + SERVER-0002 -> SERVER-0004  first-zone entity state
-SERVER-0004 + PROTOCOL-0004 -> SIM-0008  authoritative click-to-move
+CONTENT-0006 -> CONTENT-0014  regional contract before exact graybox layout
+CONTENT-0014 + SERVER-0002 -> SERVER-0004  first-zone entity state
+SERVER-0004 + PROTOCOL-0004 + CONTENT-0014 -> SIM-0008  authoritative click-to-move
 SERVER-0002 + PROTOCOL-0004 -> SERVER-0003  world-owned admitted sessions
 SERVER-0003 + SERVER-0004 + SIM-0008 -> SERVER-0005  command/snapshot exchange
 CLIENT-0005 + CLIENT-0006 + SERVER-0005 -> CLIENT-0009  synchronized client
@@ -75,7 +79,7 @@ SIM-0006 + SIM-0008 + PROTOCOL-0004 -> SIM-0004  Basic Arrow, integer damage, de
 SIM-0004 + CONTENT-0003 -> SIM-0009  Fire Arrow
 SIM-0004 + CONTENT-0003 -> SIM-0007  Arrow Rain
 SIM-0004 + SIM-0006 + SIM-0008 + CONTENT-0007 -> SIM-0010  bounded monster behavior
-SIM-0010 + SIM-0008 + CONTENT-0006 -> SIM-0011  protected town and respawn
+SIM-0010 + SIM-0008 + CONTENT-0014 -> SIM-0011  protected town and respawn
 CLIENT-0009 + SIM-0004 + SIM-0009 + SIM-0007 -> CLIENT-0012  connected action intent
 ```
 
@@ -84,7 +88,7 @@ Basic Arrow and Fire Arrow do not create authoritative projectile entities. All 
 Zone and monster presentation remain product integration:
 
 ```text
-CLIENT-0009 + CONTENT-0006 + CONTENT-0012 + parent SHARED-0018/0019 + ASSET-0007 -> CLIENT-0016  first-zone scene
+CLIENT-0009 + CONTENT-0014 + CONTENT-0012 + parent SHARED-0018/0019 + ASSET-0007 -> CLIENT-0016  first-zone scene
 CLIENT-0009 + SIM-0010 + CONTENT-0013 + parent ASSET-0008 -> CLIENT-0017  starter-flyer presentation
 CLIENT-0007 + CLIENT-0011 + SIM-0009 + PROTOCOL-0004 -> CLIENT-0018  Basic/Fire arrows
 CLIENT-0012 + CONTENT-0003 + PROTOCOL-0004 + SIM-0011 -> CLIENT-0019  resources/targeting
