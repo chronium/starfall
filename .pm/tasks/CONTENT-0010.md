@@ -2,7 +2,6 @@
 id: CONTENT-0010
 title: Apply material and palette variants to starter equipment
 track: CONTENT
-milestone: M2
 priority: none
 dependsOn:
 - CONTENT-0004
