@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starfall Build Validation"
+  short_description: "Build and validate Starfall safely"
+  default_prompt: "Use $starfall-build-validation to choose and run the correct Starfall restore, build, test, and dependency checks."

@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Starfall.Content/Starfall.Content.csproj" />
+    <Project Path="src/Starfall.Protocol/Starfall.Protocol.csproj" />
+    <Project Path="src/Starfall.Simulation/Starfall.Simulation.csproj" />
+    <Project Path="src/Starfall.World/Starfall.World.csproj" />
+    <Project Path="src/Starfall.Client/Starfall.Client.csproj" />
+    <Project Path="src/Starfall.Editor/Starfall.Editor.csproj" />
+    <Project Path="src/Starfall.BalanceLab/Starfall.BalanceLab.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Starfall.Architecture.Tests/Starfall.Architecture.Tests.csproj" />
+  </Folder>
+</Solution>

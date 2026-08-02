@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Starfall.Content/Starfall.Content.csproj" />
+    <ProjectReference Include="../Starfall.Simulation/Starfall.Simulation.csproj" />
+  </ItemGroup>
+</Project>

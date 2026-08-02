@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starfall PM Workflow"
+  short_description: "Manage Starfall PM and wiki work"
+  default_prompt: "Use $starfall-pm-workflow to select, execute, document, and complete one Starfall task through PM MCP."

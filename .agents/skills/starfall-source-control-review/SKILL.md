@@ -1,0 +1,38 @@
+---
+name: starfall-source-control-review
+description: Inspect, review, stage, and commit Starfall work without mixing coordinator or sibling changes. Use for dirty-tree triage, focused task commits, diff review, authority and dependency review, validation evidence, or coordinator gitlink handoff.
+---
+
+# Starfall Source Control And Review
+
+## Establish State
+
+Inspect:
+
+```sh
+git status --short
+git -C .. status --short
+git -C .. submodule status
+```
+
+Proceed with a clean Starfall tree or one known coherent active-task change. Stop on mixed, surprising, or ambiguous edits. Never reset, discard, clean, overwrite, or absorb unrelated work.
+
+## Review The Task
+
+Review the complete Starfall diff for:
+
+- scope against the active PM task;
+- server/client authority leaks;
+- forbidden headless presentation dependencies;
+- unapproved dependency, protocol, format, service, or topology decisions;
+- parent-relative or Royale references;
+- missing tests, wiki updates, PM notes, or owner validation;
+- generated, secret, cache, build-output, or accidental machine files.
+
+Run the repository's documented validation and inspect the staged file list before committing.
+
+## Commit And Hand Off
+
+Commit only Starfall-owned files with a subject beginning `[TASK-ID]`. Do not stage coordinator files or the gitlink from inside the child task.
+
+After the child commit, report its hash and leave coordinator pointer advancement to a separate approved coordinator `SUBMODULE` task. Do not automatically push, advance the gitlink, or begin another Starfall task.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Starfall Architecture Boundaries"
+  short_description: "Protect Starfall ownership and authority"
+  default_prompt: "Use $starfall-architecture-boundaries to place a Starfall change in the correct project and preserve authority boundaries."
