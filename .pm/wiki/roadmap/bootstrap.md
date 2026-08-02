@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-02T15:54:34.9419960Z
+modifiedAt: 2026-08-02T16:33:20.3593410Z
 ---
 
 ## Execution standard
@@ -43,6 +43,18 @@ Content and evidence-gated selection are split into focused contracts:
 
 Prospective packs are not dependencies. Selection tasks record exact pack-relative paths and may reject candidates. Coordinator acquisition consumes completed selections and stages only exact inputs. Generated client content remains ignored.
 
+The reviewed canonical selection-to-acquisition gates are:
+
+```text
+CONTENT-0011 -> parent ASSET-0004  exact archer and bow-animation inputs
+CONTENT-0011 -> parent ASSET-0005  exact Ranger equipment inputs
+CONTENT-0011 -> parent ASSET-0006  exact bow and arrow inputs
+CONTENT-0012 -> parent ASSET-0007  exact zone presentation inputs
+CONTENT-0013 -> parent ASSET-0008  evidence-gated monster inputs
+```
+
+The parent tasks are identified by canonical `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/...` references in the owning Starfall consumers. Selection never depends on acquisition. Monster acquisition retains no speculative static or skeletal prerequisite until completed selection proves the smallest correct path.
+
 The connected world spine remains:
 
 ```text
@@ -72,22 +84,22 @@ Basic Arrow and Fire Arrow do not create authoritative projectile entities. All 
 Zone and monster presentation remain product integration:
 
 ```text
-CLIENT-0009 + CONTENT-0006 + CONTENT-0012 -> CLIENT-0016  first-zone scene
-CLIENT-0009 + SIM-0010 + CONTENT-0013 -> CLIENT-0017  starter-flyer presentation
+CLIENT-0009 + CONTENT-0006 + CONTENT-0012 + parent SHARED-0018/0019 + ASSET-0007 -> CLIENT-0016  first-zone scene
+CLIENT-0009 + SIM-0010 + CONTENT-0013 + parent ASSET-0008 -> CLIENT-0017  starter-flyer presentation
 CLIENT-0007 + CLIENT-0011 + SIM-0009 + PROTOCOL-0004 -> CLIENT-0018  Basic/Fire arrows
 CLIENT-0012 + CONTENT-0003 + PROTOCOL-0004 + SIM-0011 -> CLIENT-0019  resources/targeting
 ```
 
 Gameplay-specific character presentation stays in M2:
 
-- `CONTENT-0004`: first Ranger/leather family and body-region rules;
-- `CONTENT-0009`: starter bow/arrow attachment definitions;
-- `CLIENT-0007`: locomotion, Basic Arrow, reactions, and death;
+- `CONTENT-0004`: first Ranger/leather family and body-region rules after parent `ASSET-0005`;
+- `CONTENT-0009`: starter bow/arrow attachment definitions after parent `ASSET-0006` and narrow `SHARED-0020`;
+- `CLIENT-0007`: locomotion, Basic Arrow, reactions, and death after parent `ASSET-0004`;
 - `CLIENT-0010`: Arrow Rain targeting and effects;
 - `CLIENT-0011`: equipped bow, aim, and IK;
 - `CLIENT-0018`: client-only Basic/Fire projectile presentation.
 
-`CONTENT-0010` material/palette variants are explicitly deferred outside Draft 0. `SHARED-0007` remains the broad deferred coordinator attachment task. A future narrow coordinator M2 proof will own one socketed static bow and must later be reviewed and reused by `SHARED-0007`.
+`CONTENT-0010` material/palette variants are explicitly deferred outside Draft 0. Parent `SHARED-0020` owns the narrow socketed static bow proof. Parent `SHARED-0007` remains the broad deferred attachment task, depends on that proof, and must review and reuse it while preserving its later consumers.
 
 Connected progression remains independently testable:
 

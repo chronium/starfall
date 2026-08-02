@@ -9,15 +9,16 @@ dependsOn:
 - SIM-0004
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0008
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0009
+- pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0004
 createdAt: 2026-08-01T05:46:49.7988710Z
-modifiedAt: 2026-08-02T15:52:42.7286740Z
+modifiedAt: 2026-08-02T16:32:42.2431940Z
 ---
 
 Present authoritative player locomotion, Basic Arrow action timing, hit reactions, and death through the shared character boundary.
 
 Acceptance criteria:
-- Consume selected and cooked compatible bow-action animation evidence; Sword_Attack is not an acceptable bow placeholder.
+- Consume the exact coordinator-acquired archer and compatible bow-animation inputs through canonical ASSET-0004; Sword_Attack is not an acceptable bow placeholder.
 - Present locomotion and the authoritative Basic Arrow action/reaction facts without deciding combat outcomes.
 - Preserve coherent notch/release timing inputs for later native validation and visual-arrow work.
-- Before activation, attach the reviewed canonical coordinator acquisition prerequisite for exact archer inputs.
+- Keep selection, cooking/provenance, and gameplay/presentation ownership boundaries explicit.
 - Do not implement Fire Arrow visuals, Arrow Rain, projectile entities, equipment sockets, weapon IK, retargeting, or a general animation graph.
