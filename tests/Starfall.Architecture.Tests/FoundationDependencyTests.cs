@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Xml.Linq;
 
 namespace Starfall.Architecture.Tests;
@@ -21,6 +22,13 @@ public sealed class FoundationDependencyTests
         .. ExpectedProductReferences.Keys,
         "Starfall.Architecture.Tests",
     ];
+
+    private static readonly IReadOnlySet<string> ExpectedExecutableProjects =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Starfall.Client",
+            "Starfall.World",
+        };
 
     private static readonly string[] HeadlessProjects =
     [
@@ -66,18 +74,82 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
-    public void Foundation_product_projects_are_libraries()
+    public void Product_project_output_types_match_foundation_processes()
     {
         foreach (string projectName in ExpectedProductReferences.Keys)
         {
             XDocument project = LoadProductProject(projectName);
             string? outputType = project.Descendants("OutputType").SingleOrDefault()?.Value;
+            string actualOutputType = string.IsNullOrWhiteSpace(outputType) ? "Library" : outputType;
+            string expectedOutputType = ExpectedExecutableProjects.Contains(projectName) ? "Exe" : "Library";
 
             Assert.True(
-                string.IsNullOrWhiteSpace(outputType) ||
-                string.Equals(outputType, "Library", StringComparison.OrdinalIgnoreCase),
-                $"{projectName} must remain a library until its owning executable-shell task.");
+                string.Equals(expectedOutputType, actualOutputType, StringComparison.OrdinalIgnoreCase),
+                $"{projectName} must be {expectedOutputType}, but declares {actualOutputType}.");
         }
+    }
+
+    [Theory]
+    [InlineData("Starfall.Client")]
+    [InlineData("Starfall.World")]
+    public async Task Foundation_process_shells_start_and_exit_successfully(string projectName)
+    {
+        ProcessResult result = await RunProductProcessAsync(projectName);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(
+            $"{projectName} foundation shell started.{Environment.NewLine}",
+            result.StandardOutput);
+        Assert.Empty(result.StandardError);
+    }
+
+    [Theory]
+    [InlineData("Starfall.Client")]
+    [InlineData("Starfall.World")]
+    public async Task Foundation_process_shells_reject_arguments(string projectName)
+    {
+        ProcessResult result = await RunProductProcessAsync(projectName, "--unexpected");
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Empty(result.StandardOutput);
+        Assert.Equal(
+            $"{projectName} foundation shell does not accept arguments.{Environment.NewLine}",
+            result.StandardError);
+    }
+
+    [Fact]
+    public void World_output_excludes_presentation_artifacts()
+    {
+        string outputDirectory = GetProductOutputDirectory("Starfall.World");
+        string[] fileNames = Directory
+            .EnumerateFiles(outputDirectory, "*", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileName)
+            .Where(fileName => fileName is not null)
+            .Cast<string>()
+            .ToArray();
+
+        string[] forbiddenFragments =
+        [
+            "Starfall.Client",
+            "Starfall.Editor",
+            "ChronoFall.CharacterPresentation",
+            "SDL",
+            "ImGui",
+            "Blurg",
+            "Rendering",
+        ];
+        string[] forbiddenExtensions = [".metal", ".spv", ".png", ".jpg", ".jpeg", ".ktx", ".dds"];
+
+        string[] forbiddenFiles = fileNames
+            .Where(fileName =>
+                forbiddenFragments.Any(fragment =>
+                    fileName.Contains(fragment, StringComparison.OrdinalIgnoreCase)) ||
+                forbiddenExtensions.Contains(Path.GetExtension(fileName), StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            forbiddenFiles.Length == 0,
+            $"Starfall.World output contains presentation artifacts: {string.Join(", ", forbiddenFiles)}.");
     }
 
     [Fact]
@@ -291,6 +363,75 @@ public sealed class FoundationDependencyTests
             .Where(reference => !IsApprovedFamilySourceReference(projectName, reference));
     }
 
+    private static string GetProductOutputDirectory(string projectName)
+    {
+        DirectoryInfo testOutputDirectory = new(AppContext.BaseDirectory);
+        string targetFramework = testOutputDirectory.Name;
+        string configuration = testOutputDirectory.Parent?.Name ??
+            throw new DirectoryNotFoundException(
+                $"Could not determine the build configuration from {AppContext.BaseDirectory}.");
+
+        string outputDirectory = Path.Combine(
+            RepositoryRoot,
+            "src",
+            projectName,
+            "bin",
+            configuration,
+            targetFramework);
+
+        Assert.True(
+            Directory.Exists(outputDirectory),
+            $"Expected product output directory {outputDirectory} does not exist.");
+
+        return outputDirectory;
+    }
+
+    private static async Task<ProcessResult> RunProductProcessAsync(
+        string projectName,
+        params string[] arguments)
+    {
+        string assemblyPath = Path.Combine(
+            GetProductOutputDirectory(projectName),
+            $"{projectName}.dll");
+        Assert.True(File.Exists(assemblyPath), $"Expected executable assembly {assemblyPath} does not exist.");
+
+        var startInfo = new ProcessStartInfo("dotnet")
+        {
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            WorkingDirectory = RepositoryRoot,
+        };
+        startInfo.ArgumentList.Add(assemblyPath);
+        foreach (string argument in arguments)
+            startInfo.ArgumentList.Add(argument);
+
+        using var process = new Process { StartInfo = startInfo };
+        Assert.True(process.Start(), $"Failed to start {projectName}.");
+
+        Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
+        Task<string> standardError = process.StandardError.ReadToEndAsync();
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+
+            await process.WaitForExitAsync();
+            throw new TimeoutException($"{projectName} did not exit within 10 seconds.");
+        }
+
+        return new ProcessResult(
+            process.ExitCode,
+            await standardOutput,
+            await standardError);
+    }
+
     private static string FindRepositoryRoot()
     {
         DirectoryInfo? directory = new(AppContext.BaseDirectory);
@@ -309,4 +450,9 @@ public sealed class FoundationDependencyTests
         throw new DirectoryNotFoundException(
             $"Could not locate the Starfall repository from {AppContext.BaseDirectory}.");
     }
+
+    private sealed record ProcessResult(
+        int ExitCode,
+        string StandardOutput,
+        string StandardError);
 }

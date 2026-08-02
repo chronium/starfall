@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-02T09:48:44.6855010Z
+modifiedAt: 2026-08-02T12:09:40.9389410Z
 ---
 
 ## Purpose
@@ -10,7 +10,7 @@ Starfall is an independently owned and useful server-authoritative MMORPG inspir
 
 ## Planned boundaries
 
-The foundation separates native client presentation, headless world orchestration, authoritative simulation, transport-neutral protocol, content, editor authoring, and a headless Balance Lab. It also preserves logical ownership boundaries for identity/lobby, realm/world, chat, operations, and persistence. `BUILD-0002` realizes the approved boundaries as independently buildable .NET libraries and executable dependency tests; runnable client and world-host shells remain owned by `BUILD-0003`.
+The foundation separates native client presentation, headless world orchestration, authoritative simulation, transport-neutral protocol, content, editor authoring, and a headless Balance Lab. It also preserves logical ownership boundaries for identity/lobby, realm/world, chat, operations, and persistence. `BUILD-0002` realized the approved boundaries as independently buildable .NET libraries and executable dependency tests. `BUILD-0003` makes only `Starfall.Client` and `Starfall.World` executable composition roots with bounded startup-and-exit behavior; later tasks still own the client presentation runtime and fixed-step authoritative world lifecycle.
 
 Once admitted to a world, an active player's gameplay session does not depend on authentication, chat, or management services remaining available. Identity admits; the selected world consumes a short-lived signed join ticket and owns the gameplay session. Chat and operations remain optional from gameplay's perspective. Persistence degradation requires a later explicit contract.
 
@@ -36,7 +36,7 @@ Content and Protocol remain product-dependency-free. Simulation owns determinist
 
 The graph above records Starfall-local product dependencies. A later approved client task may add the allowlisted coordinator presentation projects as source references; those references do not change Starfall gameplay ownership and may never enter Content, Protocol, Simulation, World, Editor, or BalanceLab.
 
-All seven projects are libraries during the foundation task. Identity, chat, operations, and persistence remain logical ownership boundaries rather than placeholder assemblies or immediate deployables. Changes to this graph require an approved task, updated dependency tests, and an updated Starfall architecture contract.
+`Starfall.Client` and `Starfall.World` are executable boundaries; Content, Protocol, Simulation, Editor, and BalanceLab remain libraries. The two foundation shells accept no arguments, report deterministic startup, and exit without a runtime loop. This process split follows the client/server trust, platform, and authority boundary: it does not require identity, chat, operations, or persistence to become separate deployables. Changes to this graph require an approved task, updated dependency tests, and an updated Starfall architecture contract.
 
 ## Family source-consumption boundary
 

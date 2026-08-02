@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-02T11:53:18.5761270Z
+modifiedAt: 2026-08-02T12:09:40.9472160Z
 ---
 
 ## Purpose
@@ -28,7 +28,7 @@ tests/
 .agents/skills/
 ```
 
-All product projects are libraries during `BUILD-0002`. They establish compile-time ownership and dependency direction without placeholder gameplay or service types. `BUILD-0003` separately owns runnable client and world-host shells plus the local launch workflow.
+`BUILD-0002` established every product project as a library so compile-time ownership and dependency direction existed without placeholder gameplay or service types. `BUILD-0003` changes only `Starfall.Client` and `Starfall.World` into executable composition roots. Content, Protocol, Simulation, Editor, and BalanceLab remain libraries.
 
 The repository pins .NET SDK 10.0.301 and owns its build properties and package versions. `BUILD-0002` established a standalone library foundation; that historical result remains valid. The canonical environment for future full-client builds is now the shallow coordinator family checkout. Starfall may consume an approved coordinator source allowlist through `$(ChronoFallFamilyRoot)`, but never references Royale or imports coordinator build policy.
 
@@ -42,7 +42,16 @@ dotnet build Starfall.slnx --no-restore
 dotnet test Starfall.slnx --no-restore --no-build
 ```
 
-The architecture tests enforce the expected solution projects, library-only foundation, approved direct project-reference graph, absence of product package dependencies during the foundation, and headless exclusion of client/editor/rendering dependencies. They also enforce the exact client-only coordinator source allowlist and reject literal repository escapes, absolute paths, arbitrary property-rooted references, coordinator imports, and Royale references.
+After the solution build, prove each composition root independently:
+
+```sh
+dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build
+dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
+```
+
+Both foundation shells accept no arguments, print a deterministic startup message, and exit successfully. Arguments fail with exit code 2 rather than being silently ignored. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service. `SERVER-0002` owns the fixed-step world lifecycle, while `CLIENT-0006` owns the first presentation runtime integration.
+
+The architecture tests enforce the expected solution projects, exact executable/library split, bounded Client and World process startup, argument rejection, approved direct project-reference graph, absence of product package dependencies, and headless output exclusion of client/editor/rendering artifacts. They also enforce the exact client-only coordinator source allowlist and reject literal repository escapes, absolute paths, arbitrary property-rooted references, coordinator imports, and Royale references.
 
 When an approved task changes a dependency or executable boundary, update the tests and `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/overview` together.
 
