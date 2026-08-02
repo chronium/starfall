@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-02T07:34:10.3924290Z
+modifiedAt: 2026-08-02T07:53:25.1794880Z
 ---
 
 ## Execution standard
@@ -21,20 +21,11 @@ After `BUILD-0002`, `PROTOCOL-0002` defines signed lobby-to-world admission and 
 
 `BUILD-0002` is the only dependency-ready feature task after this grooming pass.
 
-## M1 — Shared character presentation
+## M1 — Shared character foundation
 
-`CLIENT-0006` integrates the canonical parent presentation foundation only after `BUILD-0003`. It must not use parent-relative source references. Before activation, it requires a canonical dependency on a coordinator-owned task that establishes independent acquisition of shared binaries and cooked content.
+`CLIENT-0006` is the sole M1 implementation task. It integrates the canonical parent presentation foundation after `BUILD-0003` and coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` establishes independent acquisition of versioned shared binaries and selected cooked client content.
 
-Presentation is split by independently verifiable outcome:
-
-- `CONTENT-0004`: modular armour and truthful body-region hiding;
-- `CONTENT-0009`: starter weapon/socket attachment mappings;
-- `CONTENT-0010`: bounded material and palette variants;
-- `CLIENT-0007`: locomotion, basic attack, damage, and death presentation;
-- `CLIENT-0010`: the geometric skill and bounded gameplay effects;
-- `CLIENT-0011`: equipped weapon alignment, aim offsets, and off-hand IK.
-
-Each task consumes authoritative Starfall state and the smallest relevant canonical coordinator contract. Animation, rendering, effects, and IK remain presentation-only.
+M1 must not use parent-relative source references and must preserve Starfall-owned gameplay, protocol, content, build, and release boundaries. Gameplay-specific presentation is part of the M2 playable-zone phase, keeping milestones chronological rather than treating them as unordered capability buckets.
 
 ## M2 — First playable zone
 
@@ -57,6 +48,15 @@ SERVER-0003 + SERVER-0004 + SIM-0008 -> SERVER-0005  command/snapshot exchange
 CLIENT-0005 + CLIENT-0006 + SERVER-0005 -> CLIENT-0009  synchronized client
 ```
 
+Connected-player interaction is explicit:
+
+```text
+CLIENT-0009 + SIM-0004 + SIM-0007 -> CLIENT-0012  combat/skill intent and targeting
+CLIENT-0012 + GAME-0004 -> CLIENT-0013  physical-drop presentation and collection
+CLIENT-0013 + GAME-0003 + GAME-0005 -> CLIENT-0014  inventory/equipment interaction
+CLIENT-0012 + GAME-0002 -> CLIENT-0015  experience and level-up feedback
+```
+
 Monster and combat work is split into:
 
 ```text
@@ -73,12 +73,25 @@ Authoritative progression is four separate outcomes:
 - `GAME-0004`: physical world drops, reservation, and collection;
 - `GAME-0005`: equipping and authoritative item effects.
 
+Gameplay-specific character presentation also belongs to M2:
+
+- `CONTENT-0004`: modular armour and truthful body-region hiding;
+- `CONTENT-0009`: starter weapon/socket attachment mappings;
+- `CONTENT-0010`: bounded material and palette variants;
+- `CLIENT-0007`: locomotion, basic attack, damage, and death presentation;
+- `CLIENT-0010`: the geometric skill and bounded gameplay effects;
+- `CLIENT-0011`: equipped weapon alignment, aim offsets, and off-hand IK.
+
+All client tasks consume authoritative Starfall state. Input sends intent only; animation, rendering, effects, UI, and IK never decide gameplay outcomes.
+
 Balance Lab work is split into the deterministic harness `EDITOR-0004`, camp/combat scenarios `EDITOR-0005`, and progression/drop/equipment metrics `EDITOR-0006`. Only the resulting evidence gates deferred topology decision `ARCH-0005`.
 
 ## M3 — Deferred transformations and companions
 
 `CONTENT-0005` and `SIM-0005` remain future contract tasks. `CLIENT-0008` is a deliberately deferred presentation umbrella and must be split into wings, mounts, and companions before implementation. M3 has no milestone priority and is outside the vertical-slice critical path.
 
-## Remaining cross-project action
+## Shared-acquisition gate
 
-Starfall cannot own how coordinator shared modules are distributed. The coordinator must create and complete a focused shared-acquisition task, after which `CLIENT-0006` must gain its canonical `pm://project/.../task/...` dependency. `SF-0004` records this contract gap but does not fabricate a parent task or mutate the coordinator repository.
+Starfall does not own coordinator distribution. The missing prerequisite is now represented by canonical task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016`, and `CLIENT-0006` persists that exact dependency. PM therefore keeps the integration blocked until the coordinator contract is complete, even after `BUILD-0003`.
+
+`SF-0005` adds only the task identity and dependency. It does not activate or implement shared packaging, publication, child restore, or cooked-content distribution.
