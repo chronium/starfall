@@ -1,12 +1,12 @@
 ---
 id: CONTENT-0003
-title: Define one class, one small zone, monsters, and starter items
+title: Define the first playable class and starter skills
 track: CONTENT
 milestone: M2
 dependsOn:
 - BUILD-0002
 createdAt: 2026-08-01T05:46:47.6706230Z
-modifiedAt: 2026-08-01T05:47:05.5357560Z
+modifiedAt: 2026-08-02T07:30:17.2621550Z
 ---
 
-Author the minimal content contracts for one playable class, one small zone, representative monster spots, basic skills, experience, drops, and visibly distinct starter equipment. Defer the broader economy and complete first-wings release.
+Define one playable vertical-slice class with stable content IDs, base attributes, resource rules, a basic attack, and one geometric area skill contract. Include validation inputs shared by authoritative simulation and authoring. Do not define the zone, monsters, items, runtime combat, animation, effects, progression, persistence, or final balance.
