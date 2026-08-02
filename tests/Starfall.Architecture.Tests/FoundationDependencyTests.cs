@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 
 namespace Starfall.Architecture.Tests;
@@ -89,32 +90,45 @@ public sealed class FoundationDependencyTests
         }
     }
 
-    [Theory]
-    [InlineData("Starfall.Client")]
-    [InlineData("Starfall.World")]
-    public async Task Foundation_process_shells_start_and_exit_successfully(string projectName)
+    [Fact]
+    public async Task World_foundation_shell_starts_and_exits_successfully()
     {
-        ProcessResult result = await RunProductProcessAsync(projectName);
+        ProcessResult result = await RunProductProcessAsync("Starfall.World");
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(
-            $"{projectName} foundation shell started.{Environment.NewLine}",
+            $"Starfall.World foundation shell started.{Environment.NewLine}",
+            result.StandardOutput);
+        Assert.Empty(result.StandardError);
+    }
+
+    [Fact]
+    public async Task Client_validates_staged_character_content_without_starting_sdl()
+    {
+        ProcessResult result = await RunProductProcessAsync(
+            "Starfall.Client",
+            "--validate-character-content");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(
+            "STARFALL_CLIENT_CHARACTER_CONTENT_READY asset=quaternius-ual1-standard " +
+            $"joints=65 clips=Idle_Loop,Walk_Loop,Sword_Attack{Environment.NewLine}",
             result.StandardOutput);
         Assert.Empty(result.StandardError);
     }
 
     [Theory]
-    [InlineData("Starfall.Client")]
-    [InlineData("Starfall.World")]
-    public async Task Foundation_process_shells_reject_arguments(string projectName)
+    [InlineData("Starfall.World", "Starfall.World foundation shell does not accept arguments.")]
+    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview or --validate-character-content.")]
+    public async Task Foundation_processes_reject_unknown_arguments(
+        string projectName,
+        string expectedError)
     {
         ProcessResult result = await RunProductProcessAsync(projectName, "--unexpected");
 
         Assert.Equal(2, result.ExitCode);
         Assert.Empty(result.StandardOutput);
-        Assert.Equal(
-            $"{projectName} foundation shell does not accept arguments.{Environment.NewLine}",
-            result.StandardError);
+        Assert.Equal(expectedError + Environment.NewLine, result.StandardError);
     }
 
     [Fact]
@@ -210,6 +224,92 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
+    public void Client_references_exact_approved_family_source_set()
+    {
+        XDocument client = LoadProductProject("Starfall.Client");
+        XElement[] familyReferences = client
+            .Descendants("ProjectReference")
+            .Where(reference => IsApprovedFamilySourceReference(
+                "Starfall.Client",
+                reference.Attribute("Include")?.Value ?? string.Empty))
+            .ToArray();
+        string[] actual = familyReferences
+            .Select(reference => reference.Attribute("Include")!.Value)
+            .Where(reference => IsApprovedFamilySourceReference("Starfall.Client", reference))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(ApprovedClientFamilySourceReferences.Order(StringComparer.Ordinal), actual);
+        XElement configurationPolicy = Assert.Single(
+            client.Descendants("ShouldUnsetParentConfigurationAndPlatform"));
+        Assert.Equal("false", configurationPolicy.Value);
+        Assert.All(
+            familyReferences,
+            reference => Assert.Equal(
+                "ShouldUnsetParentConfigurationAndPlatform=false",
+                reference.Attribute("AdditionalProperties")?.Value));
+    }
+
+    [Fact]
+    public void Client_output_contains_only_the_bounded_character_runtime_inputs()
+    {
+        string output = GetProductOutputDirectory("Starfall.Client");
+        string content = Path.Combine(
+            output,
+            "content",
+            "chronofall",
+            "character-presentation",
+            "client");
+
+        Assert.True(File.Exists(Path.Combine(content, "quaternius-ual1-standard.cfskel")));
+        Assert.True(File.Exists(Path.Combine(content, "quaternius-ual1-standard.provenance.json")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "licenses",
+            "quaternius-ual1-standard",
+            "License.txt")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "licenses",
+            "quaternius-ual1-standard",
+            "README.txt")));
+
+        string[] contentFiles = Directory
+            .EnumerateFiles(content, "*", SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(content, path))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(
+        [
+            Path.Combine("licenses", "quaternius-ual1-standard", "License.txt"),
+            Path.Combine("licenses", "quaternius-ual1-standard", "README.txt"),
+            "quaternius-ual1-standard.cfskel",
+            "quaternius-ual1-standard.provenance.json",
+        ],
+        contentFiles);
+        Assert.DoesNotContain(
+            Directory.EnumerateFiles(output, "*", SearchOption.AllDirectories),
+            path => string.Equals(Path.GetExtension(path), ".glb", StringComparison.OrdinalIgnoreCase));
+
+        string shaderDirectory = Path.Combine(output, "shaders");
+        Assert.True(File.Exists(Path.Combine(shaderDirectory, "skinned-character.vert.msl")));
+        Assert.True(File.Exists(Path.Combine(shaderDirectory, "skinned-character.frag.msl")));
+        Assert.True(File.Exists(Path.Combine(shaderDirectory, "skinned-character.vert.spv")));
+        Assert.True(File.Exists(Path.Combine(shaderDirectory, "skinned-character.frag.spv")));
+
+        if (OperatingSystem.IsMacOS() &&
+            RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64)
+        {
+            Assert.True(File.Exists(Path.Combine(
+                output,
+                "runtimes",
+                "osx-arm64",
+                "native",
+                "libSDL3.dylib")));
+        }
+    }
+
+    [Fact]
     public void Product_projects_have_no_external_packages()
     {
         foreach (string projectName in ExpectedProductReferences.Keys)
@@ -262,6 +362,22 @@ public sealed class FoundationDependencyTests
         Assert.Equal(
             "$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))",
             root.Value);
+    }
+
+    [Fact]
+    public void Repository_root_centralizes_local_generated_content_paths()
+    {
+        XDocument properties = XDocument.Load(Path.Combine(RepositoryRoot, "Directory.Build.props"));
+        XElement root = Assert.Single(properties.Descendants("StarfallRepositoryRoot"));
+        Assert.Equal(
+            "$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)'))",
+            root.Value);
+
+        XDocument client = LoadProductProject("Starfall.Client");
+        XElement stageRoot = Assert.Single(client.Descendants("StarfallCharacterStageRoot"));
+        Assert.Equal(
+            "$(StarfallRepositoryRoot)artifacts/chronofall/character-presentation/client/",
+            stageRoot.Value);
     }
 
     [Theory]

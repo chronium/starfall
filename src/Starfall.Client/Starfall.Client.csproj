@@ -1,10 +1,61 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ChronoFallEffectiveRuntimeIdentifier Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</ChronoFallEffectiveRuntimeIdentifier>
+    <ChronoFallEffectiveRuntimeIdentifier Condition="'$(ChronoFallEffectiveRuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</ChronoFallEffectiveRuntimeIdentifier>
+    <StarfallCharacterStageRoot>$(StarfallRepositoryRoot)artifacts/chronofall/character-presentation/client/</StarfallCharacterStageRoot>
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Starfall.Content/Starfall.Content.csproj" />
     <ProjectReference Include="../Starfall.Protocol/Starfall.Protocol.csproj" />
+    <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj"
+                      AdditionalProperties="ShouldUnsetParentConfigurationAndPlatform=false" />
+    <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj"
+                      AdditionalProperties="ShouldUnsetParentConfigurationAndPlatform=false" />
+    <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj"
+                      AdditionalProperties="ShouldUnsetParentConfigurationAndPlatform=false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(StarfallCharacterStageRoot)quaternius-ual1-standard.cfskel"
+          Link="content/chronofall/character-presentation/client/quaternius-ual1-standard.cfskel"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)quaternius-ual1-standard.provenance.json"
+          Link="content/chronofall/character-presentation/client/quaternius-ual1-standard.provenance.json"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/License.txt"
+          Link="content/chronofall/character-presentation/client/licenses/quaternius-ual1-standard/License.txt"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/README.txt"
+          Link="content/chronofall/character-presentation/client/licenses/quaternius-ual1-standard/README.txt"
+          CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(ChronoFallEffectiveRuntimeIdentifier)' == 'osx-arm64'">
+    <None Include="$(ChronoFallFamilyRoot)thirdparty/repos/SDL3-CS/native/osx-arm64/libSDL3.dylib"
+          CopyToOutputDirectory="PreserveNewest"
+          TargetPath="runtimes/osx-arm64/native/libSDL3.dylib" />
+  </ItemGroup>
+
+  <Target Name="EnsureStarfallCharacterPresentationStage" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-ual1-standard.cfskel')"
+           Text="Starfall character content is not staged. From the ChronoFall coordinator root run: scripts/cook-character-presentation-for-client.sh --project-id prj_pkIpzx0fzFD4URjvqBuYrGZF" />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-ual1-standard.provenance.json')"
+           Text="Starfall character provenance is not staged. Re-run the stable-ID coordinator staging command." />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/License.txt') Or !Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/README.txt')"
+           Text="Starfall character CC0 evidence is incomplete. Re-run the stable-ID coordinator staging command." />
+  </Target>
+
+  <Target Name="CopyChronoFallCharacterPresentationShaders" AfterTargets="Build">
+    <ItemGroup>
+      <CharacterPresentationShaderAsset Include="$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/bin/$(Configuration)/$(TargetFramework)/shaders/**/*.msl" />
+      <CharacterPresentationShaderAsset Include="$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/bin/$(Configuration)/$(TargetFramework)/shaders/**/*.spv" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CharacterPresentationShaderAsset)"
+          DestinationFiles="@(CharacterPresentationShaderAsset->'$(OutputPath)shaders/%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

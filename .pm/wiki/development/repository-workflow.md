@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-02T12:09:40.9472160Z
+modifiedAt: 2026-08-02T12:39:46.6050900Z
 ---
 
 ## Purpose
@@ -34,7 +34,14 @@ The repository pins .NET SDK 10.0.301 and owns its build properties and package 
 
 ## Foundation validation
 
-Run from the Starfall repository root:
+First stage the selected client cook from the coordinator root by stable project ID:
+
+```sh
+scripts/cook-character-presentation-for-client.sh \
+  --project-id prj_pkIpzx0fzFD4URjvqBuYrGZF
+```
+
+Then run from the Starfall repository root:
 
 ```sh
 dotnet restore Starfall.slnx
@@ -42,14 +49,21 @@ dotnet build Starfall.slnx --no-restore
 dotnet test Starfall.slnx --no-restore --no-build
 ```
 
-After the solution build, prove each composition root independently:
+After the solution build, prove the headless world shell and the client content path independently:
 
 ```sh
 dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build
+dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build -- \
+  --validate-character-content
+```
+
+Run the native presentation preview with:
+
+```sh
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-Both foundation shells accept no arguments, print a deterministic startup message, and exit successfully. Arguments fail with exit code 2 rather than being silently ignored. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service. `SERVER-0002` owns the fixed-step world lifecycle, while `CLIENT-0006` owns the first presentation runtime integration.
+The preview loads the staged Quaternius humanoid, loops `Idle_Loop` through SDL GPU, and closes with Escape or the window close control. The content probe loads the same runtime cook without initializing SDL and prints a deterministic asset, joint, and clip summary. Unknown arguments fail with exit code 2. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service. `SERVER-0002` owns the fixed-step world lifecycle, while `CLIENT-0006` owns the first presentation runtime integration.
 
 The architecture tests enforce the expected solution projects, exact executable/library split, bounded Client and World process startup, argument rejection, approved direct project-reference graph, absence of product package dependencies, and headless output exclusion of client/editor/rendering artifacts. They also enforce the exact client-only coordinator source allowlist and reject literal repository escapes, absolute paths, arbitrary property-rooted references, coordinator imports, and Royale references.
 
@@ -57,17 +71,17 @@ When an approved task changes a dependency or executable boundary, update the te
 
 ## Coordinator family checkout
 
-`Directory.Build.props` declares `ChronoFallFamilyRoot` once. When no override is supplied, it normalizes the directory above the Starfall checkout, matching the expected `coordinator/starfall` topology. An override must identify an equivalent coordinator root; individual projects must not invent their own parent-relative or absolute source paths.
+`Directory.Build.props` declares `ChronoFallFamilyRoot` once. When no override is supplied, it normalizes the directory above the Starfall checkout, matching the expected `coordinator/starfall` topology. An override must identify an equivalent coordinator root; individual projects must not invent their own parent-relative or absolute source paths. The same file defines `StarfallRepositoryRoot` for repository-local generated-content routing, so Client project files do not scatter relative traversal.
 
-The currently approved future source consumers are limited to `Starfall.Client` references to:
+The implemented source-consumption boundary is limited to `Starfall.Client` references to:
 
 - `ChronoFall.CharacterPresentation`;
 - `ChronoFall.CharacterPresentation.Cooking`;
 - `ChronoFall.CharacterPresentation.SdlGpu`.
 
-No reference is added by `SF-0006`. `CLIENT-0006` will add and validate them after coordinator `SHARED-0016` establishes the source and generated-content workflow. Coordinator-owned SDL3-CS remains compiled from its checked-out source transitively through the shared SDL GPU project; Starfall does not acquire or pin it independently in this policy task.
+`CLIENT-0006` adds and validates exactly these references after coordinator `SHARED-0016` established the source and generated-content workflow. Client preserves the selected Debug or Release configuration across references that are external to `Starfall.slnx`, including their nested coordinator references. Coordinator-owned SDL3-CS remains compiled from its checked-out source transitively through the shared SDL GPU project; Starfall neither references, acquires, nor pins it independently.
 
-Generated character content will remain under a task-owned ignored child `artifacts/` tree. The future coordinator workflow must validate the destination by stable linked-project identity and resolved checkout path, then refuse to write unless its exact owned output tree is ignored and contains no tracked files. Raw supplied assets, generated output, and presentation dependencies never enter headless projects.
+Generated character content remains under the workflow-owned ignored `artifacts/chronofall/character-presentation/client/` tree. The coordinator command validates stable linked identity, the resolved checkout, gitlink ownership, the exact ignored and untracked output boundary, known files, and symlink safety before writing. Starfall.Client copies only the cooked asset, provenance, CC0 evidence, shared shaders, and the supported native runtime into its build output. Raw supplied assets, generated output, and presentation dependencies never enter headless projects.
 
 ## PM workflow
 

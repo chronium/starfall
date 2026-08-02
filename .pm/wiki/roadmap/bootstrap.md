@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-02T09:49:30.4219140Z
+modifiedAt: 2026-08-02T12:33:17.3406530Z
 ---
 
 ## Execution standard
@@ -23,7 +23,7 @@ After `BUILD-0002`, `PROTOCOL-0002` defines signed lobby-to-world admission and 
 
 ## M1 — Shared character foundation
 
-`CLIENT-0006` is the sole M1 implementation task. It integrates the canonical parent presentation foundation after `BUILD-0003` and coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` establishes the approved source-consumption and generated client cook/copy workflow.
+`CLIENT-0006` is the sole M1 implementation task. It integrates the canonical parent presentation foundation after `BUILD-0003` and completed coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` established the approved source-consumption and generated client cook/copy workflow. Its bounded native preview proves the cooked Quaternius humanoid and `Idle_Loop`; gameplay-driven presentation remains M2 work.
 
 M1 uses only the central `$(ChronoFallFamilyRoot)` property for approved coordinator projects. It must not use literal parent traversal, absolute paths, arbitrary external property roots, coordinator imports, or Royale references, and it must preserve Starfall-owned gameplay, protocol, content, build/release decisions, and commits. Gameplay-specific presentation is part of the M2 playable-zone phase, keeping milestones chronological rather than treating them as unordered capability buckets.
 
@@ -92,6 +92,6 @@ Balance Lab work is split into the deterministic harness `EDITOR-0004`, camp/com
 
 ## Shared-source gate
 
-Starfall does not own coordinator shared source, SDL3-CS acquisition, or character-content cooking. Canonical task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` owns the narrow source-consumption and generated client cook/copy contract, and `CLIENT-0006` persists that exact dependency. PM therefore keeps integration blocked until the coordinator contract is complete, even after `BUILD-0003`.
+Starfall does not own coordinator shared source, SDL3-CS acquisition, or character-content cooking. Completed canonical task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` owns the narrow source-consumption and generated client cook/copy contract, and `CLIENT-0006` persists and consumes that exact dependency.
 
-`SF-0006` establishes only Starfall policy, the single family-root property, executable allowlist gates, documentation, and task grooming. It does not activate `CLIENT-0006`, add shared references, generate content, mutate coordinator tasks, or advance the gitlink. NuGet packages, feeds, content packages, and independent full-client distribution remain deferred until real child integrations or release/CI evidence make them valuable.
+`SF-0006` established only Starfall policy, the single family-root property, executable allowlist gates, documentation, and task grooming. `CLIENT-0006` is the separately approved implementation that adds the references and consumes generated client content. NuGet packages, feeds, content packages, and independent full-client distribution remain deferred until real child integrations or release/CI evidence make them valuable.
