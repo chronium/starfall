@@ -85,7 +85,9 @@ public sealed class FoundationDependencyTests
     {
         foreach ((string projectName, string[] expectedReferences) in ExpectedProductReferences)
         {
-            string[] actualReferences = ReadProjectReferences(LoadProductProject(projectName))
+            string[] actualReferences = ReadReferencesForLocalProductGraph(
+                    projectName,
+                    LoadProductProject(projectName))
                 .Select(path => Path.GetFileNameWithoutExtension(path) ??
                     throw new InvalidDataException($"Project reference has no file name: {path}."))
                 .Order(StringComparer.Ordinal)
@@ -93,6 +95,46 @@ public sealed class FoundationDependencyTests
 
             Assert.Equal(expectedReferences.Order(StringComparer.Ordinal), actualReferences);
         }
+    }
+
+    [Fact]
+    public void Approved_client_family_references_do_not_change_the_local_product_graph()
+    {
+        XDocument project = new(
+            new XElement(
+                "Project",
+                new XElement(
+                    "ItemGroup",
+                    new XElement(
+                        "ProjectReference",
+                        new XAttribute("Include", "../Starfall.Content/Starfall.Content.csproj")),
+                    new XElement(
+                        "ProjectReference",
+                        new XAttribute("Include", "../Starfall.Protocol/Starfall.Protocol.csproj")),
+                    ApprovedClientFamilySourceReferences
+                        .Order(StringComparer.Ordinal)
+                        .Select(reference => new XElement(
+                            "ProjectReference",
+                            new XAttribute("Include", reference))))));
+
+        Assert.All(
+            ApprovedClientFamilySourceReferences,
+            reference => Assert.True(IsApprovedFamilySourceReference("Starfall.Client", reference)));
+        Assert.Equal(
+        [
+            "../Starfall.Content/Starfall.Content.csproj",
+            "../Starfall.Protocol/Starfall.Protocol.csproj",
+        ],
+        ReadReferencesForLocalProductGraph("Starfall.Client", project));
+
+        const string unapprovedReference =
+            "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterExperiment.SdlGpu/ChronoFall.CharacterExperiment.SdlGpu.csproj";
+        project.Root!.Element("ItemGroup")!.Add(
+            new XElement("ProjectReference", new XAttribute("Include", unapprovedReference)));
+
+        Assert.Contains(
+            unapprovedReference,
+            ReadReferencesForLocalProductGraph("Starfall.Client", project));
     }
 
     [Fact]
@@ -239,6 +281,14 @@ public sealed class FoundationDependencyTests
             .Select(reference => reference.Attribute("Include")?.Value)
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Cast<string>();
+    }
+
+    private static IEnumerable<string> ReadReferencesForLocalProductGraph(
+        string projectName,
+        XDocument project)
+    {
+        return ReadProjectReferences(project)
+            .Where(reference => !IsApprovedFamilySourceReference(projectName, reference));
     }
 
     private static string FindRepositoryRoot()
