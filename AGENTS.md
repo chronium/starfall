@@ -4,7 +4,9 @@
 
 Starfall is an independently useful server-authoritative MMORPG and a linked child of the ChronoFall coordinator. Starfall owns its PM project, source history, product architecture, simulation, protocol, content, presentation integration, editor and Balance Lab, build, release, and commits.
 
-ChronoFall owns family planning, cross-project contracts, proven shared modules, distribution experiments, and the pinned Starfall gitlink. Starfall may consume coordinator-owned shared artifacts through an approved acquisition contract, but it must not reference coordinator source by relative path. Starfall never depends on Royale.
+ChronoFall owns family planning, cross-project contracts, proven shared modules, distribution experiments, and the pinned Starfall gitlink. The canonical full-client development environment is the coordinator family checkout. Starfall may consume explicitly approved coordinator-owned shared projects from source through the single `ChronoFallFamilyRoot` MSBuild property and may consume generated client content through an approved cook/copy workflow. Starfall never depends on Royale.
+
+Starfall remains independently owned and useful: it keeps its PM project, source history, product architecture, gameplay, protocol, content, build/release decisions, and commits. That ownership does not require every full client build to work outside the family checkout. Literal parent-relative paths, absolute checkout paths, arbitrary property-rooted dependencies, and unapproved coordinator projects remain forbidden.
 
 Inspect the selected task, PM wiki, project graph, nearby code, tests, repository status, and linked-family state before changing contracts. Ask the owner before selecting a new dependency, protocol or file format, authority rule, service topology, persistence behavior, renderer/native integration, platform policy, or product rule not already approved.
 
@@ -79,7 +81,7 @@ dotnet build Starfall.slnx --no-restore
 dotnet test Starfall.slnx --no-restore --no-build
 ```
 
-Also validate relevant skills, PM state, `git diff --check`, project references, repository status, and the coordinator's submodule status. Choose focused validation for later domain work, but always protect headless outputs from client graphics dependencies.
+Also validate relevant skills, PM state, `git diff --check`, project references, repository status, and the coordinator's submodule status. When coordinator source is consumed, verify every reference is rooted at `$(ChronoFallFamilyRoot)`, belongs to the approved client-only allowlist, and does not enter a headless output. Choose focused validation for later domain work, but always protect headless outputs from client graphics dependencies.
 
 Rendering, UI, controls, animation, camera, audio, and gameplay feel require explicit owner validation. When a result is a meaningful visual milestone rather than routine evidence, show the best candidate and ask whether to preserve, revise, or skip it; never commit a history artifact automatically.
 

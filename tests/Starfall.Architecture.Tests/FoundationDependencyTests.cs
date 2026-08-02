@@ -39,6 +39,14 @@ public sealed class FoundationDependencyTests
         "Sdl",
     ];
 
+    private static readonly IReadOnlySet<string> ApprovedClientFamilySourceReferences =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj",
+            "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj",
+            "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj",
+        };
+
     private static string RepositoryRoot { get; } = FindRepositoryRoot();
 
     [Fact]
@@ -131,7 +139,35 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
-    public void Project_references_and_imports_stay_inside_repository()
+    public void Family_root_defaults_to_the_canonical_coordinator_checkout()
+    {
+        XDocument properties = XDocument.Load(Path.Combine(RepositoryRoot, "Directory.Build.props"));
+        XElement root = Assert.Single(properties.Descendants("ChronoFallFamilyRoot"));
+
+        Assert.Equal("'$(ChronoFallFamilyRoot)' == ''", root.Attribute("Condition")?.Value);
+        Assert.Equal(
+            "$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))",
+            root.Value);
+    }
+
+    [Theory]
+    [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", true)]
+    [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj", true)]
+    [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj", true)]
+    [InlineData("Starfall.World", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", false)]
+    [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)royale/src/Royale.Client/Royale.Client.csproj", false)]
+    [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)thirdparty/repos/SDL3-CS/SDL3-CS/SDL3-CS.csproj", false)]
+    [InlineData("Starfall.Client", "$(OtherRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", false)]
+    public void Family_source_reference_policy_is_narrow(
+        string projectName,
+        string reference,
+        bool expected)
+    {
+        Assert.Equal(expected, IsApprovedFamilySourceReference(projectName, reference));
+    }
+
+    [Fact]
+    public void Project_references_and_imports_follow_repository_and_family_policy()
     {
         IEnumerable<string> projectFiles = Directory.EnumerateFiles(
             RepositoryRoot,
@@ -146,16 +182,26 @@ public sealed class FoundationDependencyTests
         foreach (string filePath in projectFiles.Concat(buildFiles))
         {
             XDocument document = XDocument.Load(filePath);
-            IEnumerable<string> paths = document
+            IEnumerable<(string Kind, string Path)> paths = document
                 .Descendants()
                 .Where(element => element.Name.LocalName is "ProjectReference" or "Import")
-                .Select(element => element.Attribute(
-                    element.Name.LocalName == "Import" ? "Project" : "Include")?.Value)
-                .Where(path => !string.IsNullOrWhiteSpace(path) && !path.Contains("$(", StringComparison.Ordinal))
-                .Cast<string>();
+                .Select(element => (
+                    element.Name.LocalName,
+                    element.Attribute(element.Name.LocalName == "Import" ? "Project" : "Include")?.Value))
+                .Where(entry => !string.IsNullOrWhiteSpace(entry.Value))
+                .Select(entry => (entry.LocalName, entry.Value!));
 
-            foreach (string path in paths)
+            string projectName = Path.GetFileNameWithoutExtension(filePath);
+            foreach ((string kind, string path) in paths)
             {
+                if (path.Contains("$(", StringComparison.Ordinal))
+                {
+                    Assert.True(
+                        kind == "ProjectReference" && IsApprovedFamilySourceReference(projectName, path),
+                        $"{filePath} uses unapproved property-rooted {kind} path {path}.");
+                    continue;
+                }
+
                 Assert.False(Path.IsPathRooted(path), $"{filePath} uses absolute path {path}.");
 
                 string resolved = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(filePath)!, path));
@@ -167,6 +213,12 @@ public sealed class FoundationDependencyTests
                     $"{filePath} escapes the Starfall repository through {path}.");
             }
         }
+    }
+
+    private static bool IsApprovedFamilySourceReference(string projectName, string reference)
+    {
+        return string.Equals(projectName, "Starfall.Client", StringComparison.Ordinal) &&
+            ApprovedClientFamilySourceReferences.Contains(reference);
     }
 
     private static XDocument LoadProductProject(string projectName)

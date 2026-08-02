@@ -25,7 +25,7 @@ Review the complete Starfall diff for:
 - server/client authority leaks;
 - forbidden headless presentation dependencies;
 - unapproved dependency, protocol, format, service, or topology decisions;
-- parent-relative or Royale references;
+- literal parent-relative paths, unapproved coordinator source references, or Royale references;
 - missing tests, wiki updates, PM notes, or owner validation;
 - generated, secret, cache, build-output, or accidental machine files.
 

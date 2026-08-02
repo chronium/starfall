@@ -1,12 +1,12 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-02T08:58:18.3729700Z
+modifiedAt: 2026-08-02T09:48:44.6855010Z
 ---
 
 ## Purpose
 
-Starfall is an independently useful server-authoritative MMORPG inspired by classic MU Online. It remains a child of ChronoFall for family roadmap and shared-engine coordination but owns its architecture, simulation, protocol, content, editor, build, and release lifecycle.
+Starfall is an independently owned and useful server-authoritative MMORPG inspired by classic MU Online. It remains a child of ChronoFall for family roadmap and shared-engine coordination but owns its PM project, source history, architecture, simulation, protocol, content, editor, build/release decisions, and commits. The canonical full-client development environment is the coordinator family checkout; independent ownership does not require an isolated full-client build.
 
 ## Planned boundaries
 
@@ -16,7 +16,7 @@ Once admitted to a world, an active player's gameplay session does not depend on
 
 Servers own world state, movement, combat, monsters, camps, progression, drops, equipment, and persistent-intent outcomes. Clients own input presentation, rendering, animation, IK, effects, cameras, and smoothing. Headless projects never depend on SDL windowing/GPU, ImGui, rendering, or editor code.
 
-Logical boundaries do not initially require separate processes. Strict modules and a small number of executables are acceptable while the vertical slice gathers evidence for the final physical topology. Starfall may consume parent-owned shared modules but never depends on Royale. Parent shared modules never depend on Starfall.
+Logical boundaries do not initially require separate processes. Strict modules and a small number of executables are acceptable while the vertical slice gathers evidence for the final physical topology. Starfall may consume explicitly approved parent-owned shared projects from source through the canonical family checkout, but never depends on Royale. Parent shared modules never depend on Starfall.
 
 ## Foundation assembly graph
 
@@ -34,7 +34,15 @@ Starfall.BalanceLab -> Content, Simulation
 
 Content and Protocol remain product-dependency-free. Simulation owns deterministic authoritative rules and does not depend on Protocol. World is the later headless orchestration boundary between protocol, content, and simulation. Client never references World or Simulation. Editor remains an authoring boundary, while Balance Lab consumes the same deterministic content and simulation without a live-world or presentation dependency.
 
+The graph above records Starfall-local product dependencies. A later approved client task may add the allowlisted coordinator presentation projects as source references; those references do not change Starfall gameplay ownership and may never enter Content, Protocol, Simulation, World, Editor, or BalanceLab.
+
 All seven projects are libraries during the foundation task. Identity, chat, operations, and persistence remain logical ownership boundaries rather than placeholder assemblies or immediate deployables. Changes to this graph require an approved task, updated dependency tests, and an updated Starfall architecture contract.
+
+## Family source-consumption boundary
+
+`Directory.Build.props` defines the single overridable `ChronoFallFamilyRoot` property. Its default resolves the parent coordinator directory in the canonical shallow family checkout. Only `Starfall.Client` may later reference the explicitly approved `ChronoFall.CharacterPresentation`, `ChronoFall.CharacterPresentation.Cooking`, and `ChronoFall.CharacterPresentation.SdlGpu` projects through that root.
+
+Literal parent traversal, absolute checkout paths, arbitrary property-rooted dependencies, coordinator imports, direct Royale references, and direct SDL3-CS references are not approved. The coordinator retains ownership of shared source, its actual source-built SDL3-CS dependency, and the generated client cook/copy workflow. `CLIENT-0006` will own the Starfall references and consumption of ignored generated content after the coordinator contract is complete. NuGet/feed distribution remains deferred until real integrations or independent release and CI needs justify it.
 
 ## Initial vertical slice
 

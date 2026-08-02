@@ -8,5 +8,6 @@
     <Company>Starfall</Company>
     <Product>Starfall</Product>
     <Authors>Starfall</Authors>
+    <ChronoFallFamilyRoot Condition="'$(ChronoFallFamilyRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..'))</ChronoFallFamilyRoot>
   </PropertyGroup>
 </Project>

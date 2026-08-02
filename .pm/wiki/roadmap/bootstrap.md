@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-02T07:53:25.1794880Z
+modifiedAt: 2026-08-02T09:49:30.4219140Z
 ---
 
 ## Execution standard
@@ -19,13 +19,13 @@ BUILD-0002  Establish repository, solution, project boundaries, and dependency t
 
 After `BUILD-0002`, `PROTOCOL-0002` defines signed lobby-to-world admission and `EDITOR-0003` establishes editor/Balance Lab boundaries. `PROTOCOL-0003` separately defines gameplay commands, authoritative events, and snapshots.
 
-`BUILD-0002` is the only dependency-ready feature task after this grooming pass.
+`BUILD-0002` established the standalone library foundation. `SF-0006` subsequently adopts the coordinator-family source-consumption policy without adding shared references or changing runtime behavior.
 
 ## M1 — Shared character foundation
 
-`CLIENT-0006` is the sole M1 implementation task. It integrates the canonical parent presentation foundation after `BUILD-0003` and coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` establishes independent acquisition of versioned shared binaries and selected cooked client content.
+`CLIENT-0006` is the sole M1 implementation task. It integrates the canonical parent presentation foundation after `BUILD-0003` and coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` establishes the approved source-consumption and generated client cook/copy workflow.
 
-M1 must not use parent-relative source references and must preserve Starfall-owned gameplay, protocol, content, build, and release boundaries. Gameplay-specific presentation is part of the M2 playable-zone phase, keeping milestones chronological rather than treating them as unordered capability buckets.
+M1 uses only the central `$(ChronoFallFamilyRoot)` property for approved coordinator projects. It must not use literal parent traversal, absolute paths, arbitrary external property roots, coordinator imports, or Royale references, and it must preserve Starfall-owned gameplay, protocol, content, build/release decisions, and commits. Gameplay-specific presentation is part of the M2 playable-zone phase, keeping milestones chronological rather than treating them as unordered capability buckets.
 
 ## M2 — First playable zone
 
@@ -90,8 +90,8 @@ Balance Lab work is split into the deterministic harness `EDITOR-0004`, camp/com
 
 `CONTENT-0005` and `SIM-0005` remain future contract tasks. `CLIENT-0008` is a deliberately deferred presentation umbrella and must be split into wings, mounts, and companions before implementation. M3 has no milestone priority and is outside the vertical-slice critical path.
 
-## Shared-acquisition gate
+## Shared-source gate
 
-Starfall does not own coordinator distribution. The missing prerequisite is now represented by canonical task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016`, and `CLIENT-0006` persists that exact dependency. PM therefore keeps the integration blocked until the coordinator contract is complete, even after `BUILD-0003`.
+Starfall does not own coordinator shared source, SDL3-CS acquisition, or character-content cooking. Canonical task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0016` owns the narrow source-consumption and generated client cook/copy contract, and `CLIENT-0006` persists that exact dependency. PM therefore keeps integration blocked until the coordinator contract is complete, even after `BUILD-0003`.
 
-`SF-0005` adds only the task identity and dependency. It does not activate or implement shared packaging, publication, child restore, or cooked-content distribution.
+`SF-0006` establishes only Starfall policy, the single family-root property, executable allowlist gates, documentation, and task grooming. It does not activate `CLIENT-0006`, add shared references, generate content, mutate coordinator tasks, or advance the gitlink. NuGet packages, feeds, content packages, and independent full-client distribution remain deferred until real child integrations or release/CI evidence make them valuable.

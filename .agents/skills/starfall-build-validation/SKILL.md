@@ -29,7 +29,9 @@ Do not invent commands the repository does not configure.
 
 ## Protect Boundaries
 
-Architecture tests are an executable contract. Verify direct project references, repository-local imports, library versus executable ownership, and absence of presentation/editor dependencies from World, Simulation, and BalanceLab.
+Architecture tests are an executable contract. Verify direct project references, repository-local imports, library versus executable ownership, the exact `$(ChronoFallFamilyRoot)` client-source allowlist, and absence of presentation/editor dependencies from World, Simulation, and BalanceLab.
+
+When a client consumes coordinator source, validate from the canonical family checkout and inspect the resolved MSBuild graph. Reject literal repository escapes, absolute paths, arbitrary property-rooted references, Royale references, and any coordinator presentation dependency in a headless project.
 
 Inspect headless artifacts when a dependency changes. They must exclude SDL, GPU, ImGui, shaders, textures, editor UI, and client presentation assets.
 

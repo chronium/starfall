@@ -32,6 +32,8 @@ Keep camps inside authoritative world simulation. Share deterministic definition
 
 ## Preserve Repository Ownership
 
-Starfall owns game-specific code and may consume approved coordinator artifacts without parent-relative source references. Never reference Royale. Do not move Starfall gameplay, protocol, content, build, or release concerns into shared modules.
+Starfall owns game-specific code and may consume approved coordinator projects from source in the canonical family checkout. Root every such reference at the single `$(ChronoFallFamilyRoot)` property; never use literal parent traversal, absolute checkout paths, arbitrary property roots, or Royale references. Only the client may consume the currently approved character-presentation source set. Do not move Starfall gameplay, protocol, content, build, or release concerns into shared modules.
+
+Independent repository and product ownership does not imply an isolated full-client build. Headless projects must remain buildable without coordinator presentation, SDL, GPU, or generated client content dependencies.
 
 Keep authoring models separate from compact runtime data. Reject speculative generic engines, reflective runtime component systems, distributed transactions, and abstractions without a concrete task need.
