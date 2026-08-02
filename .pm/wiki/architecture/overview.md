@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-02T12:33:17.1934930Z
+modifiedAt: 2026-08-02T15:54:34.8616320Z
 ---
 
 ## Purpose
@@ -46,7 +46,15 @@ Literal parent traversal, absolute checkout paths, arbitrary property-rooted dep
 
 ## Initial vertical slice
 
-The initial slice is one world/channel, one small zone, one class, shaped monster spots, basic attacks, one geometric AoE, experience, physical drops, visible equipment, and a Balance Lab using the same authoritative rules. Identity/lobby, chat, operations, and persistence implementation depth remain deferred even though their ownership and availability boundaries are defined. Trade stands, the full economy, wings progression, territory, and the complete public release also remain deferred.
+The M2 technical vertical slice is now defined by the provisional Draft 0 brief: one approximately 200 x 200 metre zone, a protected town, three shaped camps, a dark-elf archer, Basic Arrow, Fire Arrow, Arrow Rain, bounded starter-flyer behavior, deterministic progression and drops, visible Ranger/leather equipment, and Balance Lab scenarios using the same authoritative rules.
+
+Authoritative resources use integer internal units and time uses fixed ticks. Basic Arrow, Fire Arrow, and Arrow Rain resolve at explicit authoritative ticks; their rendered arrows and effects are presentation and never determine collision, victims, damage, mana, or success. Monsters remain ground-plane world entities even when their temporary presentation hovers. The town rejects hostile player actions, excludes monsters, and owns the configured defeat/respawn return anchor.
+
+Starfall owns game content, rules, protocol, world state, and presentation integration. ChronoFall owns only proven reusable presentation/cooking contracts, supplied-source provenance, and stable-ID staging. Exact selections precede acquisition; no whole pack enters a runtime cook. Prospective sources remain evidence-gated until physically supplied and reviewed.
+
+Identity/lobby, chat, operations, and persistence implementation depth remain deferred even though their ownership and availability boundaries are defined. Trade stands, the full economy, wings progression, territory, and the complete public release also remain deferred.
+
+Draft 0: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`.
 
 Starfall service contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/service-availability-and-ownership`.
 

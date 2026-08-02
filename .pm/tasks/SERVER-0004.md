@@ -7,7 +7,13 @@ dependsOn:
 - SERVER-0002
 - CONTENT-0006
 createdAt: 2026-08-02T07:29:12.8441180Z
-modifiedAt: 2026-08-02T07:30:17.3110320Z
+modifiedAt: 2026-08-02T15:52:42.6603910Z
 ---
 
-Load the bounded first-zone content into one world/channel and host authoritative character and world-entity state on the fixed-step world lifecycle. Prove independent world ownership and deterministic headless state updates. Do not add monsters, combat, drops, persistence, multiple zones, or process extraction.
+Load and host the deterministic Draft 0 zone in one authoritative world/channel.
+
+Acceptance criteria:
+- Load the approximately 200 x 200 metre zone, protected town, respawn anchor, landmark footprints, branch/camp areas, collision, navigation, and deterministic entity-placement inputs.
+- Host player and monster world state as ordinary ground-plane entities with authoritative positions and radii.
+- Keep town protection and gameplay rules in simulation rather than rendering or authoring data.
+- Do not implement monsters, combat, progression, persistence, streaming, terrain systems, or additional zones.

@@ -1,6 +1,6 @@
 ---
 id: CONTENT-0004
-title: Map modular armour and body-region rules
+title: Map the first Ranger armour family and body-region rules
 track: CONTENT
 milestone: M2
 dependsOn:
@@ -10,7 +10,14 @@ dependsOn:
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0003
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0004
 createdAt: 2026-08-01T05:46:49.5679450Z
-modifiedAt: 2026-08-02T07:52:35.1288500Z
+modifiedAt: 2026-08-02T15:52:42.6120790Z
 ---
 
-Map Starfall starter armour content and authoritative equipment state to the approved canonical rig, modular armour, equipment-slot, and body-region hiding contracts. Validate truthful visible progression and stable content mappings. Do not add weapons, material variants, gameplay equipment rules, final art, or renderer-general abstractions.
+Map one selected Ranger/leather armour family into truthful Starfall equipment presentation.
+
+Acceptance criteria:
+- Preserve the initial non-equipment underlayer and no equipped armour at character start.
+- Map exact selected Ranger pieces to equipment slots, body regions, hiding rules, and stable content identities.
+- Require the future exact coordinator-owned acquisition and cook prerequisites to be attached before activation.
+- Make visible equipment agree with authoritative Starfall equipment state and Draft 0 progression.
+- Do not broaden into weapon attachment, material variants, arbitrary outfit support, asset acquisition, or final art.

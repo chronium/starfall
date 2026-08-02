@@ -9,7 +9,14 @@ dependsOn:
 - GAME-0004
 - GAME-0005
 createdAt: 2026-08-02T07:29:14.5660230Z
-modifiedAt: 2026-08-02T07:30:17.3941240Z
+modifiedAt: 2026-08-02T15:52:42.7967540Z
 ---
 
-Extend the headless Balance Lab with deterministic experience, drop, inventory, and equipment scenarios and concise progression metrics using the authoritative vertical-slice rules. Do not add rendering, editor UI, persistence, economy simulation, or a separate runtime service.
+Report deterministic Draft 0 progression, drop, equipment, and sustain metrics.
+
+Acceptance criteria:
+- Report level 1-20 pacing against the accepted XP sequence, deterministic reward ranges, exact drop tables, collection, equipment progression, and visible Ranger/leather milestones.
+- Report health, mana, death, respawn, return-to-camp, and time-to-progression outcomes using the same content and authoritative rules.
+- Preserve seeds and inputs so results are reproducible and comparable.
+- Keep results as provisional Balance Lab evidence rather than hard-coded conclusions.
+- Do not add persistence, economy, trade, crafting, final dashboards, or separate simulation rules.

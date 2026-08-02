@@ -7,9 +7,19 @@ dependsOn:
 - CLIENT-0009
 - PROTOCOL-0004
 - SIM-0004
+- SIM-0009
 - SIM-0007
 createdAt: 2026-08-02T07:52:11.1885940Z
-modifiedAt: 2026-08-02T07:52:35.0503040Z
+modifiedAt: 2026-08-02T15:52:42.7186750Z
 ---
 
-Map connected-player input and bounded target selection to the approved basic-attack and geometric-skill protocol commands. Cover target point/entity selection, range-facing inputs, command sequencing, local rejection feedback, and end-to-end authoritative responses. The client sends intent only; it never decides hits, victims, damage, death, cooldown success, or skill outcomes.
+Send the complete Draft 0 combat and skill intent from connected isometric controls.
+
+Acceptance criteria:
+- Right-click a valid enemy to select it and request Basic Arrow.
+- Press 1 to request Fire Arrow against the selected valid target.
+- Press 2 to enter Arrow Rain ground-targeting mode, then right-click a valid point to request the cast.
+- Escape or an approved empty-ground action cancels targeting without sending a cast.
+- Send intent only; the server decides range, facing, victims, damage, mana, death, timing, and success.
+- Present rejections and authoritative corrections without local outcome authority.
+- Do not implement projectile collision, damage prediction, generic input binding, or unrelated controls.

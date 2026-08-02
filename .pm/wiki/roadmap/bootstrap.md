@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-02T12:33:17.3406530Z
+modifiedAt: 2026-08-02T15:54:34.9419960Z
 ---
 
 ## Execution standard
@@ -29,62 +29,78 @@ M1 uses only the central `$(ChronoFallFamilyRoot)` property for approved coordin
 
 ## M2 — First playable zone
 
-Content is split into independently reviewable contracts:
+Draft 0 is the provisional M2 technical vertical slice. Its durable design input is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`; exact tuning remains Content and Balance Lab input rather than final balance.
 
-- `CONTENT-0003`: first playable class and starter skills;
-- `CONTENT-0006`: first small zone;
-- `CONTENT-0007`: starter monsters and camp placements;
-- `CONTENT-0008`: starter items, progression, and drop tables.
+Content and evidence-gated selection are split into focused contracts:
 
-The connected world spine is:
+- `CONTENT-0003`: provisional dark-elf archer and Basic Arrow, Fire Arrow, and Arrow Rain identities;
+- `CONTENT-0006`: exact Draft 0 zone, protected town, branches, camp geometry, collision, and navigation inputs;
+- `CONTENT-0007`: neutral starter-flyer identities, health, and camp compositions;
+- `CONTENT-0008`: levels 1-20, deterministic XP, starter bow/underlayer, first Ranger/leather family, and drop inputs;
+- `CONTENT-0011`: exact archer, outfit, bow/arrow, and minimum compatible bow-clip selection;
+- `CONTENT-0012`: exact zone presentation asset selection;
+- `CONTENT-0013`: exact temporary monster presentation selection, including static/rigid/skeletal evidence.
+
+Prospective packs are not dependencies. Selection tasks record exact pack-relative paths and may reject candidates. Coordinator acquisition consumes completed selections and stages only exact inputs. Generated client content remains ignored.
+
+The connected world spine remains:
 
 ```text
 BUILD-0003 -> SERVER-0002  headless fixed-step world lifecycle
-PROTOCOL-0002 -> PROTOCOL-0003 -> PROTOCOL-0004  deterministic serialization
+PROTOCOL-0002 -> PROTOCOL-0003 -> PROTOCOL-0004  deterministic Draft 0 facts and serialization
 CONTENT-0006 + SERVER-0002 -> SERVER-0004  first-zone entity state
-SERVER-0004 + PROTOCOL-0004 -> SIM-0008  authoritative player movement
+SERVER-0004 + PROTOCOL-0004 -> SIM-0008  authoritative click-to-move
 SERVER-0002 + PROTOCOL-0004 -> SERVER-0003  world-owned admitted sessions
 SERVER-0003 + SERVER-0004 + SIM-0008 -> SERVER-0005  command/snapshot exchange
 CLIENT-0005 + CLIENT-0006 + SERVER-0005 -> CLIENT-0009  synchronized client
 ```
 
-Connected-player interaction is explicit:
+Combat, monster behavior, protection, and intent are explicit:
 
 ```text
-CLIENT-0009 + SIM-0004 + SIM-0007 -> CLIENT-0012  combat/skill intent and targeting
-CLIENT-0012 + GAME-0004 -> CLIENT-0013  physical-drop presentation and collection
-CLIENT-0013 + GAME-0003 + GAME-0005 -> CLIENT-0014  inventory/equipment interaction
-CLIENT-0012 + GAME-0002 -> CLIENT-0015  experience and level-up feedback
+CONTENT-0007 -> SIM-0003 -> SIM-0006  camps, replenishment, and world-owned monsters
+SIM-0006 + SIM-0008 + PROTOCOL-0004 -> SIM-0004  Basic Arrow, integer damage, death
+SIM-0004 + CONTENT-0003 -> SIM-0009  Fire Arrow
+SIM-0004 + CONTENT-0003 -> SIM-0007  Arrow Rain
+SIM-0004 + SIM-0006 + SIM-0008 + CONTENT-0007 -> SIM-0010  bounded monster behavior
+SIM-0010 + SIM-0008 + CONTENT-0006 -> SIM-0011  protected town and respawn
+CLIENT-0009 + SIM-0004 + SIM-0009 + SIM-0007 -> CLIENT-0012  connected action intent
 ```
 
-Monster and combat work is split into:
+Basic Arrow and Fire Arrow do not create authoritative projectile entities. All three actions resolve at explicit fixed ticks. The protocol carries enough action, target, victim, timing, resource, and outcome facts for client-only arrows and effects.
+
+Zone and monster presentation remain product integration:
 
 ```text
-CONTENT-0007 -> SIM-0003  camp and replenishment policy
-SIM-0003 + SERVER-0004 -> SIM-0006  authoritative monster entities
-SIM-0006 + SIM-0008 + PROTOCOL-0004 -> SIM-0004  basic attack, damage, death
-SIM-0004 + CONTENT-0003 -> SIM-0007  one geometric area skill
+CLIENT-0009 + CONTENT-0006 + CONTENT-0012 -> CLIENT-0016  first-zone scene
+CLIENT-0009 + SIM-0010 + CONTENT-0013 -> CLIENT-0017  starter-flyer presentation
+CLIENT-0007 + CLIENT-0011 + SIM-0009 + PROTOCOL-0004 -> CLIENT-0018  Basic/Fire arrows
+CLIENT-0012 + CONTENT-0003 + PROTOCOL-0004 + SIM-0011 -> CLIENT-0019  resources/targeting
 ```
 
-Authoritative progression is four separate outcomes:
+Gameplay-specific character presentation stays in M2:
 
-- `GAME-0002`: experience and bounded character progression;
-- `GAME-0003`: item identity, ownership, and inventory;
-- `GAME-0004`: physical world drops, reservation, and collection;
-- `GAME-0005`: equipping and authoritative item effects.
+- `CONTENT-0004`: first Ranger/leather family and body-region rules;
+- `CONTENT-0009`: starter bow/arrow attachment definitions;
+- `CLIENT-0007`: locomotion, Basic Arrow, reactions, and death;
+- `CLIENT-0010`: Arrow Rain targeting and effects;
+- `CLIENT-0011`: equipped bow, aim, and IK;
+- `CLIENT-0018`: client-only Basic/Fire projectile presentation.
 
-Gameplay-specific character presentation also belongs to M2:
+`CONTENT-0010` material/palette variants are explicitly deferred outside Draft 0. `SHARED-0007` remains the broad deferred coordinator attachment task. A future narrow coordinator M2 proof will own one socketed static bow and must later be reviewed and reused by `SHARED-0007`.
 
-- `CONTENT-0004`: modular armour and truthful body-region hiding;
-- `CONTENT-0009`: starter weapon/socket attachment mappings;
-- `CONTENT-0010`: bounded material and palette variants;
-- `CLIENT-0007`: locomotion, basic attack, damage, and death presentation;
-- `CLIENT-0010`: the geometric skill and bounded gameplay effects;
-- `CLIENT-0011`: equipped weapon alignment, aim offsets, and off-hand IK.
+Connected progression remains independently testable:
 
-All client tasks consume authoritative Starfall state. Input sends intent only; animation, rendering, effects, UI, and IK never decide gameplay outcomes.
+```text
+CLIENT-0012 + GAME-0004 -> CLIENT-0013  physical drops
+CLIENT-0013 + GAME-0003 + GAME-0005 -> CLIENT-0014  inventory/equipment
+CLIENT-0012 + GAME-0002 -> CLIENT-0015  XP/level feedback
+CLIENT-0012 + SIM-0011 -> CLIENT-0019  health/mana/death/respawn feedback
+```
 
-Balance Lab work is split into the deterministic harness `EDITOR-0004`, camp/combat scenarios `EDITOR-0005`, and progression/drop/equipment metrics `EDITOR-0006`. Only the resulting evidence gates deferred topology decision `ARCH-0005`.
+Balance Lab work is `EDITOR-0004`, then `EDITOR-0005` for the same camp/combat/sustain/protection rules, then `EDITOR-0006` for progression/drop/equipment metrics. Its evidence gates deferred topology decision `ARCH-0005`.
+
+All feature tasks remain todo until separately selected, planned, approved, and activated. The first-wings public release, trade stands, crafting, economy, persistence, PvP, multiple zones, and final topology are not M2 scope.
 
 ## M3 — Deferred transformations and companions
 

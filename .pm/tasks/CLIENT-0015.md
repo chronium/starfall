@@ -8,7 +8,14 @@ dependsOn:
 - GAME-0002
 - PROTOCOL-0004
 createdAt: 2026-08-02T07:52:11.9212650Z
-modifiedAt: 2026-08-02T07:52:35.0843560Z
+modifiedAt: 2026-08-02T15:52:42.7538940Z
 ---
 
-Present authoritative experience gains, current progress, level transitions, and bounded derived-stat changes from protocol events and snapshots. Cover duplicate/correction handling and clear connected-player feedback. Do not award experience locally, implement persistence/economy, or create a general notification framework.
+Present deterministic Draft 0 experience and level progression from authoritative facts.
+
+Acceptance criteria:
+- Display current level, accumulated progress, the accepted level 2-20 XP requirements, awards, level-up feedback, and authoritative corrections.
+- Preserve integer XP and the nearest-integer half-up requirement sequence.
+- Never award XP or level locally.
+- Keep health, mana, targeting, defeat, and respawn feedback in CLIENT-0019.
+- Do not add final HUD art, economy, persistence, or unrelated progression systems.

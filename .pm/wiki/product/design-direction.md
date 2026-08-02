@@ -1,7 +1,7 @@
 ---
 title: Product Design Direction
 createdAt: 2026-08-01T05:48:09.1092000Z
-modifiedAt: 2026-08-01T06:16:07.2105700Z
+modifiedAt: 2026-08-02T15:54:35.0205880Z
 ---
 
 ## Approved direction
@@ -20,4 +20,10 @@ The coordinator design document remains the current full product-design source o
 
 ## Kickoff scope
 
-M0 establishes repository and architecture boundaries. M1 integrates proven shared character presentation for the initial class, equipment, and skills when both shared and Starfall-domain inputs are ready. M2 proves one playable zone and headless balance simulation. M3 records deferred content, authority, and presentation contracts for wings, mounts, and companions; it has no milestone priority and is outside the bootstrap critical path. Broader economy, stands, reputation/PvP, prestige class, transformations, events, and territory remain design inputs rather than near-term implementation commitments.
+M0 establishes repository and architecture boundaries. M1 integrates proven shared character presentation. M2 proves one connected technical vertical slice defined by the provisional Draft 0 brief: a protected-town zone, three camp geometries, a dark-elf archer with Basic Arrow, Fire Arrow, and Arrow Rain, bounded hostile behavior, deterministic progression and drops, truthful Ranger/leather equipment, and Balance Lab evidence from the same authoritative rules.
+
+Draft 0 remains experimental rather than final content or balance. Integer resource arithmetic and fixed ticks are authoritative. Client arrows, hovering, animation, effects, cameras, and feedback present server outcomes but never decide them. Starfall selects game-specific characters, equipment, monsters, and zone composition; ChronoFall owns only genuinely reusable presentation/cooking contracts, supplied-source provenance, and stable-ID staging.
+
+M3 records deferred content, authority, and presentation contracts for transformations, wings, mounts, and companions; it has no milestone priority and is outside the technical-slice critical path. First wings still conclude the distinct eventual first end-to-end public arc. Broader economy, stands, reputation/PvP, persistence, crafting, multiple zones, final service topology, prestige class, transformations, events, and territory remain later design inputs.
+
+Draft 0: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`.
