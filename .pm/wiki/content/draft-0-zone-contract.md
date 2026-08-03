@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Zone Contract
 createdAt: 2026-08-02T18:32:00.1104310Z
-modifiedAt: 2026-08-03T08:32:46.9275740Z
+modifiedAt: 2026-08-03T10:01:20.8876460Z
 ---
 
 ## Ownership
@@ -40,6 +40,47 @@ Initial networking preserves the actual finite IEEE-754 spatial values used by t
 | Boundary/separation | boundary_rocks_boulders | Rocks/boulders communicate outer bounds and separation |
 
 The graybox may represent these with flat colour, lines, planes and boxes. Temporary assets are optional, separately approved presentation inputs and never replace deterministic regions/collision/navigation.
+
+## Provisional executable graybox
+
+`Draft0GrayboxCatalog.FirstPlayable` freezes the disposable executable input for the local walking graybox. Coordinates below use `(X,Z)` metres and are ordered exactly as listed.
+
+| Input | Identity | Exact value |
+| --- | --- | --- |
+| Walkable bounds | — | `(5,5)` through `(195,195)` inside the durable `(0,0)` through `(200,200)` zone |
+| Protected town | `town_safe` | `(75,5)` through `(125,55)` |
+| Respawn anchor | — | `(100,25)` |
+| Town exit anchor | — | `(100,55)` |
+| Exit junction | — | `(100,70)` |
+
+| Route | Ordered centreline | Width | Validated length |
+| --- | --- | --- | --- |
+| `route_town_exit` | `(100,55) -> (100,70)` | 8 m | 15 m |
+| `route_branch_short` | `(100,70) -> (75,70)` | 6 m | 25 m |
+| `route_branch_medium` | `(100,70) -> (100,115)` | 6 m | 45 m |
+| `route_branch_long` | `(100,70) -> (145,70) -> (145,95)` | 6 m | 70 m |
+
+A route's thick diagnostic presentation is its swept centreline plus round endpoint caps with radius equal to half its width. This makes the short route visibly overlap the circular easy camp instead of merely touching its tangent. The footprint is presentation semantics, not a movement constraint or navigation format.
+
+| Branch/camp | Bounds and geometry | Entry anchor |
+| --- | --- | --- |
+| `branch_short` / `camp_easy` | `(45,55)` through `(75,85)`; actual circular footprint centred at `(60,70)` with 15 m radius | `(75,70)` |
+| `branch_medium` / `camp_mixed` | `(90,115)` through `(110,150)`; elongated/divided footprint | `(100,115)` |
+| `branch_long` / `camp_hard` | `(130,95)` through `(160,125)`; tight bowl/constrained approach | `(145,95)` |
+
+Collidable diagnostic proxies remain in this stable order:
+
+1. `landmark_west_south`: town landmark, `(80,12)` through `(94,26)`, height 8 m.
+2. `landmark_east_south`: town landmark, `(106,12)` through `(120,26)`, height 8 m.
+3. `landmark_west_north`: town landmark, `(80,34)` through `(94,48)`, height 7 m.
+4. `mixed_divider`: camp divider, `(99,126)` through `(101,140)`, height 2 m.
+5. `hard_bowl_wall_west`: camp wall, `(130,99)` through `(134,125)`, height 3 m.
+6. `hard_bowl_wall_east`: camp wall, `(156,99)` through `(160,125)`, height 3 m.
+7. `hard_bowl_wall_north`: camp wall, `(134,121)` through `(156,125)`, height 3 m.
+
+Neutral sample spawns are also stable and branch-local: easy uses `spawn_easy_01 (55,65)`, `spawn_easy_02 (60,75)`, and `spawn_easy_03 (65,65)`; mixed uses `spawn_mixed_01 (95,122)`, `spawn_mixed_02 (105,122)`, `spawn_mixed_03 (95,144)`, and `spawn_mixed_04 (105,144)`; hard uses `spawn_hard_01 (140,104)`, `spawn_hard_02 (150,104)`, and `spawn_hard_03 (145,114)`.
+
+Construction validates ordinal global identity uniqueness; finite dimensions and coordinates; zone, walkable, owner and actual-camp containment; proxy ownership; unobstructed critical anchors and spawns; route linkage and lengths with a 0.001 m tolerance; and square bounds plus boundary entry for the circular camp. Collections are copied into read-only views. These values are coarse content inputs only: they add no Box3D, renderer, editor, serialization, movement or monster contract and are expected to be replaced by the later editor-authored scene.
 
 ## Deferred decisions
 

@@ -3,7 +3,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - CONTENT-0014
   - CONTENT-0003
   - CONTENT-0007
   - CONTENT-0008
