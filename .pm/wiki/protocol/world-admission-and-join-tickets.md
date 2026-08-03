@@ -1,7 +1,7 @@
 ---
 title: World Admission and Join Tickets
 createdAt: 2026-08-03T06:08:22.0865090Z
-modifiedAt: 2026-08-03T06:09:39.2497790Z
+modifiedAt: 2026-08-03T07:56:04.1703350Z
 ---
 
 ## Purpose
@@ -98,7 +98,7 @@ Implementations may record bounded counters for internal diagnosis, but must nev
 
 ## Transport and availability boundaries
 
-`PROTOCOL-0002` owns the self-contained ticket encoding and admission facts. `PROTOCOL-0004` later owns enclosing transport serialization and framing. `SERVER-0003` owns consumption and active sessions.
+`PROTOCOL-0002` owns the self-contained ticket encoding and transport-neutral admission facts. `SERVER-0003` owns the narrow host-specific binding that receives the bounded join request and returns the approved accept or reject fact, alongside atomic ticket consumption and world-owned session creation. This admission exchange is independent of `PROTOCOL-0004` connected-walking serialization and must not introduce a general networking or framing framework.
 
 TLS or an equivalent protected transport remains required because signatures provide authenticity and integrity, not confidentiality. This task does not implement transport security.
 
