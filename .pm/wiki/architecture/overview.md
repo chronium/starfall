@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-02T18:32:39.6882710Z
+modifiedAt: 2026-08-03T06:09:39.1582000Z
 ---
 
 ## Purpose
@@ -13,6 +13,8 @@ Starfall is an independently owned and useful server-authoritative MMORPG inspir
 The foundation separates native client presentation, headless world orchestration, authoritative simulation, transport-neutral protocol, content, editor authoring, and a headless Balance Lab. It also preserves logical ownership boundaries for identity/lobby, realm/world, chat, operations, and persistence. `BUILD-0002` realized the approved boundaries as independently buildable .NET libraries and executable dependency tests. `BUILD-0003` makes only `Starfall.Client` and `Starfall.World` executable composition roots. `CLIENT-0006` replaces the client placeholder with the first native presentation runtime, while `SERVER-0002` still owns the fixed-step authoritative world lifecycle.
 
 Once admitted to a world, an active player's gameplay session does not depend on authentication, chat, or management services remaining available. Identity admits; the selected world consumes a short-lived signed join ticket and owns the gameplay session. Chat and operations remain optional from gameplay's perspective. Persistence degradation requires a later explicit contract.
+
+`PROTOCOL-0002` realizes the admission boundary as a provisional BCL-only `sfjt1` contract: identity signs with ECDSA P-256, worlds validate with locally configured public keys, and every ticket is bound to one configured world, channel, and lifecycle-specific world instance. Atomic single consumption and active session creation remain `SERVER-0003` work. Full contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/world-admission-and-join-tickets`.
 
 Servers own world state, movement, combat, monsters, camps, progression, drops, equipment, and persistent-intent outcomes. Clients own input presentation, rendering, animation, IK, effects, cameras, and smoothing. Headless projects never depend on SDL windowing/GPU, ImGui, rendering, or editor code.
 

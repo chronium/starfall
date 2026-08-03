@@ -1,7 +1,7 @@
 ---
 title: Service Availability and Ownership
 createdAt: 2026-08-01T06:48:13.9601190Z
-modifiedAt: 2026-08-01T06:50:23.9966050Z
+modifiedAt: 2026-08-03T06:08:50.2457160Z
 ---
 
 ## Decision
@@ -37,7 +37,7 @@ The intended handoff is:
 5. The selected world validates and consumes the ticket and creates its own gameplay session.
 6. The active gameplay session no longer calls identity for continuing authorization.
 
-Ticket claims, signing, replay protection, expiry, consumption semantics, and recovery belong to the later protocol task and require an explicit contract decision. They are not selected here.
+The executable admission contract is defined by `PROTOCOL-0002` at `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/world-admission-and-join-tickets`. It uses a versioned ECDSA P-256 ticket bound to the selected account, character, world, channel, and lifecycle-specific world instance. Worlds validate with locally configured public keys, then atomically consume the unique ticket ID before creating a session; the replay store and session lifecycle remain `SERVER-0003` responsibilities.
 
 ## Availability behaviour
 
