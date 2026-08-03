@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-03T10:35:53.2715250Z
+modifiedAt: 2026-08-03T10:58:59.3347530Z
 ---
 
 ## Status and purpose
@@ -29,7 +29,7 @@ It requires no connection, selected final assets, World/Simulation dependency in
 
 ### Provisional camera and input contract
 
-CLIENT-0005 establishes a fixed perspective-isometric presentation camera with a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw from positive X/Z, 45-metre focus distance and 0.1-to-300-metre clipping range. The current native preview focuses the already-proven technical humanoid at the durable zone centre `(100,0,100)`. These are named, tunable presentation inputs rather than gameplay or Content authority. Pan, rotation and zoom remain deferred.
+CLIENT-0005 establishes a fixed perspective-isometric presentation camera with a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw from positive X/Z, 22.5-metre focus distance and 0.1-to-300-metre clipping range. The current native preview opens at 1920 x 1080 and focuses the already-proven technical humanoid at the durable zone centre `(100,0,100)`. These are named, tunable presentation inputs rather than gameplay or Content authority. Pan, rotation and zoom remain deferred.
 
 SDL logical-window pointer coordinates are normalized before the camera uses the current drawable-pixel aspect ratio. Picking inverts the view-projection matrix, constructs a perspective ray, intersects the `Y = 0` ground plane and accepts only finite points inside caller-supplied ground bounds. Single-precision inverse/projection error is validated within 0.01 metres.
 

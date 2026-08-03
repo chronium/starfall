@@ -65,7 +65,7 @@ internal sealed class PerspectiveIsometricCameraSettings
         verticalFieldOfViewDegrees: 28.0f,
         downwardPitchDegrees: 42.0f,
         yawDegrees: 45.0f,
-        focusDistanceMetres: 45.0f,
+        focusDistanceMetres: 22.5f,
         nearPlaneMetres: 0.1f,
         farPlaneMetres: 300.0f);
 

@@ -13,8 +13,8 @@ namespace Starfall.Client;
 
 internal static unsafe class NativeCharacterPreview
 {
-    private const int WindowWidth = 960;
-    private const int WindowHeight = 720;
+    private const int WindowWidth = 1920;
+    private const int WindowHeight = 1080;
 
     internal static void Run(CharacterPresentationContent content)
     {

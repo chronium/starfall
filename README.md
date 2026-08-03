@@ -37,7 +37,7 @@ Launch the persistent native SDL GPU preview with no client arguments:
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-The preview loads the staged Quaternius humanoid, continuously samples `Idle_Loop`, and uses the provisional Draft 0 perspective-isometric camera. Its current presentation inputs are a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw, and 45-metre focus distance; there is no camera pan, rotation, or zoom yet.
+The preview loads the staged Quaternius humanoid, continuously samples `Idle_Loop`, and uses the provisional Draft 0 perspective-isometric camera. Its current presentation inputs are a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw, and 22.5-metre focus distance; there is no camera pan, rotation, or zoom yet. The development window opens at 1920 x 1080.
 
 Left-click produces and logs a finite ground movement intent when the deterministic ray-to-ground result lies inside the durable 200 x 200 metre zone. It does not move the character or decide whether movement succeeds. Right-click and skill keys remain reserved for later connected combat-intent work. Escape or the window close control exits the preview.
 

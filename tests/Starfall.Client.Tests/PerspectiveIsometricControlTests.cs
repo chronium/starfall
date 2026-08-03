@@ -19,7 +19,7 @@ public sealed class PerspectiveIsometricControlTests
         Assert.Equal(28.0f, settings.VerticalFieldOfViewDegrees);
         Assert.Equal(42.0f, settings.DownwardPitchDegrees);
         Assert.Equal(45.0f, settings.YawDegrees);
-        Assert.Equal(45.0f, settings.FocusDistanceMetres);
+        Assert.Equal(22.5f, settings.FocusDistanceMetres);
         Assert.Equal(0.1f, settings.NearPlaneMetres);
         Assert.Equal(300.0f, settings.FarPlaneMetres);
 
@@ -86,7 +86,7 @@ public sealed class PerspectiveIsometricControlTests
     [Theory]
     [InlineData(100.0f, 100.0f)]
     [InlineData(94.0f, 97.0f)]
-    [InlineData(107.0f, 103.0f)]
+    [InlineData(104.0f, 102.0f)]
     public void ProjectedGroundPointsRoundTripThroughPicking(float xMetres, float zMetres)
     {
         var camera = CreateCamera();
@@ -152,7 +152,7 @@ public sealed class PerspectiveIsometricControlTests
         float verticalFieldOfViewDegrees = 28.0f,
         float downwardPitchDegrees = 42.0f,
         float yawDegrees = 45.0f,
-        float focusDistanceMetres = 45.0f,
+        float focusDistanceMetres = 22.5f,
         float nearPlaneMetres = 0.1f,
         float farPlaneMetres = 300.0f) => new(
             verticalFieldOfViewDegrees,
