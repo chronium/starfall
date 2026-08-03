@@ -6,6 +6,7 @@ namespace Starfall.Client;
 internal static class ClientApplication
 {
     private const string ValidateContentArgument = "--validate-character-content";
+    private const string CaptureGrayboxSuiteArgument = "--capture-graybox-suite";
 
     internal static int Run(string[] args)
     {
@@ -30,8 +31,16 @@ internal static class ClientApplication
                 return 0;
             }
 
+            if (args.Length == 2 && string.Equals(args[0], CaptureGrayboxSuiteArgument, StringComparison.Ordinal))
+            {
+                CharacterPresentationContent content = CharacterPresentationContent.LoadFromRuntimeOutput();
+                NativeClientPreview.CaptureSuite(content, args[1]);
+                return 0;
+            }
+
             Console.Error.WriteLine(
-                $"Starfall.Client accepts no arguments for the native preview or {ValidateContentArgument}.");
+                $"Starfall.Client accepts no arguments for the native preview, {ValidateContentArgument}, " +
+                $"or {CaptureGrayboxSuiteArgument} <directory>.");
             return 2;
         }
         catch (Exception exception)

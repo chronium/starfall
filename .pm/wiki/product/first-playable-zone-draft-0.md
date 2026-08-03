@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-03T15:18:50.5342080Z
+modifiedAt: 2026-08-03T15:55:30.9033860Z
 ---
 
 ## Status and purpose
@@ -42,6 +42,8 @@ The native 1920 x 1080 preview exposes seven fixed views without creating a free
 A valid left-button press creates only a `GroundMovementIntent` destination using the active camera and logs it. It does not move the humanoid, run collision, accept movement or mutate authoritative state. Right-click and skill keys remain unhandled until their focused tasks.
 
 The technical humanoid remains at `(100,0,100)` only as the approved CLIENT-0005 close-framing fixture. It is not the gameplay spawn. CLIENT-0021 must decide whether its deterministic authoritative-style trace begins at the catalog respawn anchor `(100,0,25)`, and later CLIENT-0009 must reuse the resulting snapshot/fact-to-presentation adapter.
+
+CLIENT-0024 adds a deterministic native review path for those exact seven presets. Starfall.Client renders the same scene path into a caller-owned 1,920 by 1,080 GPU target, samples `Idle_Loop` at 0.500 seconds, validates the opaque/distinct frames and writes explicitly requested PNGs through the bounded coordinator capture helper. The fixed recipe, filenames and native evidence are recorded at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/draft-0-graybox-capture-suite.
 
 ### Connected walking world
 

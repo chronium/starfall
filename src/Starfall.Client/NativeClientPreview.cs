@@ -21,8 +21,17 @@ internal static unsafe class NativeClientPreview
     {
         ArgumentNullException.ThrowIfNull(content);
         ConfigureNativeSdl();
-        using var session = new PreviewSession(content.Cooked.Asset.Mesh);
+        using var session = new PreviewSession(content.Cooked.Asset.Mesh, visible: true);
         session.Run(content.IdleAnimation, content.Cooked.Asset.Mesh.Skin);
+    }
+
+    internal static void CaptureSuite(CharacterPresentationContent content, string outputDirectory)
+    {
+        ArgumentNullException.ThrowIfNull(content);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        ConfigureNativeSdl();
+        using var session = new PreviewSession(content.Cooked.Asset.Mesh, visible: false);
+        session.CaptureSuite(content.IdleAnimation, content.Cooked.Asset.Mesh.Skin, outputDirectory);
     }
 
     private static void ConfigureNativeSdl() =>
@@ -57,6 +66,7 @@ internal static unsafe class NativeClientPreview
         private readonly Draft0GrayboxCameraController cameras;
         private readonly Draft0GrayboxPresentation graybox;
         private readonly GroundBounds validGround;
+        private readonly SDL_GPUTextureFormat colorFormat;
         private SDL_Window* window;
         private SDL_GPUDevice* device;
         private SdlGpuSkinnedCharacterRenderer? renderer;
@@ -69,7 +79,7 @@ internal static unsafe class NativeClientPreview
         private uint depthHeight;
         private bool windowClaimed;
 
-        internal PreviewSession(SkinnedMeshDefinition sourceMesh)
+        internal PreviewSession(SkinnedMeshDefinition sourceMesh, bool visible)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
             Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
@@ -86,7 +96,7 @@ internal static unsafe class NativeClientPreview
                     CreateWindowTitle(),
                     WindowWidth,
                     WindowHeight,
-                    (SDL_WindowFlags)0);
+                    visible ? (SDL_WindowFlags)0 : SDL_WindowFlags.SDL_WINDOW_HIDDEN);
                 if (window is null)
                     throw new InvalidOperationException($"SDL window creation failed: {SDL_GetError()}");
 
@@ -101,14 +111,15 @@ internal static unsafe class NativeClientPreview
                 windowClaimed = true;
 
                 SDL_GPUShaderFormat shaderFormat = SelectShaderFormat(SDL_GetGPUShaderFormats(device));
+                colorFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
                 renderer = new SdlGpuSkinnedCharacterRenderer(
                     device,
-                    SDL_GetGPUSwapchainTextureFormat(device, window),
+                    colorFormat,
                     DepthFormat,
                     LoadSkinnedShaders(shaderFormat));
                 staticRenderer = new SdlGpuStaticMeshRenderer(
                     device,
-                    SDL_GetGPUSwapchainTextureFormat(device, window),
+                    colorFormat,
                     DepthFormat,
                     LoadStaticShaders(shaderFormat));
                 SDL_GPUCommandBuffer* uploadCommand = AcquireCommand();
@@ -202,6 +213,70 @@ internal static unsafe class NativeClientPreview
             }
         }
 
+        internal void CaptureSuite(
+            AnimationClip idleAnimation,
+            SkinDefinition skin,
+            string outputDirectory)
+        {
+            ArgumentNullException.ThrowIfNull(idleAnimation);
+            ArgumentNullException.ThrowIfNull(skin);
+            ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+            if (!ReferenceEquals(idleAnimation.Skeleton, skin.Skeleton))
+                throw new ArgumentException("The idle animation and skin must use the same skeleton.");
+
+            SDL_GPUTexture* captureColor = CreateTexture(
+                colorFormat,
+                SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
+                Draft0GrayboxCaptureSuite.Width,
+                Draft0GrayboxCaptureSuite.Height);
+            SDL_GPUTexture* captureDepth = null;
+            try
+            {
+                captureDepth = CreateTexture(
+                    DepthFormat,
+                    SDL_GPUTextureUsageFlags.SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
+                    Draft0GrayboxCaptureSuite.Width,
+                    Draft0GrayboxCaptureSuite.Height);
+
+                var images = new List<RgbaImage>(Draft0GrayboxCaptureSuite.Captures.Count);
+                foreach (Draft0GrayboxCapture capture in Draft0GrayboxCaptureSuite.Captures)
+                {
+                    cameras.SelectPreset(capture.PresetIndex);
+                    images.Add(CaptureFrame(
+                        idleAnimation,
+                        skin,
+                        Draft0GrayboxCaptureSuite.AnimationSampleSeconds,
+                        captureColor,
+                        captureDepth));
+                }
+
+                IReadOnlyList<ulong> fingerprints = Draft0GrayboxCaptureSuite.Validate(images);
+                string fullOutputDirectory = Path.GetFullPath(outputDirectory);
+                Directory.CreateDirectory(fullOutputDirectory);
+                for (var index = 0; index < Draft0GrayboxCaptureSuite.Captures.Count; index++)
+                {
+                    Draft0GrayboxCapture capture = Draft0GrayboxCaptureSuite.Captures[index];
+                    string path = Path.Combine(fullOutputDirectory, capture.FileName);
+                    PngImageWriter.Write(path, images[index]);
+                    Console.WriteLine(string.Create(
+                        CultureInfo.InvariantCulture,
+                        $"STARFALL_GRAYBOX_CAPTURE view={capture.PresetName} " +
+                        $"sample={Draft0GrayboxCaptureSuite.AnimationSampleSeconds:F3} " +
+                        $"size={images[index].Width}x{images[index].Height} " +
+                        $"fingerprint={fingerprints[index]:x16} path={path}"));
+                }
+
+                Console.WriteLine(
+                    $"STARFALL_GRAYBOX_CAPTURE_SUITE_READY count={images.Count} directory={fullOutputDirectory}");
+            }
+            finally
+            {
+                if (captureDepth is not null)
+                    SDL_ReleaseGPUTexture(device, captureDepth);
+                SDL_ReleaseGPUTexture(device, captureColor);
+            }
+        }
+
         public void Dispose()
         {
             if (device is not null)
@@ -235,18 +310,13 @@ internal static unsafe class NativeClientPreview
 
         private void RenderFrame(AnimationClip animation, SkinDefinition skin, float sampleTime)
         {
-            SkeletonPose pose = AnimationSampler.Sample(animation, sampleTime, AnimationPlaybackMode.Loop);
-            SkeletonGlobalPose global = SkeletonPoseEvaluator.EvaluateGlobal(pose);
-            SkinningPalette sourcePalette = SkeletonPoseEvaluator.CreateSkinningPalette(skin, global);
+            SkinningPalette sourcePalette = EvaluatePalette(animation, skin, sampleTime);
 
             SDL_GPUCommandBuffer* command = AcquireCommand();
-            SDL_GPURenderPass* pass = null;
             bool requiresSubmission = false;
             Exception? failure = null;
             try
             {
-                renderer!.UploadPalette(command, palette!, sourcePalette);
-
                 SDL_GPUTexture* swapchain;
                 uint swapchainWidth;
                 uint swapchainHeight;
@@ -266,60 +336,14 @@ internal static unsafe class NativeClientPreview
                 if (swapchain is not null)
                 {
                     EnsureDepth(swapchainWidth, swapchainHeight);
-                    PerspectiveIsometricCamera camera = cameras.Camera;
-                    Matrix4x4 viewProjection = camera.CreateViewProjection(swapchainWidth, swapchainHeight);
-                    Matrix4x4 characterWorld = Matrix4x4.CreateTranslation(100.0f, 0.0f, 100.0f);
-                    var colorTarget = new SDL_GPUColorTargetInfo
-                    {
-                        texture = swapchain,
-                        clear_color = ClearColor,
-                        load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                        store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
-                    };
-                    var depthTarget = new SDL_GPUDepthStencilTargetInfo
-                    {
-                        texture = depth,
-                        clear_depth = 1.0f,
-                        load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                        store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-                        stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
-                        stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-                    };
-                    pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
-                    if (pass is null)
-                        throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
-
-                    for (var section = 0; section < graybox.Mesh.Sections.Count; section++)
-                    {
-                        staticRenderer!.DrawSection(
-                            command,
-                            pass,
-                            staticMesh!,
-                            section,
-                            new StaticMeshDraw(
-                                Matrix4x4.Identity,
-                                viewProjection,
-                                graybox.SectionColors[section],
-                                new Vector3(-0.35f, -0.70f, -0.62f)));
-                    }
-
-                    for (int section = 0; section < mesh!.SectionCount; section++)
-                    {
-                        Vector4 color = section % 2 == 0
-                            ? new Vector4(0.76f, 0.23f, 0.17f, 1.0f)
-                            : new Vector4(0.16f, 0.48f, 0.72f, 1.0f);
-                        renderer.DrawSection(
-                            command,
-                            pass,
-                            mesh,
-                            palette!,
-                            section,
-                            new SkinnedCharacterDraw(
-                                characterWorld,
-                                viewProjection,
-                                color,
-                                new Vector3(-0.35f, -0.70f, -0.62f)));
-                    }
+                    RecordFrame(
+                        command,
+                        swapchain,
+                        depth,
+                        swapchainWidth,
+                        swapchainHeight,
+                        sourcePalette,
+                        cameras.Camera);
                 }
             }
             catch (Exception exception)
@@ -328,21 +352,6 @@ internal static unsafe class NativeClientPreview
             }
             finally
             {
-                if (pass is not null)
-                {
-                    try
-                    {
-                        SDL_EndGPURenderPass(pass);
-                    }
-                    catch (Exception exception)
-                    {
-                        failure = CombineFailures(
-                            failure,
-                            exception,
-                            "Starfall frame rendering and render-pass cleanup both failed.");
-                    }
-                }
-
                 Exception? resolutionFailure = requiresSubmission
                     ? TrySubmitCommand(ref command, "frame")
                     : TryCancelCommand(ref command, "frame");
@@ -357,6 +366,130 @@ internal static unsafe class NativeClientPreview
 
             if (failure is not null)
                 ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+
+        private RgbaImage CaptureFrame(
+            AnimationClip animation,
+            SkinDefinition skin,
+            float sampleTime,
+            SDL_GPUTexture* color,
+            SDL_GPUTexture* captureDepth)
+        {
+            SkinningPalette sourcePalette = EvaluatePalette(animation, skin, sampleTime);
+            SDL_GPUCommandBuffer* command = AcquireCommand();
+            try
+            {
+                RecordFrame(
+                    command,
+                    color,
+                    captureDepth,
+                    Draft0GrayboxCaptureSuite.Width,
+                    Draft0GrayboxCaptureSuite.Height,
+                    sourcePalette,
+                    cameras.Camera);
+            }
+            catch (Exception exception)
+            {
+                Exception? cancellationFailure = TryCancelCommand(ref command, "capture frame");
+                if (cancellationFailure is not null)
+                {
+                    throw new AggregateException(
+                        "Starfall capture rendering failed and its GPU command buffer could not be cancelled.",
+                        exception,
+                        cancellationFailure);
+                }
+                throw;
+            }
+
+            using SdlGpuReadbackRequest request = SdlGpuTextureReadback.Submit(
+                device,
+                command,
+                color,
+                Draft0GrayboxCaptureSuite.Width,
+                Draft0GrayboxCaptureSuite.Height,
+                colorFormat);
+            return request.Wait();
+        }
+
+        private void RecordFrame(
+            SDL_GPUCommandBuffer* command,
+            SDL_GPUTexture* color,
+            SDL_GPUTexture* frameDepth,
+            uint width,
+            uint height,
+            SkinningPalette sourcePalette,
+            PerspectiveIsometricCamera camera)
+        {
+            renderer!.UploadPalette(command, palette!, sourcePalette);
+            Matrix4x4 viewProjection = camera.CreateViewProjection(width, height);
+            Matrix4x4 characterWorld = Matrix4x4.CreateTranslation(100.0f, 0.0f, 100.0f);
+            var colorTarget = new SDL_GPUColorTargetInfo
+            {
+                texture = color,
+                clear_color = ClearColor,
+                load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+            };
+            var depthTarget = new SDL_GPUDepthStencilTargetInfo
+            {
+                texture = frameDepth,
+                clear_depth = 1.0f,
+                load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
+                stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
+                stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
+            };
+            SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
+            if (pass is null)
+                throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
+            try
+            {
+                for (var section = 0; section < graybox.Mesh.Sections.Count; section++)
+                {
+                    staticRenderer!.DrawSection(
+                        command,
+                        pass,
+                        staticMesh!,
+                        section,
+                        new StaticMeshDraw(
+                            Matrix4x4.Identity,
+                            viewProjection,
+                            graybox.SectionColors[section],
+                            new Vector3(-0.35f, -0.70f, -0.62f)));
+                }
+
+                for (var section = 0; section < mesh!.SectionCount; section++)
+                {
+                    Vector4 sectionColor = section % 2 == 0
+                        ? new Vector4(0.76f, 0.23f, 0.17f, 1.0f)
+                        : new Vector4(0.16f, 0.48f, 0.72f, 1.0f);
+                    renderer.DrawSection(
+                        command,
+                        pass,
+                        mesh,
+                        palette!,
+                        section,
+                        new SkinnedCharacterDraw(
+                            characterWorld,
+                            viewProjection,
+                            sectionColor,
+                            new Vector3(-0.35f, -0.70f, -0.62f)));
+                }
+            }
+            finally
+            {
+                SDL_EndGPURenderPass(pass);
+            }
+        }
+
+        private static SkinningPalette EvaluatePalette(
+            AnimationClip animation,
+            SkinDefinition skin,
+            float sampleTime)
+        {
+            SkeletonPose pose = AnimationSampler.Sample(animation, sampleTime, AnimationPlaybackMode.Loop);
+            SkeletonGlobalPose global = SkeletonPoseEvaluator.EvaluateGlobal(pose);
+            return SkeletonPoseEvaluator.CreateSkinningPalette(skin, global);
         }
 
         private SDL_GPUCommandBuffer* AcquireCommand()
@@ -454,6 +587,29 @@ internal static unsafe class NativeClientPreview
                 throw new InvalidOperationException($"SDL GPU depth texture creation failed: {SDL_GetError()}");
             depthWidth = width;
             depthHeight = height;
+        }
+
+        private SDL_GPUTexture* CreateTexture(
+            SDL_GPUTextureFormat format,
+            SDL_GPUTextureUsageFlags usage,
+            int width,
+            int height)
+        {
+            var info = new SDL_GPUTextureCreateInfo
+            {
+                type = SDL_GPUTextureType.SDL_GPU_TEXTURETYPE_2D,
+                format = format,
+                usage = usage,
+                width = checked((uint)width),
+                height = checked((uint)height),
+                layer_count_or_depth = 1,
+                num_levels = 1,
+                sample_count = SDL_GPUSampleCount.SDL_GPU_SAMPLECOUNT_1,
+            };
+            SDL_GPUTexture* texture = SDL_CreateGPUTexture(device, &info);
+            if (texture is null)
+                throw new InvalidOperationException($"SDL GPU capture texture creation failed: {SDL_GetError()}");
+            return texture;
         }
 
         private void EmitCameraDiagnostic()

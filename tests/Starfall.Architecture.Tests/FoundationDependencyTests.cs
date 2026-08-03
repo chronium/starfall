@@ -122,7 +122,7 @@ public sealed class FoundationDependencyTests
 
     [Theory]
     [InlineData("Starfall.World", "Starfall.World foundation shell does not accept arguments.")]
-    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview or --validate-character-content.")]
+    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview, --validate-character-content, or --capture-graybox-suite <directory>.")]
     public async Task Foundation_processes_reject_unknown_arguments(
         string projectName,
         string expectedError)

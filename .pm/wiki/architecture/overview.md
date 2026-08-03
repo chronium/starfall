@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-03T08:32:46.8546610Z
+modifiedAt: 2026-08-03T15:55:30.9125500Z
 ---
 
 ## Purpose
@@ -110,3 +110,7 @@ Zone contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zo
 Service contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/service-availability-and-ownership
 
 Family contract: pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/architecture/shared-engine-boundaries
+
+CLIENT-0024 consumes the coordinator's bounded one-shot SDL GPU readback and PNG writer only from Starfall.Client. Starfall retains ownership of its render loop, offscreen targets, camera presets, animation sample, capture recipe and output policy; headless projects remain free of presentation and image dependencies.
+
+Capture contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/draft-0-graybox-capture-suite

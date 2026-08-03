@@ -31,6 +31,13 @@ internal sealed class Draft0GrayboxCameraController
 
     internal static IReadOnlyList<Draft0GrayboxCameraPreset> All => Presets;
 
+    internal void SelectPreset(int index)
+    {
+        if ((uint)index >= (uint)Presets.Length)
+            throw new ArgumentOutOfRangeException(nameof(index));
+        selectedIndex = index;
+    }
+
     internal bool HandleKey(SDL_Keycode key, bool repeated)
     {
         if (repeated)
