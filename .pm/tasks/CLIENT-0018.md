@@ -7,9 +7,9 @@ dependsOn:
 - CLIENT-0007
 - CLIENT-0011
 - SIM-0009
-- PROTOCOL-0004
+- PROTOCOL-0007
 createdAt: 2026-08-02T15:49:18.5915080Z
-modifiedAt: 2026-08-02T15:49:33.2306690Z
+modifiedAt: 2026-08-03T07:30:50.7456280Z
 ---
 
 Present Basic Arrow and Fire Arrow notch/release, client-only arrow travel, impact, and readable Fire distinction from authoritative protocol facts. Use the approved bow, arrow, socket, grip, reference-point, aim, IK, and selected-animation inputs.

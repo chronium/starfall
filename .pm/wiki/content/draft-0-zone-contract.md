@@ -1,55 +1,50 @@
 ---
 title: Draft 0 Zone Contract
 createdAt: 2026-08-02T18:32:00.1104310Z
-modifiedAt: 2026-08-02T18:32:00.1104310Z
+modifiedAt: 2026-08-03T07:31:43.8266550Z
 ---
 
 ## Ownership
 
-Starfall Content owns this deterministic Draft 0 regional contract. `CONTENT-0006` defines the map envelope, protected-town targets, branch identities, approximate travel distances, camp-geometry intent, and surface/boundary identities.
+Starfall Content owns the deterministic Draft 0 regional contracts through two non-overlapping tasks.
 
-`CONTENT-0014` owns the exact graybox layout: coordinates, polygons, path centre lines, camp extents, collision/navigation inputs, respawn anchor, and authored placements. This page does not integrate Box3D, choose a binding or pinned dependency, author a general world format, or replace exact-layout work.
+CONTENT-0006 is completed durable product input. It owns the approximately 200 x 200 metre envelope, protected-town targets, stable branch identities and approximate travel distances, camp-geometry intent, landmark purpose, and surface/boundary identities. It does not own executable coordinates, a renderable scene, asset placement, or a general map format.
 
-## Coordinate contract
+CONTENT-0014 depends explicitly on CONTENT-0006 and owns the provisional executable graybox. It defines finite metre coordinates, bounded regions, landmark proxy blocks, route/camp corridors, coarse collision/navigation inputs, respawn and sample spawn points, and stable ordering. The graybox is genuine disposable development evidence rather than the proper authored map. It does not select or place the complete environment asset set.
 
-Authoritative spatial and physics state uses Box3D-native single-precision floating-point metres. Content authoring represents finite ground-plane positions and dimensions with BCL-only immutable value types backed by `System.Numerics.Vector3`. Ground-plane values require `Y = 0`; the first zone occupies inclusive X/Z bounds from `0` to `200` metres.
+EDITOR-0007 later authors the proper Draft 0 scene from these durable requirements, graybox evidence, and exact selected/staged assets. It compiles separate bounded authoritative and client-presentation outputs. SERVER-0012 consumes only the authoritative output; CLIENT-0016 consumes only the presentation output.
 
-A later simulation boundary may convert these values one-to-one into Box3D-native vector types. It must not silently change unit scale or precision. Visual meshes, terrain materials, and props never replace deterministic collision, navigation, camp, town, or respawn inputs.
+## Coordinate and numerical contract
+
+Authoritative spatial and physics state uses Box3D-native single-precision floating-point metres. Starfall.Content authoring uses BCL-only immutable spatial values backed by System.Numerics with the same precision and units. Ground-plane values require Y = 0; the first zone occupies inclusive X/Z bounds from 0 to 200 metres.
+
+CONTENT-0014 validates finite values, positive dimensions, containment, stable unique identifiers, immutable collections and deterministic ordering. NaN, infinity, duplicate identities, invalid dimensions and out-of-zone values are rejected.
+
+A later Simulation boundary converts authoring components one-to-one into Box3D-native values. It must not change scale or precision, introduce a parallel integer-millimetre model, or make Starfall.Content depend on Box3D.
+
+Discrete gameplay state remains integer: HP, mana, damage, XP, levels, currency, item counts and discrete stats. Probabilities use an explicitly scaled integer representation. Authoritative time uses integer fixed simulation ticks. Native physics/query iteration order is never trusted when order can affect gameplay; stable entity identities and explicit sorting establish gameplay ordering.
+
+Initial networking preserves the actual finite IEEE-754 spatial values used by the authoritative simulation. Quantization and compression remain later measured protocol decisions rather than a second coordinate system.
 
 ## Draft 0 regional targets
 
-| Region/input | Stable identity | Draft 0 target |
+| Region/input | Stable identity | Durable target |
 | --- | --- | --- |
-| Zone | `draft_0_first_playable_zone` | Approximately 200 x 200 metres |
-| Town | `town_safe` | Approximately 50 x 50 metres, near an edge, protected, one exit, configured respawn anchor, two or three landmark buildings |
-| Short branch | `branch_short` | Approximately 25 metres to a broad, open circular easy camp |
-| Medium branch | `branch_medium` | Approximately 45 metres to an elongated or divided mixed camp |
-| Long branch | `branch_long` | Approximately 70 metres to a tight bowl or constrained hard-camp approach |
-| Exterior surface | `surface_grass` | Flat grass treatment is acceptable |
-| Route surface | `surface_dirt_path` | Dirt paths connect town, junction, and camps |
-| Boundary/separation | `boundary_rocks_boulders` | Rocks and boulders define the outer boundary, separate spaces, and add landmarks |
+| Zone | draft_0_first_playable_zone | Approximately 200 x 200 metres |
+| Town | town_safe | Approximately 50 x 50 metres near an edge, protected, one exit, configured respawn anchor and two or three landmark intentions |
+| Short branch | branch_short | Approximately 25 metres to a broad open easy camp |
+| Medium branch | branch_medium | Approximately 45 metres to an elongated or divided mixed camp |
+| Long branch | branch_long | Approximately 70 metres to a constrained hard-camp approach |
+| Exterior surface | surface_grass | Flat grass treatment is acceptable |
+| Route surface | surface_dirt_path | Dirt paths connect town, junction and camps |
+| Boundary/separation | boundary_rocks_boulders | Rocks/boulders communicate outer bounds and separation |
 
-The branch distances and dimensions are experimental inputs. They are not exact placements and must remain inspectable Balance Lab/content inputs.
+The graybox may represent these with flat colour, lines, planes and boxes. Temporary assets are optional, separately approved presentation inputs and never replace deterministic regions/collision/navigation.
 
-## Numerical and determinism policy
+## Deferred decisions
 
-Spatial and physics state uses finite single-precision metres. Discrete gameplay state remains integer: one displayed HP or mana point is 100 internal units, primary attributes are integers, probabilities use explicit integer scales, and authoritative time uses fixed integer ticks.
+Cycle 1 does not select a Box3D dependency. SIM-0008 records that a later coordinator grooming cycle must allocate the bounded shared acquisition/integration prerequisite, followed by the approved Starfall wiring continuation before SIM-0008 may activate.
 
-Native physics and spatial-query iteration order is not an authority contract. Simulation assigns stable entity identities and applies explicit deterministic ordering wherever order can affect gameplay outcomes. Client prediction and reconciliation must tolerate authoritative float corrections.
+Other deferred work includes the exact proper Editor-authored scene, selected environment placement, production collision/navigation compilation, protocol quantization and reconciliation tuning, and any reusable terrain, streaming, biome or general world/component framework.
 
-Initial networking serializes the actual finite IEEE-754 spatial values selected by the authoritative simulation. Quantization, fixed-point conversion, and compression remain future protocol-boundary decisions supported by measurements; they are not implied by this content contract.
-
-## Validation and deferred decisions
-
-The regional contract validates finite values, ground-plane use, positive dimensions, containment, stable unique identifiers, immutable collections, three ordered branches, and a town that fits the zone. Tests must remain BCL-only and deterministic.
-
-Deferred work includes:
-
-- exact graybox coordinates and geometry in `CONTENT-0014`;
-- Box3D version, bindings, build integration, and simulation ownership;
-- collision and navigation compilation;
-- network encoding, quantization, and reconciliation tuning;
-- client rendering and asset selection;
-- a reusable terrain, streaming, biome, or general world/component framework.
-
-Durable identity: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract`.
+Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract.

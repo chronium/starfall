@@ -1,34 +1,66 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-02T18:32:23.2112950Z
+modifiedAt: 2026-08-03T07:32:21.7348470Z
 ---
 
 ## Status and purpose
 
-Draft 0 is the provisional technical vertical slice for Starfall M2. Its numbers, distances, content identities, action timing, and presentation choices are deterministic Content and Balance Lab inputs, not final balance or final art.
+Draft 0 is Starfall M2's provisional technical vertical slice. Its layout, numbers, identities, timing and presentation choices are deterministic Content and Balance Lab inputs rather than final balance, final art or a public first-wings release.
 
-It proves one connected, server-authoritative hunting loop. It does not pull the first-wings public release, trade stands, crafting, economy, persistence, PvP, multiple zones, final service topology, or a general world/terrain/ability/AI framework into M2.
+Development deliberately grows through visible evidence instead of implementing an entire backend before a client can exercise it. Native presentation and authoritative simulation evolve separately, then converge through protocol contracts derived from proven behavior.
 
-## Zone brief
+Trade stands, crafting, economy, persistence, PvP, multiple zones, wings, final service topology and general world/terrain/ability/AI frameworks remain outside Draft 0.
 
-The map is approximately 200 x 200 metres. An approximately 50 x 50 metre protected town sits near one edge and contains a configured respawn anchor and two or three landmark buildings. The buildings may read as an inn, workshop, and market or storage area, but they do not imply NPC, crafting, commerce, storage, or interaction systems.
+## Two visible milestones
 
-One clear exit reaches a junction with three experimental branches:
+### Local walking graybox
 
-| Branch | Approximate travel | Camp geometry | Composition |
-| --- | ---: | --- | --- |
-| Short | 25 m | Broad, open circle | starter_flyer_light |
-| Medium | 45 m | Elongated or divided | Both starter flyers |
-| Long | 70 m | Tight bowl or constrained lanes | Emphasizes starter_flyer_heavy |
+The first visible milestone requires:
 
-Flat terrain is acceptable. Grass and dirt-path surfaces, rocks/boulders, sparse nature props, and landmark buildings make routes and spaces readable. Collision, navigation, camp shapes, and respawn anchors are deterministic gameplay/authoring inputs; visual meshes never replace them. This slice does not require streaming, terrain deformation, a biome system, or a general world format.
+- a generated provisional graybox;
+- isometric camera and deterministic ground picking;
+- the already-proven technical humanoid;
+- left-click movement intent;
+- a deterministic authoritative-style movement fixture;
+- one Client-owned snapshot/fact-to-presentation adapter.
 
-The regional envelope and experimental targets are the durable `CONTENT-0006` contract documented at [Draft 0 Zone Contract](../content/draft-0-zone-contract.md). Exact coordinates, polygons, path centre lines, camp extents, respawn placement, and collision/navigation inputs belong to the focused follow-up `CONTENT-0014`; approximate dimensions and travel distances here do not pretend that layout is already authored.
+It requires no connection, selected final assets, World/Simulation dependency in Client, or client gameplay authority. CLIENT-0009 later maps real protocol snapshots into exactly the same adapter.
+
+### Connected walking world
+
+The second visible milestone requires:
+
+- PROTOCOL-0002 admission feeding SERVER-0003 world-owned gameplay sessions;
+- one 60 Hz world lifecycle and loaded provisional graybox;
+- one generic world-owned technical player identity/state;
+- authoritative movement;
+- connected-walking facts, deterministic serialization and SERVER-0005 exchange;
+- CLIENT-0009 reconciliation through the locally proven adapter.
+
+Monsters extend the connected contract afterward and do not block connected player movement.
+
+## Zone direction
+
+The durable CONTENT-0006 requirements remain:
+
+- approximately 200 x 200 metres;
+- an approximately 50 x 50 metre protected town near one edge;
+- a configured respawn anchor and two or three landmark intentions;
+- one exit leading to a junction;
+- short/easy, medium/mixed and long/hard branches around 25, 45 and 70 metres;
+- broad/open, elongated/divided and constrained camp geometry;
+- flat grass treatment, dirt route semantics and an outer rock/boulder boundary.
+
+CONTENT-0014 turns only those requirements into provisional executable graybox coordinates, regions, proxy blocks, coarse collision/navigation and sample spawns. Generated planes, lines and boxes are sufficient; it does not author the complete map or depend on asset selection.
+
+EDITOR-0007 later authors the proper scene from the durable requirements, graybox evidence and exact selected/staged assets. It compiles separate authoritative and client outputs for SERVER-0012 and CLIENT-0016.
 
 ## Provisional class and combat kit
 
-The first class fantasy is a dark-elf archer. The character begins in an appropriate non-equipment underlayer with a basic wooden bow, visually presented arrows, and no equipped armour. Arrows are unlimited for Draft 0; there is no ammunition inventory or purchasing. The first armour family is a visibly meaningful Ranger/leather set that may be earned piece by piece.
+The connected walking slice uses a generic technical player and does not depend on class or combat content. The later class/combat lane owns the dark-elf archer through CONTENT-0003.
+
+The intended class begins in a non-equipment underlayer with a basic wooden bow, visually presented unlimited arrows and no equipped armour. The first armour family is a visibly meaningful Ranger/leather set.
 
 | Action | Target | Displayed damage | Internal damage |
 | --- | --- | ---: | ---: |
@@ -36,85 +68,57 @@ The first class fantasy is a dark-elf archer. The character begins in an appropr
 | Fire Arrow | Selected enemy | 7 | 700 |
 | Arrow Rain | Ground circle, each valid victim | 5 | 500 |
 
-The provisional control hypothesis is left-click ground to move, right-click a valid enemy to select it and request Basic Arrow, 1 to request Fire Arrow on the selected target, and 2 then right-click a valid ground point to request Arrow Rain. Escape or an approved empty-ground action cancels targeting.
+Right-click enemy requests Basic Arrow, 1 requests Fire Arrow on the selected target, and 2 enters Arrow Rain ground targeting. Input is intent only. The server decides validity, range, facing, victims, damage, mana, cadence, death and success.
 
-Input is intent only. The server decides range, facing requirements, valid targets and victims, damage, mana, death, cadence, and success.
+## Numerical contract
 
-## Deterministic numerical contracts
+Integer authoritative state includes HP, mana, damage, XP, levels, currency, item counts and discrete stats. One displayed HP or mana point equals 100 internal units; the Draft 0 player starts with 2,500 health units. Probabilities use explicit integer scaling and authoritative time uses fixed integer ticks.
 
-Authoritative spatial and physics state uses finite Box3D-native single-precision floating-point metres. Content authoring uses BCL-only immutable ground-plane values backed by `System.Numerics.Vector3`, with a one-to-one unit-and-precision conversion at the later simulation boundary. Spatial-query or physics iteration order is never trusted as gameplay ordering: stable entity identities and explicit sorting are required wherever order can affect outcomes. Clients must tolerate authoritative float corrections through reconciliation.
+Authoritative spatial/physics state uses finite Box3D-native single-precision metres. Starfall.Content uses BCL-only immutable System.Numerics-backed authoring values with the same units and precision, rejecting NaN, infinity and out-of-zone data. Simulation converts components one-to-one and does not maintain a parallel integer-millimetre coordinate model. Stable identity and explicit ordering isolate gameplay outcomes from native query order.
 
-Discrete gameplay state remains integer. One displayed health or mana point equals 100 authoritative internal units, and the player begins with 2,500 health units (25 displayed HP). Primary attributes use ordinary integers, probabilities use an explicit integer representation such as basis points, and authoritative time uses fixed simulation ticks. Initial protocol work carries the actual finite IEEE-754 spatial values; quantization is deferred to a measured protocol-boundary decision.
+Level 2 requires 40 XP. Later requirements use nearest-integer half-up arithmetic:
 
-Level 2 requires 40 XP. Each later requirement uses nearest-integer half-up arithmetic:
+next = (previous * 115 + 50) / 100
 
-`next = (previous * 115 + 50) / 100`
+Accepted level 2-20 requirements:
 
-The accepted Draft 0 level 2-20 sequence is:
-
-`40, 46, 53, 61, 70, 81, 93, 107, 123, 141, 162, 186, 214, 246, 283, 325, 374, 430, 495`
-
-Reward selection is deterministic under an authoritative seed. starter_flyer_light awards 1-3 XP and starter_flyer_heavy awards 2-8 XP.
+40, 46, 53, 61, 70, 81, 93, 107, 123, 141, 162, 186, 214, 246, 283, 325, 374, 430, 495
 
 ## Authority and arrow presentation
 
-Basic Arrow and Fire Arrow do not create authoritative spatial projectile entities and do not perform server-side projectile collision or travel simulation. The server validates an action and resolves its outcome at an explicit deterministic fixed tick. Protocol facts carry enough action, target, timing, resource, and outcome information for coherent client release, flight, and impact.
+Basic Arrow and Fire Arrow resolve at explicit authoritative fixed ticks without spatial projectile entities or server-side travel/collision. Arrow Rain resolves an explicitly ordered victim set and damage at an authoritative tick.
 
-Arrow Rain resolves its authoritative victim set, deterministic victim order, and damage at an explicit fixed tick. Falling arrows and impacts are presentation. Client-rendered arrows never decide collision, victims, damage, mana, or success.
+Protocol facts later carry action, target, timing, resource and outcome information. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
 
-Exact windup, resolve timing, visual trajectory, reconciliation, attack interruption, cadence, ranges, mana/regeneration/costs, and Arrow Rain radius remain focused Balance Lab or presentation inputs.
+## Monsters, camps, town and respawn
 
-## Monsters, camps, town, and respawn
+Prototype identities remain:
 
-The two neutral prototype identities are:
+- starter_flyer_light: 700 internal HP;
+- starter_flyer_heavy: 2,000 internal HP.
 
-- `starter_flyer_light`: 700 internal HP (7 displayed);
-- `starter_flyer_heavy`: 2,000 internal HP (20 displayed).
+They remain ground-plane authoritative entities. Hovering is presentation. The smallest authoritative behavior is camp-bounded awareness, pursuit, attack, disengage and return. The town rejects hostile actions, excludes monsters and owns the configured defeat/respawn anchor.
 
-The intended breakpoints are three Basic Arrows, one Fire Arrow, or two Arrow Rain hits for the light flyer; and seven Basic Arrows, three Fire Arrows, or four Arrow Rain hits for the heavy flyer.
-
-Both remain ordinary ground-plane authoritative entities with positions, radii, movement, targeting, and camp bounds. Hovering is presentation only. The smallest viable authoritative behavior is camp-bounded awareness, approach/pursuit, attack, disengage, and return. The client may use yaw, bobbing, lunging or pulsing, hit flash, and simple death presentation. Draft 0 does not require altitude, flight navigation, vertical combat, locomotion cycles, foot placement, IK, retargeting, or a generic monster skeletal pipeline.
-
-The town is protected: hostile player actions are rejected within it, monsters cannot enter it and disengage at its boundary, and defeated players return to the configured town respawn anchor. Respawn delay and restored health/mana remain configurable Balance Lab inputs.
+The local placeholder-monster task uses generated shapes or separately approved temporary assets and deterministic fixtures. A focused protocol/server/client extension later connects real monster snapshots. Exact selected monster assets remain a separate CONTENT-0013 and coordinator ASSET-0008 path.
 
 ## Asset ownership and source direction
 
-Starfall owns the identity and selection of its dark elf, underlayer and Ranger pieces, bow and arrows, monsters, and zone composition. Every selection records exact pack-relative source paths. ChronoFall owns supplied-source provenance, reusable rendering/cooking contracts, and stable-ID staging. Coordinator acquisition tasks consume completed selections and stage only exact approved inputs. Generated client content remains ignored. No entire asset pack enters a runtime manifest or cook.
+Starfall owns selection of its dark elf, underlayer/Ranger pieces, bow/arrows, monsters and proper zone composition. ChronoFall owns supplied-source provenance, reusable rendering/cooking contracts and stable-ID staging. Selection records exact pack-relative paths; acquisition stages only exact approved inputs; generated client content remains ignored.
 
-Currently supplied and established Quaternius sources include:
+Established supplied Quaternius sources include Universal Base Characters[Standard], Universal Animation Library[Standard], Universal Animation Library 2[Standard], Modular Character Outfits - Fantasy[Standard], Medieval Village MegaKit[Standard], and Medieval Weapons Pack by @Quaternius.
 
-- `Universal Base Characters[Standard]`;
-- `Universal Animation Library[Standard]`;
-- `Universal Animation Library 2[Standard]`;
-- `Modular Character Outfits - Fantasy[Standard]`;
-- `Medieval Village MegaKit[Standard]`;
-- `Medieval Weapons Pack by @Quaternius`.
+Quaternius remains selected for humanoids, the reference skeleton, animation, armour/clothing and the initial village source. Kenney and Quaternius weapons remain candidates. The existing UAL1 cook is historical/technical evidence; Sword_Attack is not a bow placeholder.
 
-Quaternius remains selected for humanoid characters, the reference skeleton, animations, modular armour/clothing, and the initial village source. Kenney and Quaternius weapons may both be evaluated by task-owned selection. The existing UAL1 cook remains valid historical and technical evidence; `Sword_Attack` is not an acceptable bow placeholder.
-
-The following official CC0 packs are prospective inputs only until their exact supplied files, hashes, licence evidence, formats, scale, materials, rigs, and compatibility are inspected:
-
-- Universal Animation Library 2 Full: likely bow-animation evidence including BOW_NOTCH, BOW_SHOOT, and bounded aim clips; only a minimum approved clip set may be cooked.
-- [Modular Sci-Fi MegaKit](https://quaternius.com/packs/modularscifimegakit.html): preferred first inspection for temporary small alien, grub, or hovering starter-flyer candidates.
-- [Ultimate Monsters](https://quaternius.com/packs/ultimatemonsters.html): fallback monster source if the sci-fi candidates are unsuitable.
-- [Stylized Nature MegaKit](https://quaternius.com/packs/stylizednaturemegakit.html): preferred focused nature candidate, initially perhaps two or three rocks, one or two trees, one bush, and one or two grass/flower clumps.
-- Fantasy Props MegaKit: optional exact landmark dressing such as a few inn, workshop, or market/storage props.
-- Ultimate RPG Pack: deferred, unselected pickup-like candidate only if a later physical-item task proves an exact unmet need.
-
-Prospective packs are not dependencies. The map graybox must not depend on a purchase. Engine-specific vegetation/wind shaders are not assumed portable; Draft 0 uses supported glTF material inputs or a deliberately simple shared material path. Grass and dirt-path ground treatments remain separate experimental inputs.
-
-The monster selection may reject every candidate. It first determines whether each selected representation is static, rigidly animated, or skeletal. Only then may reviewed follow-up attach the smallest correct coordinator acquisition and rendering/cooking prerequisites; it must not defensively require both static and skeletal paths.
+Prospective packs remain non-dependencies until supplied and inspected: Universal Animation Library 2 Full, Modular Sci-Fi MegaKit, Ultimate Monsters, Stylized Nature MegaKit, Fantasy Props MegaKit and Ultimate RPG Pack. No whole pack enters a runtime cook or manifest.
 
 ## Balance Lab evidence
 
-The Balance Lab must exercise the same content and authoritative rules as the world. Scenarios cover all three camp geometries, all three actions, fixed-tick outcome timing, deterministic victim ordering and rewards, monster pursuit/attack/return, protected-town disengagement, player damage/death/respawn, levels 1-20, drops, and visible equipment progression.
+Balance Lab eventually exercises the same authoritative content/rules: movement, three camp geometries, three actions, deterministic timing/order/rewards, monster pursuit/attack/return, protected-town disengagement, damage/death/respawn, progression, drops and equipment.
 
-Still-configurable inputs include player mana and regeneration, skill costs, action cadence and range, action interruption, Arrow Rain radius, monster damage/cadence/movement/aggro, drop tables, item modifiers, level-up gains, respawn delay, restored resources, projectile visual timing, and overall pacing.
+Tuning inputs remain configurable: mana/regeneration/costs, cadence/range/interruption, Arrow Rain radius, monster behavior/damage, drops/modifiers, level gains, respawn resources, visual projectile timing and pacing.
 
 ## Shared attachment continuity
 
-Draft 0 requires a narrow coordinator proof of one rendered socketed static attachment, initially the selected bow. The broader deferred coordinator task `SHARED-0007` remains the owner of general attachment presentation for later weapons, shields, backpacks, wings, and other categories. When implemented, it must review and reuse the narrow bow proof rather than independently recreating the capability. Existing deferred consumers of `SHARED-0007` remain intact.
+The narrow coordinator socketed-bow proof remains distinct from broader deferred SHARED-0007 attachment presentation. Later broad work must review and reuse the narrow proof.
 
-## Durable identity
-
-This brief is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`. It is provisional product input. Task files own executable acceptance boundaries and canonical cross-project dependency wiring.
+Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0.

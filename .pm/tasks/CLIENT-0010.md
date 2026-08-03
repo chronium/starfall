@@ -7,9 +7,9 @@ dependsOn:
 - CLIENT-0007
 - CLIENT-0012
 - SIM-0007
-- PROTOCOL-0004
+- PROTOCOL-0007
 createdAt: 2026-08-02T07:33:29.1280240Z
-modifiedAt: 2026-08-02T15:52:42.7371530Z
+modifiedAt: 2026-08-03T07:30:50.7356240Z
 ---
 
 Present the authoritative Draft 0 Arrow Rain action.

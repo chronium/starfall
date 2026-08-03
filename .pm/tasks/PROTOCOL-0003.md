@@ -1,23 +1,20 @@
 ---
 id: PROTOCOL-0003
-title: Define gameplay commands, events, and snapshot contract
+title: Define connected walking commands and player snapshot facts
 track: PROTOCOL
-milestone: M0
+milestone: M2
 dependsOn:
-- PROTOCOL-0002
+- SERVER-0006
+- SIM-0008
 createdAt: 2026-08-02T07:29:11.5694060Z
-modifiedAt: 2026-08-02T18:27:44.0802610Z
+modifiedAt: 2026-08-03T07:30:50.5981580Z
 ---
 
-Define the authoritative Draft 0 gameplay command, event and snapshot facts.
+Define the transport-neutral connected-walking contract only after concrete player state and authoritative movement exist.
 
 Acceptance criteria:
-- Define entity-target intents for Basic Arrow and Fire Arrow and point-target intent for Arrow Rain.
-- Carry stable action identity, actor, target or target point, action start/windup/resolve ticks, acceptance or rejection, authoritative victims, damage, resource expenditure and outcomes.
-- Represent health, mana, damage and other discrete authoritative resources as integers and time as fixed ticks.
-- Represent authoritative position, velocity, orientation, collision dimensions, ranges and other spatial/physics facts as finite single-precision IEEE-754 components in metres matching Box3D-native precision.
-- Preserve stable entity identities and explicit ordering for facts or query results whose source order is not guaranteed.
-- Include bounded monster state and player defeat, protected-town return and respawn facts needed by clients.
-- Basic Arrow and Fire Arrow create no authoritative spatial projectile entity or server-side travel/collision simulation.
-- Arrow Rain resolves its authoritative victim set and damage at an explicit deterministic tick; its falling arrows are presentation.
-- Keep transport, quantization, chat, persistence and generic ability frameworks out of scope.
+- Define bounded ground-point movement intent plus stable world-local player/entity identity.
+- Define fixed-tick player snapshots and correction facts carrying authoritative position, velocity, orientation and collision dimensions as finite single-precision metre components.
+- Preserve integer discrete resources, integer fixed ticks, stable snapshot sequencing and explicit ordering.
+- Keep the Client adapter presentational and require real snapshots to drive the same path proven by the local fixture.
+- Do not define monsters, combat actions, damage/death, progression, drops, equipment, transport framing, quantization, chat, persistence or a generic message/entity framework.

@@ -6,9 +6,10 @@ milestone: M2
 dependsOn:
 - CLIENT-0012
 - GAME-0002
-- PROTOCOL-0004
+- PROTOCOL-0008
+- SERVER-0009
 createdAt: 2026-08-02T07:52:11.9212650Z
-modifiedAt: 2026-08-02T15:52:42.7538940Z
+modifiedAt: 2026-08-03T07:30:50.7926770Z
 ---
 
 Present deterministic Draft 0 experience and level progression from authoritative facts.

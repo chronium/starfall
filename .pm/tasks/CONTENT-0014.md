@@ -1,20 +1,21 @@
 ---
 id: CONTENT-0014
-title: Author the exact Draft 0 graybox layout
+title: Define the provisional Draft 0 executable graybox
 track: CONTENT
 milestone: M2
 dependsOn:
 - CONTENT-0006
 createdAt: 2026-08-02T18:26:57.8750190Z
-modifiedAt: 2026-08-02T18:27:28.8522810Z
+modifiedAt: 2026-08-03T07:30:50.5735200Z
 ---
 
-Author one exact deterministic Draft 0 graybox layout using the completed regional zone contract.
+Define the smallest deterministic executable graybox derived from the completed Draft 0 requirements.
 
 Acceptance criteria:
-- Place the protected town, configured respawn anchor, two or three landmark footprints, one exit and one junction inside the 200 x 200 metre envelope.
-- Place short, medium and long route centre-lines, navigation corridors and camp areas that satisfy the approved approximate travel targets and open, divided and constrained hunting geometries.
-- Define exact finite single-precision metre collision blockers, outer boundary treatment and deterministic entity-placement inputs in stable order.
-- Validate every point, region and dimension against the zone bounds and reject non-finite, invalid, duplicate or out-of-zone data.
-- Keep authoring values BCL-only; later simulation performs a one-to-one component conversion into Box3D-native types without changing unit or precision.
-- Do not select or cook assets, add Box3D, render the scene, implement movement, monsters or simulation, or create a general scene, terrain, navigation or world format.
+- Preserve the explicit CONTENT-0006 durable-requirements prerequisite.
+- Define finite single-precision metre coordinates and bounded regions for the outer envelope, protected town, respawn anchor, landmark proxy blocks, exit, junction, three route corridors and three camp areas.
+- Define only simple proxy geometry, coarse collision/navigation inputs and deterministic sample spawn points in stable order.
+- Use BCL-only immutable spatial values backed by System.Numerics; reject NaN, infinity, invalid dimensions, duplicates and out-of-zone values.
+- Preserve one-to-one component conversion into later Box3D-native single-precision metre values without introducing a parallel integer-millimetre coordinate model.
+- Treat the result as provisional executable evidence until the focused Editor task authors and compiles the proper scene.
+- Do not select/place the complete asset-authored map, add Box3D/SDL/rendering/editor dependencies, implement movement/monsters, or create a general map, scene, terrain, navigation or streaming format.

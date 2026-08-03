@@ -1,30 +1,28 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-03T06:09:39.1582000Z
+modifiedAt: 2026-08-03T07:32:55.5108590Z
 ---
 
 ## Purpose
 
-Starfall is an independently owned and useful server-authoritative MMORPG inspired by classic MU Online. It remains a child of ChronoFall for family roadmap and shared-engine coordination but owns its PM project, source history, architecture, simulation, protocol, content, editor, build/release decisions, and commits. The canonical full-client development environment is the coordinator family checkout; independent ownership does not require an isolated full-client build.
+Starfall is an independently owned server-authoritative MMORPG and a linked child of ChronoFall. It owns its PM project, source history, architecture, simulation, protocol, content, presentation integration, editor/Balance Lab, build, release and commits. ChronoFall owns family coordination, proven shared modules and the pinned Starfall commit.
 
-## Planned boundaries
+The canonical full-client development environment is the shallow coordinator family checkout. Independent ownership does not require isolated full-client builds.
 
-The foundation separates native client presentation, headless world orchestration, authoritative simulation, transport-neutral protocol, content, editor authoring, and a headless Balance Lab. It also preserves logical ownership boundaries for identity/lobby, realm/world, chat, operations, and persistence. `BUILD-0002` realized the approved boundaries as independently buildable .NET libraries and executable dependency tests. `BUILD-0003` makes only `Starfall.Client` and `Starfall.World` executable composition roots. `CLIENT-0006` replaces the client placeholder with the first native presentation runtime, while `SERVER-0002` still owns the fixed-step authoritative world lifecycle.
+## Foundation and service boundaries
 
-Once admitted to a world, an active player's gameplay session does not depend on authentication, chat, or management services remaining available. Identity admits; the selected world consumes a short-lived signed join ticket and owns the gameplay session. Chat and operations remain optional from gameplay's perspective. Persistence degradation requires a later explicit contract.
+Starfall separates native Client presentation, headless World orchestration, authoritative Simulation, transport-neutral Protocol, Content, Editor authoring and headless Balance Lab.
 
-`PROTOCOL-0002` realizes the admission boundary as a provisional BCL-only `sfjt1` contract: identity signs with ECDSA P-256, worlds validate with locally configured public keys, and every ticket is bound to one configured world, channel, and lifecycle-specific world instance. Atomic single consumption and active session creation remain `SERVER-0003` work. Full contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/world-admission-and-join-tickets`.
+Once admitted, an active player's gameplay session does not depend on identity, chat or operations remaining available. PROTOCOL-0002 owns the signed sfjt1 admission contract. SERVER-0003 consumes tickets atomically and creates world-owned sessions independently of gameplay message serialization.
 
-Servers own world state, movement, combat, monsters, camps, progression, drops, equipment, and persistent-intent outcomes. Clients own input presentation, rendering, animation, IK, effects, cameras, and smoothing. Headless projects never depend on SDL windowing/GPU, ImGui, rendering, or editor code.
+World/Simulation own movement, combat, character state, monsters, camps, progression, drops and equipment. Client owns input presentation, rendering, animation, IK, effects, camera and smoothing. Headless projects never depend on SDL, GPU, ImGui, renderer, editor UI or presentation assets.
 
-Logical boundaries do not initially require separate processes. Strict modules and a small number of executables are acceptable while the vertical slice gathers evidence for the final physical topology. Starfall may consume explicitly approved parent-owned shared projects from source through the canonical family checkout, but never depends on Royale. Parent shared modules never depend on Starfall.
+Logical identity/lobby, world, chat, operations and persistence boundaries do not require one process per concept. Physical topology and persistence degradation remain evidence-gated.
 
 ## Foundation assembly graph
 
-The initial direct project-reference graph is:
-
-```text
+~~~text
 Starfall.Content
 Starfall.Protocol
 Starfall.Simulation -> Content
@@ -32,36 +30,83 @@ Starfall.World -> Content, Protocol, Simulation
 Starfall.Client -> Content, Protocol
 Starfall.Editor -> Content
 Starfall.BalanceLab -> Content, Simulation
-```
+~~~
 
-Content and Protocol remain product-dependency-free. Simulation owns deterministic authoritative rules and does not depend on Protocol. World is the later headless orchestration boundary between protocol, content, and simulation. Client never references World or Simulation. Editor remains an authoring boundary, while Balance Lab consumes the same deterministic content and simulation without a live-world or presentation dependency.
+Content and Protocol remain product-dependency-free. Simulation never depends on Protocol. Client never references World or Simulation. World is the composition boundary between protocol, content and simulation. Editor authoring stays separate from compact runtime data; Balance Lab remains headless.
 
-The graph above records Starfall-local product dependencies. `CLIENT-0006` adds the allowlisted coordinator presentation projects as source references to Client only; those references do not change Starfall gameplay ownership and may never enter Content, Protocol, Simulation, World, Editor, or BalanceLab.
+CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through ChronoFallFamilyRoot. Future EDITOR-0007 may add a separately explicit, architecture-tested static-rendering allowlist for Editor; no such reference exists merely because the task is planned.
 
-`Starfall.Client` and `Starfall.World` are executable boundaries; Content, Protocol, Simulation, Editor, and BalanceLab remain libraries. World retains its bounded foundation shell. Client now opens a native SDL GPU character preview with no arguments and exposes `--validate-character-content` as a non-graphical content probe; unknown arguments fail explicitly. This process split follows the client/server trust, platform, and authority boundary: it does not require identity, chat, operations, or persistence to become separate deployables. Changes to this graph require an approved task, updated dependency tests, and an updated Starfall architecture contract.
+## Evidence-driven vertical-slice order
 
-## Family source-consumption boundary
+Starfall does not complete a speculative backend before producing visible client evidence.
 
-`Directory.Build.props` defines the single overridable `ChronoFallFamilyRoot` property. Its default resolves the parent coordinator directory in the canonical shallow family checkout. Only `Starfall.Client` references the explicitly approved `ChronoFall.CharacterPresentation`, `ChronoFall.CharacterPresentation.Cooking`, and `ChronoFall.CharacterPresentation.SdlGpu` projects through that root.
+The native-presentation lane proves:
 
-Literal parent traversal, absolute checkout paths, arbitrary property-rooted dependencies, coordinator imports, direct Royale references, and direct SDL3-CS references are not approved. The coordinator retains ownership of shared source, its actual source-built SDL3-CS dependency, and the stable-ID generated client cook/copy workflow. Starfall.Client consumes only the known ignored cook, deterministic provenance, CC0 evidence, compiled shared shaders, and verified native runtime from bounded client output paths. Missing staged content fails the build with the reproduction command. NuGet/feed distribution remains deferred until real integrations or independent release and CI needs justify it.
+1. CONTENT-0014 provisional executable graybox;
+2. CLIENT-0005 camera/ground picking;
+3. CLIENT-0020 generated graybox rendering;
+4. CLIENT-0021 technical humanoid and reusable world-presentation adapter;
+5. CLIENT-0022 placeholder monster presentation from deterministic fixtures.
 
-## Initial vertical slice
+The authoritative lane proves:
 
-The M2 technical vertical slice is now defined by the provisional Draft 0 brief: one approximately 200 x 200 metre zone, a protected town, three shaped camps, a dark-elf archer, Basic Arrow, Fire Arrow, Arrow Rain, bounded starter-flyer behavior, deterministic progression and drops, visible Ranger/leather equipment, and Balance Lab scenarios using the same authoritative rules.
+1. SERVER-0002 60 Hz world lifecycle;
+2. SERVER-0004 loaded graybox;
+3. SERVER-0006 one concrete generic technical player;
+4. SIM-0008 authoritative movement;
+5. camp spawning, Basic Arrow, bounded monster behavior and protected-town return.
 
-Authoritative spatial and physics state uses finite Box3D-native single-precision metres; deterministic content authoring uses BCL-only `System.Numerics.Vector3`-backed values with the same units and precision. Discrete resources remain integer and time uses fixed ticks. Stable entity identities and explicit ordering isolate gameplay outcomes from native physics/query iteration order, while clients reconcile authoritative float corrections. Initial protocol work carries actual finite IEEE-754 spatial values; quantization remains a later measured protocol decision.
+Protocol is derived from those proven concepts. PROTOCOL-0003/0004 first cover only connected player walking. SERVER-0005 exchanges those commands/snapshots and CLIENT-0009 maps them into the same adapter used by the local fixture. Monsters then extend the contract through PROTOCOL-0005, SERVER-0007 and CLIENT-0023. Combat facts/serialization/exchange follow proven combat simulation.
 
-Basic Arrow, Fire Arrow, and Arrow Rain resolve at explicit authoritative ticks; their rendered arrows and effects are presentation and never determine collision, victims, damage, mana, or success. Monsters remain ground-plane world entities even when their temporary presentation hovers. The town rejects hostile player actions, excludes monsters, and owns the configured defeat/respawn return anchor.
+Progression, physical drops and inventory/equipment each retain focused protocol and server-exchange extensions rather than expanding the connected-walking contract.
 
-Starfall owns game content, rules, protocol, world state, and presentation integration. ChronoFall owns only proven reusable presentation/cooking contracts, supplied-source provenance, and stable-ID staging. Exact selections precede acquisition; no whole pack enters a runtime cook. Prospective sources remain evidence-gated until physically supplied and reviewed.
+## Two visible milestones
 
-Identity/lobby, chat, operations, and persistence implementation depth remain deferred even though their ownership and availability boundaries are defined. Trade stands, the full economy, wings progression, territory, and the complete public release also remain deferred.
+### Local walking graybox
 
-Draft 0: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`.
+Generated graybox, isometric camera, ground picking, technical humanoid, click intent and deterministic authoritative-style movement fixture. No connection, selected final assets or client gameplay authority.
 
-Zone contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract`.
+### Connected walking world
 
-Starfall service contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/service-availability-and-ownership`.
+~~~text
+PROTOCOL-0002 -> SERVER-0003
+PROTOCOL-0003 -> PROTOCOL-0004
+SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004
+  -> SERVER-0005
+  -> CLIENT-0009
+~~~
 
-Family contracts: `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/architecture/shared-engine-boundaries`.
+This milestone proves real world-owned player identity/state, authoritative movement, serialized snapshots, world-host exchange and Client adapter reuse. Monsters do not block it.
+
+## Map authoring boundary
+
+CONTENT-0006 owns durable gameplay/layout requirements. CONTENT-0014 depends on it and owns provisional executable graybox coordinates, regions, proxy geometry, coarse collision/navigation and sample spawns.
+
+EDITOR-0007 later authors one proper Draft 0 scene from the durable requirements, graybox evidence and exact selected/staged assets. It compiles separate outputs:
+
+- SERVER-0012 consumes only authoritative regions/collision/navigation/respawn/camp/spawn inputs;
+- CLIENT-0016 consumes only visual placements and staged presentation assets.
+
+This boundary does not create a general map, terrain, scene, streaming or reflective runtime component framework.
+
+## Numerical contract
+
+Integer authoritative state covers HP, mana, damage, XP, levels, currency, item counts and discrete stats. Probabilities use explicitly scaled integers. Authoritative time uses fixed integer ticks.
+
+Spatial/physics authority uses finite Box3D-native single-precision metres. Content authoring uses BCL-only immutable System.Numerics-backed values with identical units/precision and rejects NaN, infinity and out-of-zone data. Simulation converts components one-to-one without maintaining a parallel integer-millimetre model. Stable identities and explicit sorting protect gameplay from unordered native query results.
+
+Cycle 1 does not invent a Box3D dependency. A separately approved coordinator grooming cycle must allocate the bounded shared acquisition/integration task; SF-0009 may then reopen solely to attach its canonical URI to SIM-0008 before activation.
+
+## Family source and asset boundaries
+
+Starfall may consume only explicitly approved parent projects through ChronoFallFamilyRoot and never depends on Royale. Parent shared modules never depend on Starfall. Generated client content enters only through stable-project-ID staging and remains ignored.
+
+Starfall owns game-specific selection and composition. ChronoFall owns supplied-source provenance, reusable cooking/rendering contracts and stable-ID staging. The generated graybox has no asset-selection gate. The proper Editor-authored scene uses only exact selected/staged assets.
+
+Draft 0: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0
+
+Zone contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract
+
+Service contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/service-availability-and-ownership
+
+Family contract: pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/architecture/shared-engine-boundaries

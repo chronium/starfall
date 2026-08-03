@@ -1,0 +1,91 @@
+orders:
+- track: CONTENT
+  state: todo
+  milestone: M2
+  taskIds:
+  - CONTENT-0014
+  - CONTENT-0003
+  - CONTENT-0007
+  - CONTENT-0008
+  - CONTENT-0011
+  - CONTENT-0013
+  - CONTENT-0012
+  - CONTENT-0009
+  - CONTENT-0004
+- track: CLIENT
+  state: todo
+  milestone: M2
+  taskIds:
+  - CLIENT-0005
+  - CLIENT-0020
+  - CLIENT-0021
+  - CLIENT-0009
+  - CLIENT-0022
+  - CLIENT-0023
+  - CLIENT-0017
+  - CLIENT-0012
+  - CLIENT-0007
+  - CLIENT-0011
+  - CLIENT-0018
+  - CLIENT-0010
+  - CLIENT-0019
+  - CLIENT-0013
+  - CLIENT-0014
+  - CLIENT-0015
+  - CLIENT-0016
+- track: SERVER
+  state: todo
+  milestone: M2
+  taskIds:
+  - SERVER-0002
+  - SERVER-0003
+  - SERVER-0004
+  - SERVER-0006
+  - SERVER-0005
+  - SERVER-0007
+  - SERVER-0008
+  - SERVER-0009
+  - SERVER-0010
+  - SERVER-0011
+  - SERVER-0012
+- track: SIM
+  state: todo
+  milestone: M2
+  taskIds:
+  - SIM-0008
+  - SIM-0003
+  - SIM-0006
+  - SIM-0004
+  - SIM-0010
+  - SIM-0011
+  - SIM-0009
+  - SIM-0007
+- track: PROTOCOL
+  state: todo
+  milestone: M2
+  taskIds:
+  - PROTOCOL-0003
+  - PROTOCOL-0004
+  - PROTOCOL-0005
+  - PROTOCOL-0006
+  - PROTOCOL-0007
+  - PROTOCOL-0008
+  - PROTOCOL-0009
+  - PROTOCOL-0010
+- track: GAME
+  state: todo
+  milestone: M2
+  taskIds:
+  - GAME-0003
+  - GAME-0002
+  - GAME-0004
+  - GAME-0005
+- track: EDITOR
+  state: todo
+  milestone: M2
+  taskIds:
+  - EDITOR-0003
+  - EDITOR-0004
+  - EDITOR-0005
+  - EDITOR-0006
+  - EDITOR-0007

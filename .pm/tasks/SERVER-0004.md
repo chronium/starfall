@@ -1,19 +1,20 @@
 ---
 id: SERVER-0004
-title: Load the first zone and host authoritative entity state
+title: Load and own the provisional Draft 0 graybox
 track: SERVER
 milestone: M2
 dependsOn:
 - SERVER-0002
 - CONTENT-0014
 createdAt: 2026-08-02T07:29:12.8441180Z
-modifiedAt: 2026-08-02T18:27:28.8702100Z
+modifiedAt: 2026-08-03T07:30:50.6418410Z
 ---
 
-Load and host the deterministic Draft 0 zone in one authoritative world/channel.
+Load the provisional executable Draft 0 graybox into one authoritative world/channel.
 
 Acceptance criteria:
-- Load the approximately 200 x 200 metre zone, protected town, respawn anchor, landmark footprints, branch/camp areas, collision, navigation, and deterministic entity-placement inputs.
-- Host player and monster world state as ordinary ground-plane entities with authoritative positions and radii.
-- Keep town protection and gameplay rules in simulation rather than rendering or authoring data.
-- Do not implement monsters, combat, progression, persistence, streaming, terrain systems, or additional zones.
+- Load the bounded envelope, protected town, respawn anchor, proxy landmarks, route/camp regions, coarse collision/navigation and deterministic sample spawn inputs.
+- Preserve finite single-precision metre components, stable identities and explicit ordering.
+- Own the loaded world layout without yet creating player or monster state.
+- Keep protection and gameplay behavior in Simulation rather than rendering or authoring data.
+- Do not implement entities, movement, monsters, combat, progression, persistence, asset presentation, streaming, terrain systems or additional zones.
