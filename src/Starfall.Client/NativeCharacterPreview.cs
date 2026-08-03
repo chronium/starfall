@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -5,6 +6,7 @@ using System.Runtime.InteropServices;
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.SdlGpu;
 using SDL;
+using Starfall.Content.Zones;
 using static SDL.SDL3;
 
 namespace Starfall.Client;
@@ -51,7 +53,8 @@ internal static unsafe class NativeCharacterPreview
         private const SDL_GPUTextureFormat DepthFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
         private static readonly SDL_FColor ClearColor = new() { r = 0.035f, g = 0.045f, b = 0.070f, a = 1.0f };
 
-        private readonly MeshBounds bounds;
+        private readonly PerspectiveIsometricCamera camera;
+        private readonly GroundBounds validGround;
         private SDL_Window* window;
         private SDL_GPUDevice* device;
         private SdlGpuSkinnedCharacterRenderer? renderer;
@@ -65,7 +68,12 @@ internal static unsafe class NativeCharacterPreview
         internal PreviewSession(SkinnedMeshDefinition sourceMesh)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
-            bounds = MeshBounds.Create(sourceMesh.Vertices.Select(static vertex => vertex.Position));
+            validGround = Draft0ZoneCatalog.FirstPlayable.Bounds;
+            camera = new PerspectiveIsometricCamera(
+                new GroundPoint(
+                    (validGround.Minimum.XMetres + validGround.Maximum.XMetres) * 0.5f,
+                    (validGround.Minimum.ZMetres + validGround.Maximum.ZMetres) * 0.5f),
+                PerspectiveIsometricCameraSettings.Draft0);
 
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
                 throw new InvalidOperationException($"SDL video initialization failed: {SDL_GetError()}");
@@ -73,7 +81,7 @@ internal static unsafe class NativeCharacterPreview
             try
             {
                 window = SDL_CreateWindow(
-                    "Starfall - Shared Character Presentation",
+                    "Starfall - Isometric Control Prototype",
                     WindowWidth,
                     WindowHeight,
                     (SDL_WindowFlags)0);
@@ -132,7 +140,7 @@ internal static unsafe class NativeCharacterPreview
             if (!ReferenceEquals(idleAnimation.Skeleton, skin.Skeleton))
                 throw new ArgumentException("The idle animation and skin must use the same skeleton.");
 
-            Console.WriteLine("STARFALL_CLIENT_CONTROLS Escape=close");
+            Console.WriteLine("STARFALL_CLIENT_CONTROLS LeftClick=move-intent Escape=close");
             ulong frequency = SDL_GetPerformanceFrequency();
             if (frequency == 0)
                 throw new InvalidOperationException("SDL returned a zero performance-counter frequency.");
@@ -150,6 +158,11 @@ internal static unsafe class NativeCharacterPreview
                         sdlEvent.key.key == SDL_Keycode.SDLK_ESCAPE)
                     {
                         running = false;
+                    }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN &&
+                        sdlEvent.button.Button == SDLButton.SDL_BUTTON_LEFT)
+                    {
+                        EmitMovementIntent(sdlEvent.button);
                     }
                 }
 
@@ -232,7 +245,8 @@ internal static unsafe class NativeCharacterPreview
                 if (swapchain is not null)
                 {
                     EnsureDepth(swapchainWidth, swapchainHeight);
-                    Matrix4x4 viewProjection = CreateViewProjection(bounds, swapchainWidth, swapchainHeight);
+                    Matrix4x4 viewProjection = camera.CreateViewProjection(swapchainWidth, swapchainHeight);
+                    Matrix4x4 characterWorld = Matrix4x4.CreateTranslation(camera.Focus.Metres);
                     var colorTarget = new SDL_GPUColorTargetInfo
                     {
                         texture = swapchain,
@@ -265,7 +279,7 @@ internal static unsafe class NativeCharacterPreview
                             palette!,
                             section,
                             new SkinnedCharacterDraw(
-                                Matrix4x4.Identity,
+                                characterWorld,
                                 viewProjection,
                                 color,
                                 new Vector3(-0.35f, -0.70f, -0.62f)));
@@ -315,6 +329,39 @@ internal static unsafe class NativeCharacterPreview
             if (command is null)
                 throw new InvalidOperationException($"SDL GPU command acquisition failed: {SDL_GetError()}");
             return command;
+        }
+
+        private void EmitMovementIntent(SDL_MouseButtonEvent mouseButton)
+        {
+            int logicalWidth;
+            int logicalHeight;
+            if (!SDL_GetWindowSize(window, &logicalWidth, &logicalHeight))
+                throw new InvalidOperationException($"SDL logical window size query failed: {SDL_GetError()}");
+
+            int drawableWidth;
+            int drawableHeight;
+            if (!SDL_GetWindowSizeInPixels(window, &drawableWidth, &drawableHeight))
+                throw new InvalidOperationException($"SDL drawable window size query failed: {SDL_GetError()}");
+            if (drawableWidth <= 0 || drawableHeight <= 0)
+                return;
+
+            if (!GroundMovementInput.TryCreateIntent(
+                    camera,
+                    validGround,
+                    mouseButton.x,
+                    mouseButton.y,
+                    logicalWidth,
+                    logicalHeight,
+                    (uint)drawableWidth,
+                    (uint)drawableHeight,
+                    out GroundMovementIntent intent))
+            {
+                return;
+            }
+
+            Console.WriteLine(string.Create(
+                CultureInfo.InvariantCulture,
+                $"STARFALL_CLIENT_MOVE_INTENT x={intent.Destination.XMetres:F3} z={intent.Destination.ZMetres:F3}"));
         }
 
         private static Exception? TryCancelCommand(
@@ -402,50 +449,5 @@ internal static unsafe class NativeCharacterPreview
                 return SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV;
             throw new NotSupportedException($"SDL GPU supports no requested shader format. Reported: {supported}.");
         }
-    }
-
-    private readonly record struct MeshBounds(Vector3 Minimum, Vector3 Maximum)
-    {
-        internal Vector3 Center => (Minimum + Maximum) * 0.5f;
-        internal Vector3 Extents => (Maximum - Minimum) * 0.5f;
-        internal float Radius => Extents.Length();
-
-        internal static MeshBounds Create(IEnumerable<Vector3> positions)
-        {
-            ArgumentNullException.ThrowIfNull(positions);
-            using IEnumerator<Vector3> iterator = positions.GetEnumerator();
-            if (!iterator.MoveNext())
-                throw new ArgumentException("Mesh bounds require at least one position.", nameof(positions));
-
-            Vector3 minimum = iterator.Current;
-            Vector3 maximum = iterator.Current;
-            while (iterator.MoveNext())
-            {
-                minimum = Vector3.Min(minimum, iterator.Current);
-                maximum = Vector3.Max(maximum, iterator.Current);
-            }
-            return new MeshBounds(minimum, maximum);
-        }
-    }
-
-    private static Matrix4x4 CreateViewProjection(MeshBounds bounds, uint width, uint height)
-    {
-        if (width == 0 || height == 0)
-            throw new ArgumentOutOfRangeException(nameof(width), "Swapchain dimensions must be positive.");
-        if (!float.IsFinite(bounds.Radius) || bounds.Radius <= 1e-5f)
-            throw new ArgumentException("Mesh bounds must have a positive finite radius.", nameof(bounds));
-
-        const float fieldOfView = MathF.PI / 5.0f;
-        Vector3 direction = Vector3.Normalize(new Vector3(1.35f, 0.45f, 2.1f));
-        float limitingHalfExtent = MathF.Max(bounds.Extents.Y, bounds.Radius * 0.78f);
-        float distance = limitingHalfExtent / MathF.Tan(fieldOfView * 0.5f) * 1.18f;
-        Vector3 position = bounds.Center + direction * distance;
-        Matrix4x4 view = Matrix4x4.CreateLookAt(position, bounds.Center, Vector3.UnitY);
-        Matrix4x4 projection = Matrix4x4.CreatePerspectiveFieldOfView(
-            fieldOfView,
-            width / (float)height,
-            MathF.Max(0.01f, distance - bounds.Radius * 2.0f),
-            distance + bounds.Radius * 3.0f);
-        return view * projection;
     }
 }

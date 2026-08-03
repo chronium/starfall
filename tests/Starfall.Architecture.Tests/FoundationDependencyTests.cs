@@ -22,6 +22,7 @@ public sealed class FoundationDependencyTests
     [
         .. ExpectedProductReferences.Keys,
         "Starfall.Architecture.Tests",
+        "Starfall.Client.Tests",
         "Starfall.Content.Tests",
         "Starfall.Protocol.Tests",
     ];

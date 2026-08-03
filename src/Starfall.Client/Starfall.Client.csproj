@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Starfall.Client.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Starfall.Content/Starfall.Content.csproj" />
     <ProjectReference Include="../Starfall.Protocol/Starfall.Protocol.csproj" />
     <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj"

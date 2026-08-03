@@ -37,7 +37,11 @@ Launch the persistent native SDL GPU preview with no client arguments:
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-The preview loads the staged Quaternius humanoid, continuously samples `Idle_Loop`, and exits through Escape or the window close control. The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
+The preview loads the staged Quaternius humanoid, continuously samples `Idle_Loop`, and uses the provisional Draft 0 perspective-isometric camera. Its current presentation inputs are a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw, and 45-metre focus distance; there is no camera pan, rotation, or zoom yet.
+
+Left-click produces and logs a finite ground movement intent when the deterministic ray-to-ground result lies inside the durable 200 x 200 metre zone. It does not move the character or decide whether movement succeeds. Right-click and skill keys remain reserved for later connected combat-intent work. Escape or the window close control exits the preview.
+
+The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
 
 `Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It still exits after its bounded startup probe. Later tasks own its fixed-step world lifecycle and all gameplay and networking.
 

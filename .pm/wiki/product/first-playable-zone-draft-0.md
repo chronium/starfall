@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-03T07:32:21.7348470Z
+modifiedAt: 2026-08-03T10:35:53.2715250Z
 ---
 
 ## Status and purpose
@@ -26,6 +26,14 @@ The first visible milestone requires:
 - one Client-owned snapshot/fact-to-presentation adapter.
 
 It requires no connection, selected final assets, World/Simulation dependency in Client, or client gameplay authority. CLIENT-0009 later maps real protocol snapshots into exactly the same adapter.
+
+### Provisional camera and input contract
+
+CLIENT-0005 establishes a fixed perspective-isometric presentation camera with a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw from positive X/Z, 45-metre focus distance and 0.1-to-300-metre clipping range. The current native preview focuses the already-proven technical humanoid at the durable zone centre `(100,0,100)`. These are named, tunable presentation inputs rather than gameplay or Content authority. Pan, rotation and zoom remain deferred.
+
+SDL logical-window pointer coordinates are normalized before the camera uses the current drawable-pixel aspect ratio. Picking inverts the view-projection matrix, constructs a perspective ray, intersects the `Y = 0` ground plane and accepts only finite points inside caller-supplied ground bounds. Single-precision inverse/projection error is validated within 0.01 metres.
+
+A valid left-button press creates only a `GroundMovementIntent` destination and logs it for the prototype. It does not move the technical humanoid, run collision, accept movement or mutate authoritative state. Right-click and skill keys remain unhandled until their focused combat-intent work. CLIENT-0020 reuses this camera and picking seam for the generated graybox; CLIENT-0021 later consumes the intent through its deterministic authoritative-style fixture.
 
 ### Connected walking world
 
