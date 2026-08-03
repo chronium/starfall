@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Zone Contract
 createdAt: 2026-08-02T18:32:00.1104310Z
-modifiedAt: 2026-08-03T07:31:43.8266550Z
+modifiedAt: 2026-08-03T08:32:46.9275740Z
 ---
 
 ## Ownership
@@ -43,7 +43,7 @@ The graybox may represent these with flat colour, lines, planes and boxes. Tempo
 
 ## Deferred decisions
 
-Cycle 1 does not select a Box3D dependency. SIM-0008 records that a later coordinator grooming cycle must allocate the bounded shared acquisition/integration prerequisite, followed by the approved Starfall wiring continuation before SIM-0008 may activate.
+Coordinator SHARED-0021 is the allocated bounded shared Box3D runtime prerequisite, and its canonical URI is attached to SIM-0008. The dependency is valid but waiting while SHARED-0021 remains todo; SIM-0008 must not activate or consume shared Box3D source until SHARED-0021 completes and SIM-0008 receives its own approved implementation plan.
 
 Other deferred work includes the exact proper Editor-authored scene, selected environment placement, production collision/navigation compilation, protocol quantization and reconciliation tuning, and any reusable terrain, streaming, biome or general world/component framework.
 

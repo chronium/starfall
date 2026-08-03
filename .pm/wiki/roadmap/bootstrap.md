@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-03T07:33:35.2005680Z
+modifiedAt: 2026-08-03T08:32:47.0059370Z
 ---
 
 ## Execution standard
@@ -60,10 +60,7 @@ SERVER-0002 + CONTENT-0014
 
 SERVER-0006 deliberately does not depend on CONTENT-0003. SIM-0008 depends on domain state/content rather than Protocol.
 
-The coordinator-owned Box3D prerequisite does not yet exist. SIM-0008 records it in prose only and must not activate until:
-
-1. a separately approved coordinator grooming cycle allocates the bounded shared Box3D task;
-2. SF-0009 reopens solely to attach the allocated canonical dependency.
+Coordinator SHARED-0021 is the allocated bounded shared Box3D runtime prerequisite. SF-0009 Cycle 3 attached its canonical URI to SIM-0008, so the dependency is valid but waiting while SHARED-0021 remains todo. SIM-0008 must not activate or consume shared Box3D source until SHARED-0021 completes and SIM-0008 receives its own approved implementation plan.
 
 ### Connected walking world
 

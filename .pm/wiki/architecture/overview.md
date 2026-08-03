@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-03T07:32:55.5108590Z
+modifiedAt: 2026-08-03T08:32:46.8546610Z
 ---
 
 ## Purpose
@@ -95,7 +95,7 @@ Integer authoritative state covers HP, mana, damage, XP, levels, currency, item 
 
 Spatial/physics authority uses finite Box3D-native single-precision metres. Content authoring uses BCL-only immutable System.Numerics-backed values with identical units/precision and rejects NaN, infinity and out-of-zone data. Simulation converts components one-to-one without maintaining a parallel integer-millimetre model. Stable identities and explicit sorting protect gameplay from unordered native query results.
 
-Cycle 1 does not invent a Box3D dependency. A separately approved coordinator grooming cycle must allocate the bounded shared acquisition/integration task; SF-0009 may then reopen solely to attach its canonical URI to SIM-0008 before activation.
+Coordinator SHARED-0021 is the allocated bounded shared Box3D runtime prerequisite, and SF-0009 Cycle 3 has attached its canonical URI to SIM-0008. The dependency is valid but waiting while SHARED-0021 remains todo; SIM-0008 must not activate or consume shared Box3D source until SHARED-0021 completes and SIM-0008 receives its own approved implementation plan.
 
 ## Family source and asset boundaries
 
