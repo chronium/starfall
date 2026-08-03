@@ -2,7 +2,7 @@
 
 Starfall is a server-authoritative MMORPG inspired by classic MU Online. It is an independently useful child repository in the ChronoFall project family and owns its simulation, protocol, content, presentation integration, editor and Balance Lab, build, and release lifecycle.
 
-The repository contains the approved library boundaries, architecture tests, a native shared-character preview in the player client, and a bounded executable shell for the authoritative world host. Gameplay, networking, and the authoritative world loop remain future task-owned work.
+The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a bounded executable shell for the authoritative world host. Gameplay, networking, and the authoritative world loop remain future task-owned work.
 
 ## Foundation commands
 
@@ -37,9 +37,13 @@ Launch the persistent native SDL GPU preview with no client arguments:
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-The preview loads the staged Quaternius humanoid, continuously samples `Idle_Loop`, and uses the provisional Draft 0 perspective-isometric camera. Its current presentation inputs are a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw, and 22.5-metre focus distance; there is no camera pan, rotation, or zoom yet. The development window opens at 1920 x 1080.
+The preview loads the staged Quaternius technical humanoid, continuously samples `Idle_Loop`, and renders the generated Draft 0 graybox from `Draft0GrayboxCatalog.FirstPlayable`. Flat-colour presentation layers distinguish the walkable ground, protected town, round-capped routes, three camp footprints, outer boundary, exact-height collision proxies, critical anchors, and sample spawns. These generated diagnostics do not select environment assets or change Content, collision, navigation, or gameplay state.
 
-Left-click produces and logs a finite ground movement intent when the deterministic ray-to-ground result lies inside the durable 200 x 200 metre zone. It does not move the character or decide whether movement succeeds. Right-click and skill keys remain reserved for later connected combat-intent work. Escape or the window close control exits the preview.
+The development window opens at 1920 x 1080. F1 selects the approved close player-framing fixture, F2 the whole-zone overview, F3 the town, F4 the junction, and F5 through F7 the easy, mixed, and hard camps. Tab cycles the same fixed views. Number keys remain reserved for later skill controls; there is no free pan, rotation, or zoom.
+
+The humanoid remains fixed at `(100,0,100)` only to preserve the CLIENT-0005 camera-framing evidence. It is not the gameplay spawn. CLIENT-0021 must decide whether its deterministic local movement trace begins at the catalog respawn anchor `(100,0,25)`.
+
+Left-click produces and logs a finite ground movement intent using the currently selected camera when the deterministic ray-to-ground result lies inside the durable 200 x 200 metre zone. It does not move the character or decide whether movement succeeds. Right-click and skill keys remain reserved for later connected combat-intent work. Escape or the window close control exits the preview.
 
 The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
 

@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-03T10:58:59.3347530Z
+modifiedAt: 2026-08-03T15:18:50.5342080Z
 ---
 
 ## Status and purpose
@@ -29,11 +29,19 @@ It requires no connection, selected final assets, World/Simulation dependency in
 
 ### Provisional camera and input contract
 
-CLIENT-0005 establishes a fixed perspective-isometric presentation camera with a 28-degree vertical field of view, 42-degree downward pitch, 45-degree diagonal yaw from positive X/Z, 22.5-metre focus distance and 0.1-to-300-metre clipping range. The current native preview opens at 1920 x 1080 and focuses the already-proven technical humanoid at the durable zone centre `(100,0,100)`. These are named, tunable presentation inputs rather than gameplay or Content authority. Pan, rotation and zoom remain deferred.
+CLIENT-0005 establishes the perspective-isometric projection and deterministic ground-picking seam: a 28-degree vertical field of view, 42-degree downward pitch and 45-degree diagonal yaw from positive X/Z. SDL logical-window pointer coordinates are normalized before the camera uses the current drawable-pixel aspect ratio. Picking inverts the view-projection matrix, constructs a perspective ray, intersects the authoritative/content Y = 0 ground plane, and accepts only finite points inside caller-supplied ground bounds.
 
-SDL logical-window pointer coordinates are normalized before the camera uses the current drawable-pixel aspect ratio. Picking inverts the view-projection matrix, constructs a perspective ray, intersects the `Y = 0` ground plane and accepts only finite points inside caller-supplied ground bounds. Single-precision inverse/projection error is validated within 0.01 metres.
+CLIENT-0020 consumes `Draft0GrayboxCatalog.FirstPlayable` and renders one deterministic 36-section, 870-vertex, 1,554-index generated presentation mesh through the approved shared static renderer. Section order preserves ground; south/north/west/east boundaries; town; exit and branch routes; camps; proxies; respawn/exit/junction/camp-entry anchors; and branch/local sample spawns. Exact source identities remain diagnostic section names.
 
-A valid left-button press creates only a `GroundMovementIntent` destination and logs it for the prototype. It does not move the technical humanoid, run collision, accept movement or mutate authoritative state. Right-click and skill keys remain unhandled until their focused combat-intent work. CLIENT-0020 reuses this camera and picking seam for the generated graybox; CLIENT-0021 later consumes the intent through its deterministic authoritative-style fixture.
+Presentation-only layers prevent z-fighting without changing Content or authority: walkable ground stays at Y = 0, town/camps use Y = 0.01, routes use Y = 0.02, and markers begin at Y = 0.03. Boundary and proxy boxes begin at Y = 0; proxies retain their exact Content footprints and heights. Round route caps and the long-route corner are the deterministic union of one quad per centreline segment and one 16-wedge disc per centreline point.
+
+The flat-colour diagnostic palette uses grass `(0.18,0.32,0.16)`, safe-town teal `(0.10,0.38,0.48)`, dirt `(0.50,0.32,0.14)`, easy/mixed/hard camp colours `(0.24,0.52,0.24)`, `(0.62,0.43,0.12)`, and `(0.58,0.18,0.16)`, plus role-specific boundary, proxy, anchor and spawn colours. These are disposable graybox diagnostics, not final materials or asset selection.
+
+The native 1920 x 1080 preview exposes seven fixed views without creating a free-camera system: F1 player framing, F2 overview, F3 town, F4 junction, and F5-F7 easy/mixed/hard camps. Tab cycles; repeated key events are ignored. Number keys remain reserved for Fire Arrow and Arrow Rain. The window title and console identify the active view. F1 and the five local area views use a 1-to-300-metre clipping range. The whole-zone F2 overview uses 100-to-800 metres. These tightened presentation frusta preserve the approved 0.01/0.02-metre diagnostic layers with the D32 floating-point depth buffer; they do not change Content geometry or picking.
+
+A valid left-button press creates only a `GroundMovementIntent` destination using the active camera and logs it. It does not move the humanoid, run collision, accept movement or mutate authoritative state. Right-click and skill keys remain unhandled until their focused tasks.
+
+The technical humanoid remains at `(100,0,100)` only as the approved CLIENT-0005 close-framing fixture. It is not the gameplay spawn. CLIENT-0021 must decide whether its deterministic authoritative-style trace begins at the catalog respawn anchor `(100,0,25)`, and later CLIENT-0009 must reuse the resulting snapshot/fact-to-presentation adapter.
 
 ### Connected walking world
 

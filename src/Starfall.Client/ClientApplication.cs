@@ -18,7 +18,7 @@ internal static class ClientApplication
                 Console.WriteLine(
                     $"STARFALL_CLIENT_PRESENTATION_START asset={content.Cooked.Descriptor.AssetId} " +
                     $"joints={content.Cooked.Asset.Mesh.Skin.Skeleton.JointCount} clip={content.IdleAnimation.Name}");
-                NativeCharacterPreview.Run(content);
+                NativeClientPreview.Run(content);
                 Console.WriteLine("STARFALL_CLIENT_PRESENTATION_STOP");
                 return 0;
             }

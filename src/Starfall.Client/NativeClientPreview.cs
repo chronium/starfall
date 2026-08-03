@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.SdlGpu;
 using SDL;
@@ -11,7 +12,7 @@ using static SDL.SDL3;
 
 namespace Starfall.Client;
 
-internal static unsafe class NativeCharacterPreview
+internal static unsafe class NativeClientPreview
 {
     private const int WindowWidth = 1920;
     private const int WindowHeight = 1080;
@@ -53,13 +54,16 @@ internal static unsafe class NativeCharacterPreview
         private const SDL_GPUTextureFormat DepthFormat = SDL_GPUTextureFormat.SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
         private static readonly SDL_FColor ClearColor = new() { r = 0.035f, g = 0.045f, b = 0.070f, a = 1.0f };
 
-        private readonly PerspectiveIsometricCamera camera;
+        private readonly Draft0GrayboxCameraController cameras;
+        private readonly Draft0GrayboxPresentation graybox;
         private readonly GroundBounds validGround;
         private SDL_Window* window;
         private SDL_GPUDevice* device;
         private SdlGpuSkinnedCharacterRenderer? renderer;
         private SdlGpuSkinnedMesh? mesh;
         private SdlGpuSkinningPalette? palette;
+        private SdlGpuStaticMeshRenderer? staticRenderer;
+        private SdlGpuStaticMesh? staticMesh;
         private SDL_GPUTexture* depth;
         private uint depthWidth;
         private uint depthHeight;
@@ -68,12 +72,10 @@ internal static unsafe class NativeCharacterPreview
         internal PreviewSession(SkinnedMeshDefinition sourceMesh)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
-            validGround = Draft0ZoneCatalog.FirstPlayable.Bounds;
-            camera = new PerspectiveIsometricCamera(
-                new GroundPoint(
-                    (validGround.Minimum.XMetres + validGround.Maximum.XMetres) * 0.5f,
-                    (validGround.Minimum.ZMetres + validGround.Maximum.ZMetres) * 0.5f),
-                PerspectiveIsometricCameraSettings.Draft0);
+            Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
+            validGround = layout.Specification.Bounds;
+            cameras = new Draft0GrayboxCameraController();
+            graybox = Draft0GrayboxPresentation.Create(layout);
 
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
                 throw new InvalidOperationException($"SDL video initialization failed: {SDL_GetError()}");
@@ -81,7 +83,7 @@ internal static unsafe class NativeCharacterPreview
             try
             {
                 window = SDL_CreateWindow(
-                    "Starfall - Isometric Control Prototype",
+                    CreateWindowTitle(),
                     WindowWidth,
                     WindowHeight,
                     (SDL_WindowFlags)0);
@@ -103,12 +105,18 @@ internal static unsafe class NativeCharacterPreview
                     device,
                     SDL_GetGPUSwapchainTextureFormat(device, window),
                     DepthFormat,
-                    LoadShaders(shaderFormat));
+                    LoadSkinnedShaders(shaderFormat));
+                staticRenderer = new SdlGpuStaticMeshRenderer(
+                    device,
+                    SDL_GetGPUSwapchainTextureFormat(device, window),
+                    DepthFormat,
+                    LoadStaticShaders(shaderFormat));
                 SDL_GPUCommandBuffer* uploadCommand = AcquireCommand();
                 try
                 {
                     mesh = renderer.UploadMesh(uploadCommand, sourceMesh);
                     palette = renderer.CreatePalette(sourceMesh.Skin.Skeleton.JointCount);
+                    staticMesh = staticRenderer.UploadMesh(uploadCommand, graybox.Mesh);
                     Exception? submissionFailure = TrySubmitCommand(ref uploadCommand, "mesh upload");
                     if (submissionFailure is not null)
                         throw submissionFailure;
@@ -140,7 +148,9 @@ internal static unsafe class NativeCharacterPreview
             if (!ReferenceEquals(idleAnimation.Skeleton, skin.Skeleton))
                 throw new ArgumentException("The idle animation and skin must use the same skeleton.");
 
-            Console.WriteLine("STARFALL_CLIENT_CONTROLS LeftClick=move-intent Escape=close");
+            Console.WriteLine(
+                "STARFALL_CLIENT_CONTROLS LeftClick=move-intent F1-F7=view Tab=next-view Escape=close");
+            EmitCameraDiagnostic();
             ulong frequency = SDL_GetPerformanceFrequency();
             if (frequency == 0)
                 throw new InvalidOperationException("SDL returned a zero performance-counter frequency.");
@@ -164,6 +174,12 @@ internal static unsafe class NativeCharacterPreview
                     {
                         EmitMovementIntent(sdlEvent.button);
                     }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        cameras.HandleKey(sdlEvent.key.key, sdlEvent.key.repeat))
+                    {
+                        SetWindowTitle(CreateWindowTitle());
+                        EmitCameraDiagnostic();
+                    }
                 }
 
                 if (!running)
@@ -177,8 +193,9 @@ internal static unsafe class NativeCharacterPreview
                 catch (Exception exception)
                 {
                     throw new InvalidOperationException(
-                        $"Starfall character presentation failed for clip '{idleAnimation.Name}' " +
-                        $"at sample {sampleTime:F3} seconds (joints={skin.Skeleton.JointCount}).",
+                        $"Starfall local graybox presentation failed for clip '{idleAnimation.Name}' " +
+                        $"at sample {sampleTime:F3} seconds (joints={skin.Skeleton.JointCount}, " +
+                        $"view={cameras.CurrentPreset.Name}).",
                         exception);
                 }
                 SDL_Delay(16);
@@ -198,6 +215,10 @@ internal static unsafe class NativeCharacterPreview
             mesh = null;
             renderer?.Dispose();
             renderer = null;
+            staticMesh?.Dispose();
+            staticMesh = null;
+            staticRenderer?.Dispose();
+            staticRenderer = null;
             if (device is not null)
             {
                 if (windowClaimed && window is not null)
@@ -245,8 +266,9 @@ internal static unsafe class NativeCharacterPreview
                 if (swapchain is not null)
                 {
                     EnsureDepth(swapchainWidth, swapchainHeight);
+                    PerspectiveIsometricCamera camera = cameras.Camera;
                     Matrix4x4 viewProjection = camera.CreateViewProjection(swapchainWidth, swapchainHeight);
-                    Matrix4x4 characterWorld = Matrix4x4.CreateTranslation(camera.Focus.Metres);
+                    Matrix4x4 characterWorld = Matrix4x4.CreateTranslation(100.0f, 0.0f, 100.0f);
                     var colorTarget = new SDL_GPUColorTargetInfo
                     {
                         texture = swapchain,
@@ -266,6 +288,20 @@ internal static unsafe class NativeCharacterPreview
                     pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
                     if (pass is null)
                         throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
+
+                    for (var section = 0; section < graybox.Mesh.Sections.Count; section++)
+                    {
+                        staticRenderer!.DrawSection(
+                            command,
+                            pass,
+                            staticMesh!,
+                            section,
+                            new StaticMeshDraw(
+                                Matrix4x4.Identity,
+                                viewProjection,
+                                graybox.SectionColors[section],
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
 
                     for (int section = 0; section < mesh!.SectionCount; section++)
                     {
@@ -345,6 +381,7 @@ internal static unsafe class NativeCharacterPreview
             if (drawableWidth <= 0 || drawableHeight <= 0)
                 return;
 
+            PerspectiveIsometricCamera camera = cameras.Camera;
             if (!GroundMovementInput.TryCreateIntent(
                     camera,
                     validGround,
@@ -419,7 +456,30 @@ internal static unsafe class NativeCharacterPreview
             depthHeight = height;
         }
 
-        private static SdlGpuSkinnedShaderSet LoadShaders(SDL_GPUShaderFormat format)
+        private void EmitCameraDiagnostic()
+        {
+            Draft0GrayboxCameraPreset preset = cameras.CurrentPreset;
+            Console.WriteLine(string.Create(
+                CultureInfo.InvariantCulture,
+                $"STARFALL_CLIENT_CAMERA view={preset.Name} key=F{cameras.SelectedIndex + 1} " +
+                $"focus=({preset.Focus.XMetres:F1},{preset.Focus.ZMetres:F1}) " +
+                $"distance={preset.Settings.FocusDistanceMetres:F1}"));
+        }
+
+        private string CreateWindowTitle() =>
+            $"Starfall - Draft 0 Local Graybox [{cameras.CurrentPreset.Name}]";
+
+        private void SetWindowTitle(string title)
+        {
+            byte[] titleBytes = Encoding.UTF8.GetBytes(title + '\0');
+            fixed (byte* titlePointer = titleBytes)
+            {
+                if (!SDL_SetWindowTitle(window, titlePointer))
+                    throw new InvalidOperationException($"SDL could not update the Starfall window title: {SDL_GetError()}");
+            }
+        }
+
+        private static SdlGpuSkinnedShaderSet LoadSkinnedShaders(SDL_GPUShaderFormat format)
         {
             string suffix = format switch
             {
@@ -435,6 +495,28 @@ internal static unsafe class NativeCharacterPreview
             if (!File.Exists(fragmentPath))
                 throw new FileNotFoundException($"Starfall fragment shader was not found: {fragmentPath}", fragmentPath);
             return new SdlGpuSkinnedShaderSet(
+                format,
+                File.ReadAllBytes(vertexPath),
+                File.ReadAllBytes(fragmentPath),
+                entryPoint);
+        }
+
+        private static SdlGpuStaticShaderSet LoadStaticShaders(SDL_GPUShaderFormat format)
+        {
+            string suffix = format switch
+            {
+                SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_MSL => ".msl",
+                SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_SPIRV => ".spv",
+                _ => throw new NotSupportedException($"Unsupported Starfall shader format: {format}."),
+            };
+            string entryPoint = format == SDL_GPUShaderFormat.SDL_GPU_SHADERFORMAT_MSL ? "main0" : "main";
+            string vertexPath = Path.Combine(AppContext.BaseDirectory, "shaders", "static-mesh.vert" + suffix);
+            string fragmentPath = Path.Combine(AppContext.BaseDirectory, "shaders", "static-mesh.frag" + suffix);
+            if (!File.Exists(vertexPath))
+                throw new FileNotFoundException($"Starfall static vertex shader was not found: {vertexPath}", vertexPath);
+            if (!File.Exists(fragmentPath))
+                throw new FileNotFoundException($"Starfall static fragment shader was not found: {fragmentPath}", fragmentPath);
+            return new SdlGpuStaticShaderSet(
                 format,
                 File.ReadAllBytes(vertexPath),
                 File.ReadAllBytes(fragmentPath),
