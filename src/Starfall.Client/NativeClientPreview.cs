@@ -22,7 +22,7 @@ internal static unsafe class NativeClientPreview
         ArgumentNullException.ThrowIfNull(content);
         ConfigureNativeSdl();
         using var session = new PreviewSession(content.Cooked.Asset.Mesh, visible: true);
-        session.Run(content.IdleAnimation, content.Cooked.Asset.Mesh.Skin);
+        session.Run(content.IdleAnimation, content.WalkAnimation, content.Cooked.Asset.Mesh.Skin);
     }
 
     internal static void CaptureSuite(CharacterPresentationContent content, string outputDirectory)
@@ -64,6 +64,8 @@ internal static unsafe class NativeClientPreview
         private static readonly SDL_FColor ClearColor = new() { r = 0.035f, g = 0.045f, b = 0.070f, a = 1.0f };
 
         private readonly Draft0GrayboxCameraController cameras;
+        private readonly Draft0LocalWalkingFixture fixture;
+        private readonly FixedTickAccumulator fixedTicks = new();
         private readonly Draft0GrayboxPresentation graybox;
         private readonly GroundBounds validGround;
         private readonly SDL_GPUTextureFormat colorFormat;
@@ -85,6 +87,7 @@ internal static unsafe class NativeClientPreview
             Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
             validGround = layout.Specification.Bounds;
             cameras = new Draft0GrayboxCameraController();
+            fixture = new Draft0LocalWalkingFixture(layout.Town.RespawnAnchor);
             graybox = Draft0GrayboxPresentation.Create(layout);
 
             if (!SDL_Init(SDL_InitFlags.SDL_INIT_VIDEO))
@@ -152,20 +155,31 @@ internal static unsafe class NativeClientPreview
             }
         }
 
-        internal void Run(AnimationClip idleAnimation, SkinDefinition skin)
+        internal void Run(
+            AnimationClip idleAnimation,
+            AnimationClip walkAnimation,
+            SkinDefinition skin)
         {
             ArgumentNullException.ThrowIfNull(idleAnimation);
+            ArgumentNullException.ThrowIfNull(walkAnimation);
             ArgumentNullException.ThrowIfNull(skin);
-            if (!ReferenceEquals(idleAnimation.Skeleton, skin.Skeleton))
-                throw new ArgumentException("The idle animation and skin must use the same skeleton.");
+            if (!ReferenceEquals(idleAnimation.Skeleton, skin.Skeleton) ||
+                !ReferenceEquals(walkAnimation.Skeleton, skin.Skeleton))
+            {
+                throw new ArgumentException("The locomotion animations and skin must use the same skeleton.");
+            }
+
+            var playback = new TechnicalPlayerLocomotionPlayback(idleAnimation, walkAnimation);
 
             Console.WriteLine(
-                "STARFALL_CLIENT_CONTROLS LeftClick=move-intent F1-F7=view Tab=next-view Escape=close");
+                "STARFALL_CLIENT_CONTROLS LeftClick=move-intent KPPlus/KPMinus=speed " +
+                "F1-F7=view Tab=next-view Up/Down=F1-distance Escape=close");
+            SetWindowTitle(CreateWindowTitle());
             EmitCameraDiagnostic();
             ulong frequency = SDL_GetPerformanceFrequency();
             if (frequency == 0)
                 throw new InvalidOperationException("SDL returned a zero performance-counter frequency.");
-            ulong started = SDL_GetPerformanceCounter();
+            ulong previousCounter = SDL_GetPerformanceCounter();
 
             bool running = true;
             while (running)
@@ -183,10 +197,10 @@ internal static unsafe class NativeClientPreview
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN &&
                         sdlEvent.button.Button == SDLButton.SDL_BUTTON_LEFT)
                     {
-                        EmitMovementIntent(sdlEvent.button);
+                        SubmitMovementIntent(sdlEvent.button);
                     }
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
-                        cameras.HandleKey(sdlEvent.key.key, sdlEvent.key.repeat))
+                        HandlePreviewKey(sdlEvent.key.key, sdlEvent.key.repeat))
                     {
                         SetWindowTitle(CreateWindowTitle());
                         EmitCameraDiagnostic();
@@ -196,17 +210,27 @@ internal static unsafe class NativeClientPreview
                 if (!running)
                     break;
 
-                float sampleTime = (float)((SDL_GetPerformanceCounter() - started) / (double)frequency);
+                ulong counter = SDL_GetPerformanceCounter();
+                double elapsedSeconds = (counter - previousCounter) / (double)frequency;
+                previousCounter = counter;
+                double presentationElapsed = Math.Min(elapsedSeconds, FixedTickAccumulator.MaximumElapsedSeconds);
+                fixedTicks.Advance(elapsedSeconds, fixture.AdvanceTick);
+                TechnicalPlayerPresentationState presentation =
+                    TechnicalPlayerPresentationAdapter.Adapt(fixture.Snapshot);
+                playback.SetLocomotion(presentation.Locomotion);
+                playback.Advance(
+                    presentationElapsed,
+                    presentation.Snapshot.VelocityMetresPerSecond.Length());
                 try
                 {
-                    RenderFrame(idleAnimation, skin, sampleTime);
+                    RenderFrame(playback.CreatePose(), skin, presentation);
                 }
                 catch (Exception exception)
                 {
                     throw new InvalidOperationException(
-                        $"Starfall local graybox presentation failed for clip '{idleAnimation.Name}' " +
-                        $"at sample {sampleTime:F3} seconds (joints={skin.Skeleton.JointCount}, " +
-                        $"view={cameras.CurrentPreset.Name}).",
+                        $"Starfall local walking presentation failed at tick {presentation.Snapshot.Tick} " +
+                        $"(joints={skin.Skeleton.JointCount}, view={cameras.CurrentPreset.Name}, " +
+                        $"speed={fixture.SpeedMetresPerSecond:F1} m/s).",
                         exception);
                 }
                 SDL_Delay(16);
@@ -238,6 +262,14 @@ internal static unsafe class NativeClientPreview
                     Draft0GrayboxCaptureSuite.Width,
                     Draft0GrayboxCaptureSuite.Height);
 
+                var historicalSnapshot = new TechnicalPlayerSnapshot(
+                    Draft0LocalWalkingFixture.Identity,
+                    tick: 0,
+                    new GroundPoint(100.0f, 100.0f),
+                    Vector2.Zero,
+                    Vector2.UnitY);
+                TechnicalPlayerPresentationState historicalPresentation =
+                    TechnicalPlayerPresentationAdapter.Adapt(historicalSnapshot);
                 var images = new List<RgbaImage>(Draft0GrayboxCaptureSuite.Captures.Count);
                 foreach (Draft0GrayboxCapture capture in Draft0GrayboxCaptureSuite.Captures)
                 {
@@ -247,7 +279,8 @@ internal static unsafe class NativeClientPreview
                         skin,
                         Draft0GrayboxCaptureSuite.AnimationSampleSeconds,
                         captureColor,
-                        captureDepth));
+                        captureDepth,
+                        historicalPresentation));
                 }
 
                 IReadOnlyList<ulong> fingerprints = Draft0GrayboxCaptureSuite.Validate(images);
@@ -308,9 +341,12 @@ internal static unsafe class NativeClientPreview
             SDL_Quit();
         }
 
-        private void RenderFrame(AnimationClip animation, SkinDefinition skin, float sampleTime)
+        private void RenderFrame(
+            SkeletonPose pose,
+            SkinDefinition skin,
+            TechnicalPlayerPresentationState presentation)
         {
-            SkinningPalette sourcePalette = EvaluatePalette(animation, skin, sampleTime);
+            SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
 
             SDL_GPUCommandBuffer* command = AcquireCommand();
             bool requiresSubmission = false;
@@ -343,7 +379,8 @@ internal static unsafe class NativeClientPreview
                         swapchainWidth,
                         swapchainHeight,
                         sourcePalette,
-                        cameras.Camera);
+                        presentation,
+                        cameras.CreateCamera(presentation.Snapshot.Position));
                 }
             }
             catch (Exception exception)
@@ -373,9 +410,11 @@ internal static unsafe class NativeClientPreview
             SkinDefinition skin,
             float sampleTime,
             SDL_GPUTexture* color,
-            SDL_GPUTexture* captureDepth)
+            SDL_GPUTexture* captureDepth,
+            TechnicalPlayerPresentationState presentation)
         {
-            SkinningPalette sourcePalette = EvaluatePalette(animation, skin, sampleTime);
+            SkeletonPose pose = AnimationSampler.Sample(animation, sampleTime, AnimationPlaybackMode.Loop);
+            SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
             SDL_GPUCommandBuffer* command = AcquireCommand();
             try
             {
@@ -386,7 +425,8 @@ internal static unsafe class NativeClientPreview
                     Draft0GrayboxCaptureSuite.Width,
                     Draft0GrayboxCaptureSuite.Height,
                     sourcePalette,
-                    cameras.Camera);
+                    presentation,
+                    cameras.CreateCamera(presentation.Snapshot.Position));
             }
             catch (Exception exception)
             {
@@ -418,11 +458,11 @@ internal static unsafe class NativeClientPreview
             uint width,
             uint height,
             SkinningPalette sourcePalette,
+            TechnicalPlayerPresentationState presentation,
             PerspectiveIsometricCamera camera)
         {
             renderer!.UploadPalette(command, palette!, sourcePalette);
             Matrix4x4 viewProjection = camera.CreateViewProjection(width, height);
-            Matrix4x4 characterWorld = Matrix4x4.CreateTranslation(100.0f, 0.0f, 100.0f);
             var colorTarget = new SDL_GPUColorTargetInfo
             {
                 texture = color,
@@ -470,7 +510,7 @@ internal static unsafe class NativeClientPreview
                         palette!,
                         section,
                         new SkinnedCharacterDraw(
-                            characterWorld,
+                            presentation.World,
                             viewProjection,
                             sectionColor,
                             new Vector3(-0.35f, -0.70f, -0.62f)));
@@ -482,12 +522,8 @@ internal static unsafe class NativeClientPreview
             }
         }
 
-        private static SkinningPalette EvaluatePalette(
-            AnimationClip animation,
-            SkinDefinition skin,
-            float sampleTime)
+        private static SkinningPalette EvaluatePalette(SkeletonPose pose, SkinDefinition skin)
         {
-            SkeletonPose pose = AnimationSampler.Sample(animation, sampleTime, AnimationPlaybackMode.Loop);
             SkeletonGlobalPose global = SkeletonPoseEvaluator.EvaluateGlobal(pose);
             return SkeletonPoseEvaluator.CreateSkinningPalette(skin, global);
         }
@@ -500,7 +536,7 @@ internal static unsafe class NativeClientPreview
             return command;
         }
 
-        private void EmitMovementIntent(SDL_MouseButtonEvent mouseButton)
+        private void SubmitMovementIntent(SDL_MouseButtonEvent mouseButton)
         {
             int logicalWidth;
             int logicalHeight;
@@ -514,7 +550,7 @@ internal static unsafe class NativeClientPreview
             if (drawableWidth <= 0 || drawableHeight <= 0)
                 return;
 
-            PerspectiveIsometricCamera camera = cameras.Camera;
+            PerspectiveIsometricCamera camera = cameras.CreateCamera(fixture.Snapshot.Position);
             if (!GroundMovementInput.TryCreateIntent(
                     camera,
                     validGround,
@@ -529,9 +565,24 @@ internal static unsafe class NativeClientPreview
                 return;
             }
 
+            fixture.Submit(intent);
             Console.WriteLine(string.Create(
                 CultureInfo.InvariantCulture,
                 $"STARFALL_CLIENT_MOVE_INTENT x={intent.Destination.XMetres:F3} z={intent.Destination.ZMetres:F3}"));
+        }
+
+        private bool HandlePreviewKey(SDL_Keycode key, bool repeated)
+        {
+            if (cameras.HandleKey(key, repeated))
+                return true;
+            if (!Draft0LocalWalkingControls.TryAdjustSpeed(fixture, key, repeated))
+                return false;
+
+            Console.WriteLine(string.Create(
+                CultureInfo.InvariantCulture,
+                $"STARFALL_CLIENT_FIXTURE_SPEED tenths={fixture.SpeedTenths} " +
+                $"metresPerSecond={fixture.SpeedMetresPerSecond:F1}"));
+            return true;
         }
 
         private static Exception? TryCancelCommand(
@@ -615,15 +666,18 @@ internal static unsafe class NativeClientPreview
         private void EmitCameraDiagnostic()
         {
             Draft0GrayboxCameraPreset preset = cameras.CurrentPreset;
+            PerspectiveIsometricCamera camera = cameras.CreateCamera(fixture.Snapshot.Position);
             Console.WriteLine(string.Create(
                 CultureInfo.InvariantCulture,
                 $"STARFALL_CLIENT_CAMERA view={preset.Name} key=F{cameras.SelectedIndex + 1} " +
-                $"focus=({preset.Focus.XMetres:F1},{preset.Focus.ZMetres:F1}) " +
-                $"distance={preset.Settings.FocusDistanceMetres:F1}"));
+                $"focus=({camera.Focus.XMetres:F1},{camera.Focus.ZMetres:F1}) " +
+                $"distance={cameras.CurrentDistanceMetres:F1} speed={fixture.SpeedMetresPerSecond:F1}"));
         }
 
-        private string CreateWindowTitle() =>
-            $"Starfall - Draft 0 Local Graybox [{cameras.CurrentPreset.Name}]";
+        private string CreateWindowTitle() => Draft0LocalPreviewTitle.Create(
+            cameras.CurrentPreset.Name,
+            fixture.SpeedTenths,
+            cameras.CurrentDistanceMetres);
 
         private void SetWindowTitle(string title)
         {

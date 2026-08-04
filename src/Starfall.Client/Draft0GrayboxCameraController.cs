@@ -10,9 +10,14 @@ internal sealed record Draft0GrayboxCameraPreset(
 
 internal sealed class Draft0GrayboxCameraController
 {
+    internal const float InitialPlayerDistanceMetres = 22.5f;
+    internal const float MinimumPlayerDistanceMetres = 10.0f;
+    internal const float MaximumPlayerDistanceMetres = 60.0f;
+    internal const float PlayerDistanceStepMetres = 0.5f;
+
     private static readonly Draft0GrayboxCameraPreset[] Presets =
     [
-        Preset("player-fixture", 100.0f, 100.0f, 22.5f, 1.0f, 300.0f),
+        Preset("player-fixture", 100.0f, 100.0f, InitialPlayerDistanceMetres, 1.0f, 300.0f),
         Preset("overview", 100.0f, 100.0f, 560.0f, 100.0f, 800.0f),
         Preset("town", 100.0f, 30.0f, 85.0f, 1.0f, 300.0f),
         Preset("junction", 100.0f, 70.0f, 80.0f, 1.0f, 300.0f),
@@ -22,14 +27,34 @@ internal sealed class Draft0GrayboxCameraController
     ];
 
     private int selectedIndex;
+    private float playerDistanceMetres = InitialPlayerDistanceMetres;
 
     internal Draft0GrayboxCameraPreset CurrentPreset => Presets[selectedIndex];
-
-    internal PerspectiveIsometricCamera Camera => new(CurrentPreset.Focus, CurrentPreset.Settings);
 
     internal int SelectedIndex => selectedIndex;
 
     internal static IReadOnlyList<Draft0GrayboxCameraPreset> All => Presets;
+
+    internal float CurrentDistanceMetres => selectedIndex == 0
+        ? playerDistanceMetres
+        : CurrentPreset.Settings.FocusDistanceMetres;
+
+    internal PerspectiveIsometricCamera CreateCamera(GroundPoint playerPosition)
+    {
+        Draft0GrayboxCameraPreset preset = CurrentPreset;
+        if (selectedIndex != 0)
+            return new PerspectiveIsometricCamera(preset.Focus, preset.Settings);
+
+        return new PerspectiveIsometricCamera(
+            playerPosition,
+            new PerspectiveIsometricCameraSettings(
+                preset.Settings.VerticalFieldOfViewDegrees,
+                preset.Settings.DownwardPitchDegrees,
+                preset.Settings.YawDegrees,
+                playerDistanceMetres,
+                preset.Settings.NearPlaneMetres,
+                preset.Settings.FarPlaneMetres));
+    }
 
     internal void SelectPreset(int index)
     {
@@ -60,10 +85,27 @@ internal sealed class Draft0GrayboxCameraController
             return true;
         }
 
+        if (selectedIndex == 0 && key == SDL_Keycode.SDLK_UP)
+            return AdjustPlayerDistance(-PlayerDistanceStepMetres);
+        if (selectedIndex == 0 && key == SDL_Keycode.SDLK_DOWN)
+            return AdjustPlayerDistance(PlayerDistanceStepMetres);
+
         if (key != SDL_Keycode.SDLK_TAB)
             return false;
 
         selectedIndex = (selectedIndex + 1) % Presets.Length;
+        return true;
+    }
+
+    private bool AdjustPlayerDistance(float delta)
+    {
+        float adjusted = Math.Clamp(
+            playerDistanceMetres + delta,
+            MinimumPlayerDistanceMetres,
+            MaximumPlayerDistanceMetres);
+        if (adjusted == playerDistanceMetres)
+            return false;
+        playerDistanceMetres = adjusted;
         return true;
     }
 

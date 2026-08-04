@@ -220,6 +220,48 @@ public sealed class Draft0GrayboxPresentationTests
     }
 
     [Fact]
+    public void PlayerViewFollowsThePlayerAndTunesDistanceWithoutChangingFixedViews()
+    {
+        var controller = new Draft0GrayboxCameraController();
+        var player = new GroundPoint(100.0f, 25.0f);
+
+        PerspectiveIsometricCamera initial = controller.CreateCamera(player);
+        Assert.Equal(player, initial.Focus);
+        Assert.Equal(22.5f, controller.CurrentDistanceMetres);
+
+        Assert.False(controller.HandleKey(SDL_Keycode.SDLK_UP, repeated: true));
+        Assert.True(controller.HandleKey(SDL_Keycode.SDLK_UP, repeated: false));
+        Assert.Equal(22.0f, controller.CurrentDistanceMetres);
+        Assert.True(controller.HandleKey(SDL_Keycode.SDLK_DOWN, repeated: false));
+        Assert.Equal(22.5f, controller.CurrentDistanceMetres);
+
+        controller.SelectPreset(1);
+        Assert.False(controller.HandleKey(SDL_Keycode.SDLK_UP, repeated: false));
+        Assert.Equal(560.0f, controller.CurrentDistanceMetres);
+        Assert.Equal(new GroundPoint(100.0f, 100.0f), controller.CreateCamera(player).Focus);
+
+        controller.SelectPreset(0);
+        Assert.Equal(22.5f, controller.CurrentDistanceMetres);
+        Assert.Equal(player, controller.CreateCamera(player).Focus);
+    }
+
+    [Fact]
+    public void PlayerViewDistanceClampsToTheApprovedRange()
+    {
+        var controller = new Draft0GrayboxCameraController();
+
+        for (var index = 0; index < 100; index++)
+            _ = controller.HandleKey(SDL_Keycode.SDLK_UP, repeated: false);
+        Assert.Equal(10.0f, controller.CurrentDistanceMetres);
+        Assert.False(controller.HandleKey(SDL_Keycode.SDLK_UP, repeated: false));
+
+        for (var index = 0; index < 200; index++)
+            _ = controller.HandleKey(SDL_Keycode.SDLK_DOWN, repeated: false);
+        Assert.Equal(60.0f, controller.CurrentDistanceMetres);
+        Assert.False(controller.HandleKey(SDL_Keycode.SDLK_DOWN, repeated: false));
+    }
+
+    [Fact]
     public void CameraPresetsFreezeApprovedFocusAndProjectionInputs()
     {
         string[] names = Draft0GrayboxCameraController.All.Select(static preset => preset.Name).ToArray();

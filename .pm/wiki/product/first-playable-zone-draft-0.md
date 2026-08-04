@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-03T15:55:30.9033860Z
+modifiedAt: 2026-08-04T08:04:03.1563680Z
 ---
 
 ## Status and purpose
@@ -27,23 +27,25 @@ The first visible milestone requires:
 
 It requires no connection, selected final assets, World/Simulation dependency in Client, or client gameplay authority. CLIENT-0009 later maps real protocol snapshots into exactly the same adapter.
 
-### Provisional camera and input contract
+### Provisional camera, input and local presentation contract
 
 CLIENT-0005 establishes the perspective-isometric projection and deterministic ground-picking seam: a 28-degree vertical field of view, 42-degree downward pitch and 45-degree diagonal yaw from positive X/Z. SDL logical-window pointer coordinates are normalized before the camera uses the current drawable-pixel aspect ratio. Picking inverts the view-projection matrix, constructs a perspective ray, intersects the authoritative/content Y = 0 ground plane, and accepts only finite points inside caller-supplied ground bounds.
 
 CLIENT-0020 consumes `Draft0GrayboxCatalog.FirstPlayable` and renders one deterministic 36-section, 870-vertex, 1,554-index generated presentation mesh through the approved shared static renderer. Section order preserves ground; south/north/west/east boundaries; town; exit and branch routes; camps; proxies; respawn/exit/junction/camp-entry anchors; and branch/local sample spawns. Exact source identities remain diagnostic section names.
 
-Presentation-only layers prevent z-fighting without changing Content or authority: walkable ground stays at Y = 0, town/camps use Y = 0.01, routes use Y = 0.02, and markers begin at Y = 0.03. Boundary and proxy boxes begin at Y = 0; proxies retain their exact Content footprints and heights. Round route caps and the long-route corner are the deterministic union of one quad per centreline segment and one 16-wedge disc per centreline point.
+Presentation-only layers prevent z-fighting without changing Content or authority: walkable ground stays at Y = 0, town/camps use Y = 0.01, routes use Y = 0.02, and markers begin at Y = 0.03. Boundary and proxy boxes begin at Y = 0; proxies retain their exact Content footprints and heights. Round route caps and the long-route corner are the deterministic union of one quad per centreline segment and one 16-wedge disc per centreline point. The disposable flat-colour palette distinguishes ground, town, routes, camps, boundaries, proxies, anchors and spawns without selecting final materials or assets.
 
-The flat-colour diagnostic palette uses grass `(0.18,0.32,0.16)`, safe-town teal `(0.10,0.38,0.48)`, dirt `(0.50,0.32,0.14)`, easy/mixed/hard camp colours `(0.24,0.52,0.24)`, `(0.62,0.43,0.12)`, and `(0.58,0.18,0.16)`, plus role-specific boundary, proxy, anchor and spawn colours. These are disposable graybox diagnostics, not final materials or asset selection.
+CLIENT-0021 completes the local walking milestone without adding gameplay authority. `local_technical_player` begins at the catalog respawn anchor `(100,0,25)`, facing `+Z`. Left-click remains an intent; a deterministic Client-local stand-in consumes the newest destination on later 60 Hz ticks and feeds one stateless snapshot/fact-to-presentation adapter. It moves directly without collision, navigation, pathfinding, town enforcement or gameplay acceptance.
 
-The native 1920 x 1080 preview exposes seven fixed views without creating a free-camera system: F1 player framing, F2 overview, F3 town, F4 junction, and F5-F7 easy/mixed/hard camps. Tab cycles; repeated key events are ignored. Number keys remain reserved for Fire Arrow and Arrow Rain. The window title and console identify the active view. F1 and the five local area views use a 1-to-300-metre clipping range. The whole-zone F2 overview uses 100-to-800 metres. These tightened presentation frusta preserve the approved 0.01/0.02-metre diagnostic layers with the D32 floating-point depth buffer; they do not change Content geometry or picking.
+The provisional speed is stored as integer tenths: `40` means 4.0 m/s and the session-local range is `1` through `120`. Numpad `+`/`-` change exactly one tenth and ignore repeat events. At the default speed one tick advances at most 1/15 metre before destination clamping.
 
-A valid left-button press creates only a `GroundMovementIntent` destination using the active camera and logs it. It does not move the humanoid, run collision, accept movement or mutate authoritative state. Right-click and skill keys remain unhandled until their focused tasks.
+The renderer consumes only the latest completed snapshot. It deliberately performs no position/facing interpolation, smoothing, prediction or reconciliation; visible higher-refresh stepping is evidence for a later focused presentation task rather than scope for this adapter. The technical cook remains unchanged and Starfall blends its existing `Idle_Loop` and `Walk_Loop` over 0.25 seconds as presentation. `Walk_Loop` uses the presentation-only square-root cadence `sqrt(planar speed / 1.0 m/s)`, giving 1x at 1.0 m/s and 2x at the 4.0 m/s default without changing authoritative movement. It reduces obvious sliding while high-speed walking remains evidence for a later locomotion-band task.
 
-The technical humanoid remains at `(100,0,100)` only as the approved CLIENT-0005 close-framing fixture. It is not the gameplay spawn. CLIENT-0021 must decide whether its deterministic authoritative-style trace begins at the catalog respawn anchor `(100,0,25)`, and later CLIENT-0009 must reuse the resulting snapshot/fact-to-presentation adapter.
+The native 1920 x 1080 preview retains seven bounded views without creating a free-camera system. F1 directly follows the latest presented position; Up/Down adjust only its session-local distance by 0.5 metre from 10.0 through 60.0 metres, beginning at 22.5 metres. F2 is the fixed overview, F3 the fixed town view, F4 the fixed junction view and F5-F7 the fixed easy/mixed/hard camp views; those diagnostics ignore Up/Down. Tab cycles and repeated key events are ignored. Number keys remain reserved for Fire Arrow and Arrow Rain. F1 and the five local area views retain 1-to-300-metre clipping; F2 retains 100-to-800 metres. The title and console expose view, speed and camera distance.
 
-CLIENT-0024 adds a deterministic native review path for those exact seven presets. Starfall.Client renders the same scene path into a caller-owned 1,920 by 1,080 GPU target, samples `Idle_Loop` at 0.500 seconds, validates the opaque/distinct frames and writes explicitly requested PNGs through the bounded coordinator capture helper. The fixed recipe, filenames and native evidence are recorded at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/draft-0-graybox-capture-suite.
+CLIENT-0024 remains deterministic historical graybox evidence. Its seven-view capture recipe explicitly supplies the idle `(100,0,100)` CLIENT-0005 fixture, frozen 22.5-metre F1 distance and `Idle_Loop` sample at 0.500 seconds through the same adapter/render path. The capture contract remains at `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/draft-0-graybox-capture-suite`.
+
+Durable adapter contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/client-world-presentation-adapter`.
 
 ### Connected walking world
 

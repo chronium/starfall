@@ -15,7 +15,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - CLIENT-0021
   - CLIENT-0009
   - CLIENT-0022
   - CLIENT-0023

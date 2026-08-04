@@ -53,10 +53,12 @@ internal static class ClientApplication
 
 internal sealed record CharacterPresentationContent(
     CookedSkeletalCharacterAsset Cooked,
-    AnimationClip IdleAnimation)
+    AnimationClip IdleAnimation,
+    AnimationClip WalkAnimation)
 {
     private const string ExpectedAssetId = "quaternius-ual1-standard";
     private const string ExpectedIdleClip = "Idle_Loop";
+    private const string ExpectedWalkClip = "Walk_Loop";
     private const int ExpectedJointCount = 65;
 
     private static readonly string[] ExpectedClips =
@@ -106,7 +108,9 @@ internal sealed record CharacterPresentationContent(
 
         AnimationClip idle = cooked.Asset.Animations.Single(
             clip => string.Equals(clip.Name, ExpectedIdleClip, StringComparison.Ordinal));
-        return new CharacterPresentationContent(cooked, idle);
+        AnimationClip walk = cooked.Asset.Animations.Single(
+            clip => string.Equals(clip.Name, ExpectedWalkClip, StringComparison.Ordinal));
+        return new CharacterPresentationContent(cooked, idle, walk);
     }
 
     internal string CreateValidationSummary() =>
