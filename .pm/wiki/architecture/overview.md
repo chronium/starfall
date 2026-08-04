@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T14:55:58.0159370Z
+modifiedAt: 2026-08-04T16:38:55.7648640Z
 ---
 
 ## Purpose
@@ -34,19 +34,25 @@ Logical identity/lobby, world, chat, operations and persistence boundaries do no
 Starfall.Content
 Starfall.Protocol
 Starfall.Simulation -> Content + approved coordinator ChronoFall.Box3D source
-Starfall.World -> Content, Protocol, Simulation
-Starfall.Client -> Content, Protocol
+Starfall.World -> Content, Protocol, Simulation + approved coordinator network adapter source
+Starfall.Client -> Content, Protocol + approved coordinator character-presentation and network adapter source
 Starfall.Editor -> Content
 Starfall.BalanceLab -> Content, Simulation
 ~~~
 
 Content and Protocol remain product-dependency-free. Simulation never depends on Protocol. Client never references World or Simulation. World is the composition boundary between protocol, content and simulation. Editor authoring stays separate from compact runtime data; Balance Lab remains headless.
 
-CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through ChronoFallFamilyRoot. Future EDITOR-0007 may add a separately explicit, architecture-tested static-rendering allowlist for Editor; no such reference exists merely because the task is planned.
+CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through ChronoFallFamilyRoot. BUILD-0006 adds only the coordinator network adapter to Client and World; its BCL contracts and pinned LiteNetLib source remain transitive. The local Starfall product graph does not change. Content, Protocol, Simulation, Editor and Balance Lab remain network-transport-free, and World remains presentation-free.
+
+The Client and World network factories are internal composition seams only. BUILD-0006 does not invoke them from either executable or define product framing, channels, delivery policy, admission serialization, peer/session binding, key provisioning or disconnect behavior. Those decisions remain with the separately planned CLIENT-0009 cycle.
+
+Future EDITOR-0007 may add a separately explicit, architecture-tested static-rendering allowlist for Editor; no such reference exists merely because the task is planned.
 
 `EDITOR-0003` preserves Editor and BalanceLab as libraries while defining their separate responsibilities. Any Balance Lab executable-host choice belongs to `EDITOR-0004`. Authoritative and presentation outputs must derive from the same fully validated authoring revision, share stable cross-output identities, and be emitted together only after complete validation; runtime consumers never depend on editor document or object identity.
 
 Editor and Balance Lab contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/editor-and-balance-lab-boundaries
+
+Network adoption contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/network-transport-adoption
 
 ## Evidence-driven vertical-slice order
 
@@ -85,12 +91,19 @@ PROTOCOL-0002 -> SERVER-0003
 PROTOCOL-0003 -> PROTOCOL-0004
 SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004
   -> SERVER-0005
+
+parent SHARED-0023 + BUILD-0003 + BUILD-0005
+  -> BUILD-0006
+
+SERVER-0005 + PROTOCOL-0004 + CLIENT-0021 + BUILD-0006
   -> CLIENT-0009
 ```
 
-`SERVER-0005` now closes the authoritative in-process lane: admission creates and binds one generic player, encoded movement commands resolve through host-context session identity, Simulation remains authoritative for spatial acceptance, and World emits ordered encoded snapshots or immediate corrections. Draining preserves the active exchange; stopping clears it.
+`SERVER-0005` closes the authoritative in-process lane: admission creates and binds one generic player, encoded movement commands resolve through host-context session identity, Simulation remains authoritative for spatial acceptance, and World emits ordered encoded snapshots or immediate corrections. Draining preserves the active exchange; stopping clears it.
 
-The second visible milestone still requires a real transport boundary before `CLIENT-0009` can activate. Shared transport selection/promotion and its Starfall adoption must be separately planned from the coordinator family. The eventual Client consumer reuses the same stateless fact-to-presentation adapter proven by the local fixture; it does not create another movement presentation path.
+Coordinator `SHARED-0023` supplies the opaque low-level transport. Starfall `BUILD-0006` adopts its source-built adapter only in Client and World and makes that adoption a real dependency of `CLIENT-0009`. Neither task defines Starfall's later product packet policy by implication.
+
+`CLIENT-0009` remains the separately planned connected-walking implementation. It must define Starfall-owned admission and gameplay transport binding and reuse the same stateless fact-to-presentation adapter proven by the local fixture; it does not create another movement presentation path.
 
 Monster snapshots are not part of this core connected-player walking exchange. Their later focused server exchange and Client consumer extend the connected world after bounded monster behavior exists, without delaying the local walking graybox or inflating this first player-only boundary.
 

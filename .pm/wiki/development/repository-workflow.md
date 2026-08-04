@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-04T11:24:59.1549890Z
+modifiedAt: 2026-08-04T16:39:28.9006310Z
 ---
 
 ## Purpose
@@ -72,25 +72,32 @@ Run the native presentation preview with:
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-The preview loads the staged Quaternius humanoid, loops `Idle_Loop` through SDL GPU, and closes with Escape or the window close control. The content probe loads the same runtime cook without initializing SDL and prints a deterministic asset, joint, and clip summary. Unknown arguments fail with exit code 2. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service. `SERVER-0002` owns its empty world/channel identity, `Created -> Running -> Draining -> Stopped` lifecycle and fixed-step scheduler. It does not load a zone, create entities or sessions, initialize physics, or expose networking. `CLIENT-0006` owns the first presentation runtime integration.
+The preview loads the staged Quaternius humanoid, loops `Idle_Loop` through SDL GPU, and closes with Escape or the window close control. The content probe loads the same runtime cook without initializing SDL and prints a deterministic asset, joint, and clip summary. Unknown arguments fail with exit code 2. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service.
 
-The architecture tests enforce the expected solution projects, exact executable/library split, bounded Client startup, exact finite World lifecycle output, required World identities, argument rejection, approved direct project-reference graph, absence of product package dependencies, and headless output exclusion of client/editor/rendering artifacts. They also enforce the exact client-only coordinator source allowlist and reject literal repository escapes, absolute paths, arbitrary property-rooted references, coordinator imports, and Royale references.
+The architecture tests enforce the expected solution projects, executable/library split, bounded process behavior, required World identities, approved local graph, absence of product packages, and headless output exclusions. Family-source policy is exact per consumer: Client may use the approved character-presentation set and network adapter; World may use only the network adapter; Simulation may use only the managed Box3D boundary. Content, Protocol, Editor and Balance Lab have no family references. Tests reject literal repository escapes, absolute paths, arbitrary property roots, direct upstream references, coordinator imports and Royale references.
+
+The network composition smoke tests start each process-local factory on an ephemeral port and dispose it without changing either executable's runtime behavior. Output tests require the contracts, adapter and LiteNetLib assemblies in Client and World only.
 
 When an approved task changes a dependency or executable boundary, update the tests and `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/overview` together.
 
 ## Coordinator family checkout
 
-`Directory.Build.props` declares `ChronoFallFamilyRoot` once. When no override is supplied, it normalizes the directory above the Starfall checkout, matching the expected `coordinator/starfall` topology. An override must identify an equivalent coordinator root; individual projects must not invent their own parent-relative or absolute source paths. The same file defines `StarfallRepositoryRoot` for repository-local generated-content routing, so Client project files do not scatter relative traversal.
+`Directory.Build.props` declares `ChronoFallFamilyRoot` once. When no override is supplied, it normalizes the directory above the Starfall checkout, matching the expected `coordinator/starfall` topology. An override must identify an equivalent coordinator root; individual projects must not invent parent-relative or absolute source paths. The same file defines `StarfallRepositoryRoot` for repository-local generated-content routing.
 
-The implemented source-consumption boundary is limited to `Starfall.Client` references to:
+The exact direct family-source references are:
 
-- `ChronoFall.CharacterPresentation`;
-- `ChronoFall.CharacterPresentation.Cooking`;
-- `ChronoFall.CharacterPresentation.SdlGpu`.
+- `Starfall.Client`: `ChronoFall.CharacterPresentation`, `ChronoFall.CharacterPresentation.Cooking`, `ChronoFall.CharacterPresentation.SdlGpu`, and `ChronoFall.Network.Transport.LiteNetLib`;
+- `Starfall.World`: `ChronoFall.Network.Transport.LiteNetLib`;
+- `Starfall.Simulation`: `ChronoFall.Box3D`;
+- Content, Protocol, Editor and Balance Lab: none.
 
-`CLIENT-0006` adds and validates exactly these references after coordinator `SHARED-0016` established the source and generated-content workflow. Client preserves the selected Debug or Release configuration across references that are external to `Starfall.slnx`, including their nested coordinator references. Coordinator-owned SDL3-CS remains compiled from its checked-out source transitively through the shared SDL GPU project; Starfall neither references, acquires, nor pins it independently.
+Every direct reference is rooted at `$(ChronoFallFamilyRoot)` and preserves the selected Debug or Release configuration. Nested coordinator dependencies remain transitive: Client does not reference SDL3-CS or network contracts/upstream LiteNetLib directly, World does not reference those network dependencies directly, and Simulation does not reference raw Box3D bindings directly.
 
-Generated character content remains under the workflow-owned ignored `artifacts/chronofall/character-presentation/client/` tree. The coordinator command validates stable linked identity, the resolved checkout, gitlink ownership, the exact ignored and untracked output boundary, known files, and symlink safety before writing. Starfall.Client copies only the cooked asset, provenance, CC0 evidence, shared shaders, and the supported native runtime into its build output. Raw supplied assets, generated output, and presentation dependencies never enter headless projects.
+`CLIENT-0006` owns character-presentation adoption and the generated-content workflow. `BUILD-0006` owns network-transport adoption in the Client and World composition roots. The internal factories do not activate networking; `CLIENT-0009` owns the separately planned Starfall packet and runtime binding.
+
+Generated character content remains under the workflow-owned ignored `artifacts/chronofall/character-presentation/client/` tree. The coordinator command validates stable linked identity, resolved checkout, gitlink ownership, the exact ignored/untracked output boundary, known files and symlink safety before writing. Raw supplied assets, generated output and presentation dependencies never enter headless projects.
+
+Network adoption contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/network-transport-adoption
 
 ## PM workflow
 

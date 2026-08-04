@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-03T08:32:47.0059370Z
+modifiedAt: 2026-08-04T16:40:45.6002340Z
 ---
 
 ## Execution standard
@@ -71,12 +71,19 @@ SERVER-0006 + SIM-0008
   -> PROTOCOL-0003  connected-walking facts
   -> PROTOCOL-0004  deterministic serialization
 
+parent SHARED-0023 + BUILD-0003 + BUILD-0005
+  -> BUILD-0006  process-local shared transport composition
+
 SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004
   -> SERVER-0005
+
+SERVER-0005 + PROTOCOL-0004 + CLIENT-0021 + BUILD-0006
   -> CLIENT-0009
 ~~~
 
 CLIENT-0009 replaces CLIENT-0021's deterministic fixture with real snapshots through the same Client-owned adapter. This is the second visible milestone. Monsters do not block it.
+
+BUILD-0006 adopts the coordinator-owned transport contracts and LiteNetLib adapter in only the Client and World composition roots. Its factories remain inactive until CLIENT-0009 makes the separately planned Starfall-specific channel, delivery, admission-message, polling, peer/session, disconnect/reconnect, development-key and protected-transport decisions. Protocol remains transport-independent.
 
 ### Camps and connected monsters
 
@@ -176,4 +183,10 @@ CONTENT-0010 remains deferred outside Draft 0. First-wings/public release, trade
 
 ## Shared-source gate
 
-Starfall never depends on Royale. Parent modules never depend on Starfall. Approved coordinator source remains rooted through ChronoFallFamilyRoot and client/editor consumption requires explicit allowlists. Generated client content remains ignored and stable-ID staged.
+Starfall never depends on Royale. Parent modules never depend on Starfall. Approved coordinator source remains rooted through ChronoFallFamilyRoot and requires an exact per-consumer allowlist.
+
+The direct network boundary is narrow: Client and World may reference only the coordinator-owned LiteNetLib adapter project, which transitively supplies the transport contracts and pinned upstream implementation. Protocol, Content, Simulation, Editor and Balance Lab remain transport-free. The composition factories do not start listeners or define Starfall packet policy.
+
+Character cooks remain client-only, ignored and stable-ID staged. Generated client content, raw supplied assets and presentation dependencies never enter World or other headless outputs.
+
+Network adoption contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/network-transport-adoption

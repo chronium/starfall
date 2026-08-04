@@ -6,6 +6,9 @@ namespace Starfall.Architecture.Tests;
 
 public sealed class FoundationDependencyTests
 {
+    private const string NetworkTransportAdapterReference =
+        "$(ChronoFallFamilyRoot)src/ChronoFall.Network.Transport.LiteNetLib/ChronoFall.Network.Transport.LiteNetLib.csproj";
+
     private static readonly IReadOnlyDictionary<string, string[]> ExpectedProductReferences =
         new Dictionary<string, string[]>(StringComparer.Ordinal)
         {
@@ -59,6 +62,13 @@ public sealed class FoundationDependencyTests
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj",
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj",
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj",
+            NetworkTransportAdapterReference,
+        };
+
+    private static readonly IReadOnlySet<string> ApprovedWorldFamilySourceReferences =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            NetworkTransportAdapterReference,
         };
 
     private static readonly IReadOnlySet<string> ApprovedSimulationFamilySourceReferences =
@@ -219,7 +229,7 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
-    public void Headless_consumers_contain_only_the_bounded_box3d_runtime()
+    public void Headless_consumers_contain_the_approved_shared_runtimes()
     {
         foreach (string projectName in new[]
                  {
@@ -252,6 +262,44 @@ public sealed class FoundationDependencyTests
             Assert.True(
                 forbidden.Length == 0,
                 $"{projectName} contains forbidden presentation artifacts: {string.Join(", ", forbidden)}.");
+        }
+    }
+
+    [Fact]
+    public void Network_transport_is_emitted_only_by_client_and_world()
+    {
+        string[] expectedNetworkAssemblies =
+        [
+            "ChronoFall.Network.Transport.dll",
+            "ChronoFall.Network.Transport.LiteNetLib.dll",
+            "LiteNetLib.dll",
+        ];
+
+        foreach (string projectName in new[] { "Starfall.Client", "Starfall.World" })
+        {
+            string output = GetProductOutputDirectory(projectName);
+            Assert.All(
+                expectedNetworkAssemblies,
+                assembly => Assert.True(
+                    File.Exists(Path.Combine(output, assembly)),
+                    $"{projectName} output is missing approved network assembly {assembly}."));
+        }
+
+        foreach (string projectName in new[]
+                 {
+                     "Starfall.Content",
+                     "Starfall.Protocol",
+                     "Starfall.Simulation",
+                     "Starfall.Editor",
+                     "Starfall.BalanceLab",
+                 })
+        {
+            string output = GetProductOutputDirectory(projectName);
+            Assert.All(
+                expectedNetworkAssemblies,
+                assembly => Assert.False(
+                    File.Exists(Path.Combine(output, assembly)),
+                    $"{projectName} unexpectedly emits network assembly {assembly}."));
         }
     }
 
@@ -378,6 +426,32 @@ public sealed class FoundationDependencyTests
         Assert.Equal(ApprovedClientFamilySourceReferences.Order(StringComparer.Ordinal), actual);
         XElement configurationPolicy = Assert.Single(
             client.Descendants("ShouldUnsetParentConfigurationAndPlatform"));
+        Assert.Equal("false", configurationPolicy.Value);
+        Assert.All(
+            familyReferences,
+            reference => Assert.Equal(
+                "ShouldUnsetParentConfigurationAndPlatform=false",
+                reference.Attribute("AdditionalProperties")?.Value));
+    }
+
+    [Fact]
+    public void World_references_exact_approved_family_source_set()
+    {
+        XDocument world = LoadProductProject("Starfall.World");
+        XElement[] familyReferences = world
+            .Descendants("ProjectReference")
+            .Where(reference => IsApprovedFamilySourceReference(
+                "Starfall.World",
+                reference.Attribute("Include")?.Value ?? string.Empty))
+            .ToArray();
+        string[] actual = familyReferences
+            .Select(reference => reference.Attribute("Include")!.Value)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(ApprovedWorldFamilySourceReferences.Order(StringComparer.Ordinal), actual);
+        XElement configurationPolicy = Assert.Single(
+            world.Descendants("ShouldUnsetParentConfigurationAndPlatform"));
         Assert.Equal("false", configurationPolicy.Value);
         Assert.All(
             familyReferences,
@@ -550,6 +624,9 @@ public sealed class FoundationDependencyTests
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", true)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj", true)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj", true)]
+    [InlineData("Starfall.Client", NetworkTransportAdapterReference, true)]
+    [InlineData("Starfall.World", NetworkTransportAdapterReference, true)]
+    [InlineData("Starfall.Protocol", NetworkTransportAdapterReference, false)]
     [InlineData("Starfall.World", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", false)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)royale/src/Royale.Client/Royale.Client.csproj", false)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)thirdparty/repos/SDL3-CS/SDL3-CS/SDL3-CS.csproj", false)]
@@ -618,6 +695,8 @@ public sealed class FoundationDependencyTests
     {
         return (string.Equals(projectName, "Starfall.Client", StringComparison.Ordinal) &&
                 ApprovedClientFamilySourceReferences.Contains(reference)) ||
+            (string.Equals(projectName, "Starfall.World", StringComparison.Ordinal) &&
+                ApprovedWorldFamilySourceReferences.Contains(reference)) ||
             (string.Equals(projectName, "Starfall.Simulation", StringComparison.Ordinal) &&
                 ApprovedSimulationFamilySourceReferences.Contains(reference));
     }

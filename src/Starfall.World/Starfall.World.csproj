@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,5 +12,7 @@
     <ProjectReference Include="../Starfall.Content/Starfall.Content.csproj" />
     <ProjectReference Include="../Starfall.Protocol/Starfall.Protocol.csproj" />
     <ProjectReference Include="../Starfall.Simulation/Starfall.Simulation.csproj" />
+    <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.Network.Transport.LiteNetLib/ChronoFall.Network.Transport.LiteNetLib.csproj"
+                      AdditionalProperties="ShouldUnsetParentConfigurationAndPlatform=false" />
   </ItemGroup>
 </Project>
