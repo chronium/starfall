@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T13:11:30.0397230Z
+modifiedAt: 2026-08-04T14:02:30.0007180Z
 ---
 
 ## Purpose
@@ -89,6 +89,10 @@ SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004
 ~~~
 
 This milestone proves real world-owned player identity/state, authoritative movement, serialized snapshots, world-host exchange and Client adapter reuse. Monsters do not block it.
+
+`PROTOCOL-0003` now defines the transport-neutral session-bound movement command, world-instance-local entity identity, monotonic intent/snapshot sequences, fixed-tick authoritative player snapshot and correction facts. It deliberately does not serialize or exchange them. `PROTOCOL-0004` owns deterministic serialization, `SERVER-0005` owns admitted-session mapping and exchange, and `CLIENT-0009` owns mapping the newest authoritative facts into the existing presentation adapter.
+
+Connected walking facts: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-walking-facts
 
 ## Map authoring boundary
 

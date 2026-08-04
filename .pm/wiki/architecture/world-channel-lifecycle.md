@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T13:11:30.0507660Z
+modifiedAt: 2026-08-04T14:02:40.5739610Z
 ---
 
 ## Purpose
@@ -89,14 +89,19 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 `SERVER-0003` owns the in-process signed-ticket exchange, atomic lifecycle-local consumption registry, and active session records. The runtime retains only session/account/character/world-instance identities; it never retains the bearer token or calls identity, chat, or operations after admission.
 
-`SERVER-0006` owns the stable world-local identity contract, checked allocator and one generic technical player. Session-to-player binding remains deliberately absent.
+`SERVER-0006` owns the stable Simulation/World identity and one generic technical player. Session-to-player binding remains deliberately absent.
+
+`PROTOCOL-0003` owns separate transport-neutral boundary facts: a session-bound sequenced movement command, world-instance-local protocol entity identity, ordered fixed-tick snapshots and correlated corrections. Protocol's similarly named values do not move Simulation identity or state authority into Protocol. World performs the later one-to-one mapping.
 
 Later focused tasks own:
 
-- `PROTOCOL-0003` and `PROTOCOL-0004`: proven connected-walking facts and deterministic serialization;
-- `SERVER-0005`: connected movement exchange.
+- `PROTOCOL-0004`: deterministic serialization and malformed-input handling for the completed facts;
+- `SERVER-0005`: admitted-session mapping, active-zone validation, checked sequence allocation and connected movement exchange;
+- `CLIENT-0009`: consumption of the latest authoritative facts through the existing presentation adapter.
 
 Those tasks may consume this lifecycle but must not retroactively turn it into a generic host framework.
+
+Connected walking facts: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-walking-facts
 
 ## Non-goals
 
