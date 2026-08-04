@@ -151,7 +151,7 @@ public sealed class GroundMovementCommand
 
 public sealed class PlayerMovementSnapshot
 {
-    private const float FacingLengthTolerance = 1e-4f;
+    internal const float FacingLengthTolerance = 1e-4f;
 
     public PlayerMovementSnapshot(
         MovementSnapshotSequence sequence,
@@ -169,9 +169,9 @@ public sealed class PlayerMovementSnapshot
             throw new ArgumentException("World entity identity must be valid.", nameof(entityId));
         if (!position.IsValid)
             throw new ArgumentException("Player position must be finite.", nameof(position));
-        if (!IsFinite(velocityMetresPerSecond))
+        if (!IsFiniteVector(velocityMetresPerSecond))
             throw new ArgumentException("Player velocity must be finite.", nameof(velocityMetresPerSecond));
-        if (!IsFinite(facing) || MathF.Abs(facing.Length() - 1.0f) > FacingLengthTolerance)
+        if (!IsValidFacing(facing))
             throw new ArgumentException("Player facing must be finite and normalized.", nameof(facing));
         if (!collision.IsValid)
             throw new ArgumentException("Player collision capsule must be valid.", nameof(collision));
@@ -232,8 +232,11 @@ public sealed class PlayerMovementSnapshot
         get;
     }
 
-    private static bool IsFinite(Vector2 value) =>
+    internal static bool IsFiniteVector(Vector2 value) =>
         float.IsFinite(value.X) && float.IsFinite(value.Y);
+
+    internal static bool IsValidFacing(Vector2 value) =>
+        IsFiniteVector(value) && MathF.Abs(value.Length() - 1.0f) <= FacingLengthTolerance;
 }
 
 public sealed class PlayerMovementCorrection

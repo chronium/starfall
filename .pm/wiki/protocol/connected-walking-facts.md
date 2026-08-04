@@ -1,7 +1,7 @@
 ---
 title: Connected Walking Facts
 createdAt: 2026-08-04T14:02:01.5363760Z
-modifiedAt: 2026-08-04T14:02:01.5363760Z
+modifiedAt: 2026-08-04T14:25:25.0627130Z
 ---
 
 ## Purpose
@@ -44,6 +44,24 @@ Snapshot sequence is the freshness order for connected-walking facts within one 
 `PlayerMovementCorrection` correlates one processed intent sequence with one complete authoritative snapshot. The embedded snapshot must acknowledge the same intent sequence.
 
 The fact does not define why correction was required. Rejection, collision, exchange and later reconciliation policies remain with their task-owned domains. Client presentation never changes the authoritative result.
+
+## Deterministic serialization
+
+`PROTOCOL-0004` freezes three independent schema-version-1 payloads. These are fact codecs, not transport frames:
+
+| Fact | Exact bytes | Layout |
+| --- | ---: | --- |
+| `GroundMovementCommand` | 17 | version 1; intent sequence 8; destination X 4; destination Z 4 |
+| `PlayerMovementSnapshot` | 66 | version 1; snapshot sequence 8; tick 8; entity 8; position X/Z 8; velocity X/Z 8; facing X/Z 8; capsule radius/height 8; acknowledgement flag 1; acknowledgement sequence 8 |
+| `PlayerMovementCorrection` | 74 | version 1; corrected intent sequence 8; the 65-byte snapshot body without a nested version |
+
+Every integer field is an unsigned 64-bit big-endian value except the one-byte schema version and acknowledgement flag. Floats are their IEEE 754 single-precision bit patterns in big-endian byte order. Encoders return a newly allocated array of the exact public length. Decoders require that exact length and reject trailing bytes; framing, message kinds and length prefixes belong to the later World-host exchange.
+
+Command intent, snapshot, entity, corrected-intent and every present acknowledgement sequence must be non-zero. Tick zero is valid. A missing acknowledgement has exactly one encoding: flag 0 and sequence 0. A present acknowledgement uses flag 1 and a non-zero sequence. Corrections require a present acknowledgement equal to the corrected sequence.
+
+Only finite canonical float encodings are accepted. Positive zero is canonical; negative-zero encodings are rejected to preserve one deterministic byte representation. Facing normalization and capsule dimensions reuse the fact contract's validation and tolerance. Protocol does not reject finite positions for being outside a particular zone.
+
+`EncodeCommand`, `EncodeSnapshot` and `EncodeCorrection` validate their complete source facts before allocating their result and throw `ArgumentException` for null or malformed facts. Their `TryDecode...` counterparts are non-throwing for untrusted payloads and expose no public error taxonomy.
 
 ## Numerical and dependency contract
 
