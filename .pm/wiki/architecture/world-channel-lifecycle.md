@@ -1,12 +1,12 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T11:56:47.7672780Z
+modifiedAt: 2026-08-04T13:11:30.0507660Z
 ---
 
 ## Purpose
 
-This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding added by `SERVER-0004`, the lifecycle-local admission/session boundary added by `SERVER-0003`, and the generic technical player state added by `SERVER-0006`. It remains the timing and content-ownership foundation for later authoritative movement and gameplay.
+This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding added by `SERVER-0004`, the lifecycle-local admission/session boundary added by `SERVER-0003`, the generic technical player state added by `SERVER-0006`, and authoritative movement added by `SIM-0008`. It remains the timing and content-ownership foundation for later gameplay.
 
 ## Identity
 
@@ -37,7 +37,7 @@ Ctrl+C requests graceful shutdown. It does not add an operations service, remote
 
 Before entering `Running`, the World composition root binds exactly `Draft0GrayboxCatalog.FirstPlayable` to the runtime. The catalog is already validated immutable executable Content, so World retains it directly instead of introducing a second runtime map model, serialization format or loader abstraction.
 
-The loaded input preserves the durable 200 x 200 metre envelope, 5..195 metre walkable bounds, protected-town description and respawn anchor, four ordered route corridors, three ordered camp regions, seven ordered proxy blocks and ten branch/local ordered sample spawns. These are owned inputs only. The runtime does not yet enforce protection, construct collision/navigation, spawn monsters or interpret routes as paths.
+The loaded input preserves the durable 200 x 200 metre envelope, 5..195 metre walkable bounds, protected-town description and respawn anchor, four ordered route corridors, three ordered camp regions, seven ordered proxy blocks and ten branch/local ordered sample spawns. `SIM-0008` interprets only the four zone-to-walkable strips and seven proxies as coarse collision. It does not interpret routes as paths, spawn monsters, or enforce hostile-action and monster protection rules.
 
 All current world/channel invocations use this one provisional layout. A zone-selection interface is deferred until more than one real authoritative input exists. `SERVER-0012` later replaces this disposable catalog with the bounded authoritative output of the proper Editor-authored Draft 0 scene.
 
@@ -45,11 +45,11 @@ All current world/channel invocations use this one provisional layout. A zone-se
 
 After entering `Running`, the standalone host creates one generic authoritative player at `town_safe`'s configured respawn anchor `(100,0,25)`, with zero planar velocity and normalized `+Z` facing. This is a technical world fixture, not the selected dark-elf class, combat kit, equipment or presentation identity, and it is not yet bound to an admitted gameplay session.
 
-`WorldPlayerState` is an immutable World-owned bucket containing only its world-local entity identity, finite ground position, finite planar velocity in metres/second and normalized planar facing. Lookup never exposes mutable runtime-owned state. Ordered player snapshots are defensively copied while holding the runtime lock and remain stable after later creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary enumeration.
+`WorldPlayerState` is an immutable World-owned bucket containing its world-local entity identity, finite ground position, finite planar velocity in metres/second, normalized planar facing, 0.35 m radius by 1.8 m tall collision capsule, and latest movement outcome. Lookup never exposes mutable runtime-owned state. Movement replaces whole states under the runtime lock; ordered defensive snapshots therefore remain stable after later movement, creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary or native query enumeration.
 
 Creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`. Draining retains players. Stopping clears them. Distinct runtime instances each own an independent identity sequence beginning at 1.
 
-`SIM-0008` may later replace whole immutable states through a controlled authoritative movement seam. This task does not introduce mutable components, an ECS, collision dimensions, Box3D bodies, session binding, persistence, networking, monsters or combat.
+`Draft0PlayerMovementSimulation` owns a zero-gravity Box3D collision world and accepts entity-targeted finite ground destinations. Movement uses a provisional 4.0 m/s speed at 60 Hz. A destination outside capsule-adjusted walkable bounds or overlapping a proxy is rejected without replacing the current destination. Unobstructed motion advances directly; arrival clamps exactly; a sweep hit moves to Box3D's safe fraction, reports blocked, clears the destination and does not slide or retry. Players do not collide with one another in this task. The town remains traversable by players; `SIM-0011` later owns hostile-action rejection, monster exclusion/disengagement, defeat and respawn.
 
 ## Fixed-step scheduling
 
@@ -93,7 +93,6 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 Later focused tasks own:
 
-- `SIM-0008`: authoritative click-to-move after its shared Box3D prerequisite completes;
 - `PROTOCOL-0003` and `PROTOCOL-0004`: proven connected-walking facts and deterministic serialization;
 - `SERVER-0005`: connected movement exchange.
 
@@ -101,4 +100,4 @@ Those tasks may consume this lifecycle but must not retroactively turn it into a
 
 ## Non-goals
 
-This contract does not create a generic entity/component framework, ECS, physics world or network socket, bind sessions to players, construct collision/navigation behavior, provision verification keys, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.
+This contract does not create a generic entity/component framework, ECS, character controller, navigation/pathfinding framework or network socket, bind sessions to players, provision verification keys, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.

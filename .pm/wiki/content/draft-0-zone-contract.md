@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Zone Contract
 createdAt: 2026-08-02T18:32:00.1104310Z
-modifiedAt: 2026-08-04T08:56:40.9513870Z
+modifiedAt: 2026-08-04T13:11:30.0592230Z
 ---
 
 ## Ownership
@@ -20,7 +20,7 @@ Authoritative spatial and physics state uses Box3D-native single-precision float
 
 CONTENT-0014 validates finite values, positive dimensions, containment, stable unique identifiers, immutable collections and deterministic ordering. NaN, infinity, duplicate identities, invalid dimensions and out-of-zone values are rejected.
 
-A later Simulation boundary converts authoring components one-to-one into Box3D-native values. It must not change scale or precision, introduce a parallel integer-millimetre model, or make Starfall.Content depend on Box3D.
+`SIM-0008` converts these authoring components one-to-one into Box3D-native values. It does not change scale or precision, introduce a parallel integer-millimetre model, or make Starfall.Content depend on Box3D.
 
 Discrete gameplay state remains integer: HP, mana, damage, XP, levels, currency, item counts and discrete stats. Probabilities use an explicitly scaled integer representation. Authoritative time uses integer fixed simulation ticks. Native physics/query iteration order is never trusted when order can affect gameplay; stable entity identities and explicit sorting establish gameplay ordering.
 
@@ -82,13 +82,13 @@ Neutral sample spawns are also stable and branch-local: easy uses `spawn_easy_01
 
 Construction validates ordinal global identity uniqueness; finite dimensions and coordinates; zone, walkable, owner and actual-camp containment; proxy ownership; unobstructed critical anchors and spawns; route linkage and lengths with a 0.001 m tolerance; and square bounds plus boundary entry for the circular camp. Collections are copied into read-only views.
 
-`SERVER-0004` binds this exact immutable catalog to each current world/channel runtime before lifecycle start. World preserves the Content object and its ordering directly rather than copying it into a parallel map model. The deterministic `READY` diagnostic identifies `draft_0_first_playable_zone`, `town_safe`, three branches, four routes, seven proxies and ten sample spawns. Loading does not interpret routes as navigation paths, proxies as physics bodies, town metadata as enforced protection or sample spawns as entities.
+`SERVER-0004` binds this exact immutable catalog to each current world/channel runtime before lifecycle start. World preserves the Content object and its ordering directly rather than copying it into a parallel map model. The deterministic `READY` diagnostic identifies `draft_0_first_playable_zone`, `town_safe`, three branches, four routes, seven proxies and ten sample spawns. `SIM-0008` converts the four outer strips and seven ordered proxies into bounded Box3D collision while leaving routes non-navigational, sample spawns non-entities, and protected-town hostile/monster/respawn enforcement to `SIM-0011`.
 
-These values are coarse content inputs only: they add no Box3D, renderer, editor, serialization, movement or monster contract and are expected to be replaced by the later editor-authored scene.
+These remain coarse Content inputs with no Box3D dependency. Starfall.Simulation alone owns their provisional Box3D conversion and movement policy; they still add no renderer, editor, serialization or monster contract and are expected to be replaced by the later editor-authored scene.
 
 ## Deferred decisions
 
-Coordinator SHARED-0021 is the allocated bounded shared Box3D runtime prerequisite, and its canonical URI is attached to SIM-0008. The dependency is valid but waiting while SHARED-0021 remains todo; SIM-0008 must not activate or consume shared Box3D source until SHARED-0021 completes and SIM-0008 receives its own approved implementation plan.
+Completed coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0021` supplies the child-independent Box3D mechanics consumed by `SIM-0008`. Starfall owns the stable creation order, entity identities, collision layers, 60 Hz schedule, direct movement rule and stop-and-clear outcome.
 
 Other deferred work includes the exact proper Editor-authored scene, selected environment placement, production collision/navigation compilation, protocol quantization and reconciliation tuning, and any reusable terrain, streaming, biome or general world/component framework.
 

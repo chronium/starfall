@@ -1,6 +1,7 @@
 using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Movement;
 using Starfall.World.Entities;
 
 namespace Starfall.World.Tests;
@@ -51,16 +52,22 @@ public sealed class WorldEntityStateTests
             entityId,
             position,
             new Vector2(float.NaN, 0.0f),
-            Vector2.UnitY));
+            Vector2.UnitY,
+            new PlayerCollisionCapsule(0.35f, 1.8f),
+            GroundMovementTickOutcome.Idle));
         Assert.Throws<ArgumentException>(() => new WorldPlayerState(
             entityId,
             position,
             Vector2.Zero,
-            Vector2.Zero));
+            Vector2.Zero,
+            new PlayerCollisionCapsule(0.35f, 1.8f),
+            GroundMovementTickOutcome.Idle));
         Assert.Throws<ArgumentException>(() => new WorldPlayerState(
             entityId,
             position,
             Vector2.Zero,
-            new Vector2(2.0f, 0.0f)));
+            new Vector2(2.0f, 0.0f),
+            new PlayerCollisionCapsule(0.35f, 1.8f),
+            GroundMovementTickOutcome.Idle));
     }
 }

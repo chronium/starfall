@@ -2,6 +2,7 @@ using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Movement;
 using Starfall.World.Admission;
 using Starfall.World.Entities;
 
@@ -22,6 +23,7 @@ internal sealed class WorldChannelRuntime
     private readonly Dictionary<GameplaySessionId, WorldGameplaySession> activeSessions = [];
     private readonly Dictionary<WorldEntityId, WorldPlayerState> players = [];
     private readonly WorldEntityIdSequence entityIds = new();
+    private readonly Draft0PlayerMovementSimulation movement;
     private WorldChannelLifecycleState state;
     private ulong currentTick;
 
@@ -37,15 +39,28 @@ internal sealed class WorldChannelRuntime
         ChannelId = channelId;
         InstanceId = instanceId;
         Layout = layout;
+        movement = new Draft0PlayerMovementSimulation(layout);
     }
 
-    internal WorldId WorldId { get; }
+    internal WorldId WorldId
+    {
+        get;
+    }
 
-    internal ChannelId ChannelId { get; }
+    internal ChannelId ChannelId
+    {
+        get;
+    }
 
-    internal WorldInstanceId InstanceId { get; }
+    internal WorldInstanceId InstanceId
+    {
+        get;
+    }
 
-    internal Draft0GrayboxLayout Layout { get; }
+    internal Draft0GrayboxLayout Layout
+    {
+        get;
+    }
 
     internal WorldChannelLifecycleState State
     {
@@ -137,6 +152,18 @@ internal sealed class WorldChannelRuntime
                     $"Cannot advance a world in the {state} state.");
             }
 
+            IReadOnlyList<AuthoritativePlayerMovementState> movementStates = movement.Step();
+            foreach (AuthoritativePlayerMovementState movementState in movementStates)
+            {
+                if (!players.ContainsKey(movementState.EntityId))
+                {
+                    throw new InvalidOperationException(
+                        $"Movement produced unknown player {movementState.EntityId}.");
+                }
+
+                players[movementState.EntityId] = CreateWorldPlayerState(movementState);
+            }
+
             currentTick = checked(currentTick + 1);
         }
     }
@@ -170,6 +197,7 @@ internal sealed class WorldChannelRuntime
             activeSessions.Clear();
             consumedTickets.Clear();
             players.Clear();
+            movement.Dispose();
         }
     }
 
@@ -184,13 +212,30 @@ internal sealed class WorldChannelRuntime
             }
 
             WorldEntityId entityId = entityIds.Allocate();
-            var player = new WorldPlayerState(
+            AuthoritativePlayerMovementState movementState = movement.RegisterPlayer(
                 entityId,
                 Layout.Town.RespawnAnchor,
-                Vector2.Zero,
                 Vector2.UnitY);
+            WorldPlayerState player = CreateWorldPlayerState(movementState);
             players.Add(entityId, player);
             return player;
+        }
+    }
+
+    internal GroundMovementIntentDisposition SubmitMovementIntent(
+        WorldEntityId entityId,
+        GroundPoint destination)
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot submit movement in a world in the {state} state.");
+            }
+
+            return movement.Submit(new GroundMovementIntent(entityId, destination));
         }
     }
 
@@ -211,7 +256,11 @@ internal sealed class WorldChannelRuntime
                     $"Cannot remove a player from a world in the {state} state.");
             }
 
-            return players.Remove(entityId);
+            bool removedPlayer = players.Remove(entityId);
+            bool removedMovement = movement.RemovePlayer(entityId);
+            if (removedPlayer != removedMovement)
+                throw new InvalidOperationException("World player and movement ownership diverged.");
+            return removedPlayer;
         }
     }
 
@@ -282,4 +331,14 @@ internal sealed class WorldChannelRuntime
                 $"Cannot {operation} a world in the {state} state; expected {required}.");
         }
     }
+
+    private static WorldPlayerState CreateWorldPlayerState(
+        AuthoritativePlayerMovementState movementState) =>
+        new(
+            movementState.EntityId,
+            movementState.Position,
+            movementState.VelocityMetresPerSecond,
+            movementState.Facing,
+            movementState.Collision,
+            movementState.Outcome);
 }

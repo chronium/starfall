@@ -1,6 +1,7 @@
 using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Movement;
 
 namespace Starfall.World.Entities;
 
@@ -12,7 +13,9 @@ internal sealed class WorldPlayerState
         WorldEntityId entityId,
         GroundPoint position,
         Vector2 velocityMetresPerSecond,
-        Vector2 facing)
+        Vector2 facing,
+        PlayerCollisionCapsule collision,
+        GroundMovementTickOutcome movementOutcome)
     {
         if (entityId.Value == 0)
             throw new ArgumentException("Player entity identity must be valid.", nameof(entityId));
@@ -22,11 +25,17 @@ internal sealed class WorldPlayerState
             throw new ArgumentException("Player facing must be finite.", nameof(facing));
         if (MathF.Abs(facing.Length() - 1.0f) > FacingLengthTolerance)
             throw new ArgumentException("Player facing must be normalized.", nameof(facing));
+        if (collision.RadiusMetres <= 0.0f || collision.HeightMetres <= collision.RadiusMetres * 2.0f)
+            throw new ArgumentException("Player collision capsule must be valid.", nameof(collision));
+        if (!Enum.IsDefined(movementOutcome))
+            throw new ArgumentOutOfRangeException(nameof(movementOutcome));
 
         EntityId = entityId;
         Position = position;
         VelocityMetresPerSecond = velocityMetresPerSecond;
         Facing = facing;
+        Collision = collision;
+        MovementOutcome = movementOutcome;
     }
 
     internal WorldEntityId EntityId
@@ -45,6 +54,16 @@ internal sealed class WorldPlayerState
     }
 
     internal Vector2 Facing
+    {
+        get;
+    }
+
+    internal PlayerCollisionCapsule Collision
+    {
+        get;
+    }
+
+    internal GroundMovementTickOutcome MovementOutcome
     {
         get;
     }

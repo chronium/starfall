@@ -2,6 +2,7 @@ using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Movement;
 using Starfall.World.Entities;
 using Starfall.World.Lifecycle;
 
@@ -143,6 +144,9 @@ public sealed class WorldChannelRuntimeTests
         Assert.Equal(new GroundPoint(100.0f, 25.0f), player.Position);
         Assert.Equal(Vector2.Zero, player.VelocityMetresPerSecond);
         Assert.Equal(Vector2.UnitY, player.Facing);
+        Assert.Equal(0.35f, player.Collision.RadiusMetres);
+        Assert.Equal(1.8f, player.Collision.HeightMetres);
+        Assert.Equal(GroundMovementTickOutcome.Idle, player.MovementOutcome);
         Assert.Equal(1, runtime.PlayerCount);
         Assert.True(runtime.TryGetPlayer(player.EntityId, out WorldPlayerState? found));
         Assert.Same(player, found);
@@ -220,6 +224,73 @@ public sealed class WorldChannelRuntimeTests
 
         Assert.Equal(new WorldEntityId(1), first.CreateTechnicalPlayer().EntityId);
         Assert.Equal(new WorldEntityId(1), second.CreateTechnicalPlayer().EntityId);
+    }
+
+    [Fact]
+    public void Fixed_ticks_replace_immutable_player_state_with_authoritative_movement()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldPlayerState original = runtime.CreateTechnicalPlayer();
+
+        Assert.Equal(
+            GroundMovementIntentDisposition.Accepted,
+            runtime.SubmitMovementIntent(original.EntityId, new GroundPoint(104.0f, 25.0f)));
+        for (var tick = 0; tick < 60; tick++)
+            runtime.Step();
+
+        Assert.True(runtime.TryGetPlayer(original.EntityId, out WorldPlayerState? moved));
+        Assert.NotNull(moved);
+        Assert.NotSame(original, moved);
+        Assert.Equal(new GroundPoint(100.0f, 25.0f), original.Position);
+        Assert.Equal(Vector2.Zero, original.VelocityMetresPerSecond);
+        Assert.Equal(new GroundPoint(104.0f, 25.0f), moved.Position);
+        Assert.Equal(Vector2.Zero, moved.VelocityMetresPerSecond);
+        Assert.Equal(Vector2.UnitX, moved.Facing);
+        Assert.Equal(GroundMovementTickOutcome.Arrived, moved.MovementOutcome);
+    }
+
+    [Fact]
+    public void Existing_players_continue_to_accept_movement_while_draining()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldPlayerState player = runtime.CreateTechnicalPlayer();
+        runtime.BeginDrain();
+
+        Assert.Equal(
+            GroundMovementIntentDisposition.Accepted,
+            runtime.SubmitMovementIntent(player.EntityId, new GroundPoint(101.0f, 25.0f)));
+        runtime.Step();
+
+        Assert.True(runtime.TryGetPlayer(player.EntityId, out WorldPlayerState? moved));
+        Assert.NotNull(moved);
+        Assert.True(moved.Position.XMetres > player.Position.XMetres);
+        Assert.Equal(GroundMovementTickOutcome.Moving, moved.MovementOutcome);
+    }
+
+    [Fact]
+    public void Movement_submission_follows_world_and_player_lifecycle()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        WorldEntityId unknown = new(1);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            runtime.SubmitMovementIntent(unknown, new GroundPoint(100.0f, 25.0f)));
+        runtime.Start();
+        Assert.Equal(
+            GroundMovementIntentDisposition.UnknownPlayer,
+            runtime.SubmitMovementIntent(unknown, new GroundPoint(100.0f, 25.0f)));
+
+        WorldPlayerState player = runtime.CreateTechnicalPlayer();
+        Assert.True(runtime.RemovePlayer(player.EntityId));
+        Assert.Equal(
+            GroundMovementIntentDisposition.UnknownPlayer,
+            runtime.SubmitMovementIntent(player.EntityId, new GroundPoint(100.0f, 30.0f)));
+
+        runtime.Stop();
+        Assert.Throws<InvalidOperationException>(() =>
+            runtime.SubmitMovementIntent(player.EntityId, new GroundPoint(100.0f, 30.0f)));
     }
 
     private static WorldChannelRuntime CreateRuntime(Guid instanceId) =>

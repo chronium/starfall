@@ -13,6 +13,7 @@
     <Project Path="tests/Starfall.Client.Tests/Starfall.Client.Tests.csproj" />
     <Project Path="tests/Starfall.Content.Tests/Starfall.Content.Tests.csproj" />
     <Project Path="tests/Starfall.Protocol.Tests/Starfall.Protocol.Tests.csproj" />
+    <Project Path="tests/Starfall.Simulation.Tests/Starfall.Simulation.Tests.csproj" />
     <Project Path="tests/Starfall.World.Tests/Starfall.World.Tests.csproj" />
   </Folder>
 </Solution>

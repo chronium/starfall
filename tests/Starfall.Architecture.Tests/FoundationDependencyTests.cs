@@ -25,6 +25,7 @@ public sealed class FoundationDependencyTests
         "Starfall.Client.Tests",
         "Starfall.Content.Tests",
         "Starfall.Protocol.Tests",
+        "Starfall.Simulation.Tests",
         "Starfall.World.Tests",
     ];
 
@@ -58,6 +59,12 @@ public sealed class FoundationDependencyTests
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj",
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj",
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj",
+        };
+
+    private static readonly IReadOnlySet<string> ApprovedSimulationFamilySourceReferences =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj",
         };
 
     private static string RepositoryRoot { get; } = FindRepositoryRoot();
@@ -212,6 +219,43 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
+    public void Headless_consumers_contain_only_the_bounded_box3d_runtime()
+    {
+        foreach (string projectName in new[]
+                 {
+                     "Starfall.Simulation",
+                     "Starfall.World",
+                     "Starfall.BalanceLab",
+                 })
+        {
+            string output = GetProductOutputDirectory(projectName);
+            Assert.True(File.Exists(Path.Combine(output, "ChronoFall.Box3D.dll")));
+            Assert.True(File.Exists(Path.Combine(output, "ChronoFall.Box3D.Bindings.dll")));
+
+            if (OperatingSystem.IsMacOS() &&
+                RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64)
+            {
+                Assert.True(File.Exists(Path.Combine(
+                    output,
+                    "runtimes",
+                    "osx-arm64",
+                    "native",
+                    "libbox3d.dylib")));
+            }
+
+            string[] forbidden = Directory
+                .EnumerateFiles(output, "*", SearchOption.AllDirectories)
+                .Select(path => Path.GetRelativePath(output, path))
+                .Where(path => ForbiddenHeadlessDependencyFragments.Any(fragment =>
+                    path.Contains(fragment, StringComparison.OrdinalIgnoreCase)))
+                .ToArray();
+            Assert.True(
+                forbidden.Length == 0,
+                $"{projectName} contains forbidden presentation artifacts: {string.Join(", ", forbidden)}.");
+        }
+    }
+
+    [Fact]
     public void BalanceLab_output_excludes_presentation_editor_and_runtime_host_artifacts()
     {
         string outputDirectory = GetProductOutputDirectory("Starfall.BalanceLab");
@@ -340,6 +384,36 @@ public sealed class FoundationDependencyTests
             reference => Assert.Equal(
                 "ShouldUnsetParentConfigurationAndPlatform=false",
                 reference.Attribute("AdditionalProperties")?.Value));
+    }
+
+    [Fact]
+    public void Simulation_references_exact_approved_headless_family_source_set()
+    {
+        XDocument simulation = LoadProductProject("Starfall.Simulation");
+        XElement[] familyReferences = simulation
+            .Descendants("ProjectReference")
+            .Where(reference => IsApprovedFamilySourceReference(
+                "Starfall.Simulation",
+                reference.Attribute("Include")?.Value ?? string.Empty))
+            .ToArray();
+        string[] actual = familyReferences
+            .Select(reference => reference.Attribute("Include")!.Value)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(ApprovedSimulationFamilySourceReferences.Order(StringComparer.Ordinal), actual);
+        XElement configurationPolicy = Assert.Single(
+            simulation.Descendants("ShouldUnsetParentConfigurationAndPlatform"));
+        Assert.Equal("false", configurationPolicy.Value);
+        Assert.All(
+            familyReferences,
+            reference => Assert.Equal(
+                "ShouldUnsetParentConfigurationAndPlatform=false",
+                reference.Attribute("AdditionalProperties")?.Value));
+        Assert.DoesNotContain(
+            simulation.Descendants("ProjectReference"),
+            reference => (reference.Attribute("Include")?.Value ?? string.Empty)
+                .Contains("ChronoFall.Box3D.Bindings", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -479,6 +553,9 @@ public sealed class FoundationDependencyTests
     [InlineData("Starfall.World", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", false)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)royale/src/Royale.Client/Royale.Client.csproj", false)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)thirdparty/repos/SDL3-CS/SDL3-CS/SDL3-CS.csproj", false)]
+    [InlineData("Starfall.Simulation", "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj", true)]
+    [InlineData("Starfall.World", "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj", false)]
+    [InlineData("Starfall.Simulation", "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D.Bindings/ChronoFall.Box3D.Bindings.csproj", false)]
     [InlineData("Starfall.Client", "$(OtherRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", false)]
     public void Family_source_reference_policy_is_narrow(
         string projectName,
@@ -539,8 +616,10 @@ public sealed class FoundationDependencyTests
 
     private static bool IsApprovedFamilySourceReference(string projectName, string reference)
     {
-        return string.Equals(projectName, "Starfall.Client", StringComparison.Ordinal) &&
-            ApprovedClientFamilySourceReferences.Contains(reference);
+        return (string.Equals(projectName, "Starfall.Client", StringComparison.Ordinal) &&
+                ApprovedClientFamilySourceReferences.Contains(reference)) ||
+            (string.Equals(projectName, "Starfall.Simulation", StringComparison.Ordinal) &&
+                ApprovedSimulationFamilySourceReferences.Contains(reference));
     }
 
     private static XDocument LoadProductProject(string projectName)

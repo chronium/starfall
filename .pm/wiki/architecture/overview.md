@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T11:56:56.9140070Z
+modifiedAt: 2026-08-04T13:11:30.0397230Z
 ---
 
 ## Purpose
@@ -24,14 +24,16 @@ Logical identity/lobby, world, chat, operations and persistence boundaries do no
 
 `SERVER-0004` binds the validated immutable `Draft0GrayboxCatalog.FirstPlayable` input to every current runtime before it enters `Running`. World now owns the provisional zone/town, route/camp, proxy and spawn inputs while implementing no monster state, collision/navigation behavior, physics, protection enforcement or protocol exchange. Direct immutable Content consumption is deliberate evidence, not a serialized map or general scene framework.
 
-`SERVER-0006` adds one generic world-owned technical player at the catalog respawn anchor after startup. Its immutable state contains a world-instance-local monotonic identity, ground position, planar velocity and normalized facing. Creation, lookup, ordered defensive snapshots and lifecycle-scoped removal are explicit; IDs never reuse or wrap, and stopping clears players. The technical player remains independent of admission sessions, selected class/content, collision, movement, networking and gameplay.
+`SERVER-0006` adds one generic world-owned technical player at the catalog respawn anchor after startup. Its immutable state contains a world-instance-local monotonic identity, ground position, planar velocity and normalized facing. Creation, lookup, ordered defensive snapshots and lifecycle-scoped removal are explicit; IDs never reuse or wrap, and stopping clears players.
+
+`SIM-0008` adds bounded authoritative movement without binding the player to a session or Protocol. Starfall.Simulation consumes finite ground destinations at 60 Hz, uses a provisional 4.0 m/s speed and 0.35 m radius by 1.8 m tall mover capsule, and replaces whole World-owned immutable states under the runtime lock. The four zone-to-walkable boundary strips and seven catalog proxies are created in stable order as Box3D collision. Accepted intent replaces the prior destination; rejected intent leaves it intact; arrival clamps exactly; a hit moves to the safe cast fraction, stops and clears the destination. The protected town remains traversable by players; hostile-action, monster-exclusion and respawn enforcement remain `SIM-0011`.
 
 ## Foundation assembly graph
 
 ~~~text
 Starfall.Content
 Starfall.Protocol
-Starfall.Simulation -> Content
+Starfall.Simulation -> Content + approved coordinator ChronoFall.Box3D source
 Starfall.World -> Content, Protocol, Simulation
 Starfall.Client -> Content, Protocol
 Starfall.Editor -> Content
@@ -105,7 +107,7 @@ Integer authoritative state covers HP, mana, damage, XP, levels, currency, item 
 
 Spatial/physics authority uses finite Box3D-native single-precision metres. Content authoring uses BCL-only immutable System.Numerics-backed values with identical units/precision and rejects NaN, infinity and out-of-zone data. Simulation converts components one-to-one without maintaining a parallel integer-millimetre model. Stable identities and explicit sorting protect gameplay from unordered native query results.
 
-Coordinator SHARED-0021 is the allocated bounded shared Box3D runtime prerequisite, and SF-0009 Cycle 3 has attached its canonical URI to SIM-0008. The dependency is valid but waiting while SHARED-0021 remains todo; SIM-0008 must not activate or consume shared Box3D source until SHARED-0021 completes and SIM-0008 receives its own approved implementation plan.
+Completed coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0021` supplies the only approved headless family-source reference: `$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj`. `SIM-0008` consumes that managed project directly from Starfall.Simulation; raw bindings and the matching native library remain transitive. Starfall retains entity identity, fixed-tick scheduling, collision layers, content conversion and movement outcomes.
 
 ## Family source and asset boundaries
 

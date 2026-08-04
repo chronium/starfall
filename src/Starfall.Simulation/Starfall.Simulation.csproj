@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="../Starfall.Content/Starfall.Content.csproj" />
+    <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj"
+                      AdditionalProperties="ShouldUnsetParentConfigurationAndPlatform=false" />
   </ItemGroup>
 </Project>

@@ -2,7 +2,7 @@
 
 Starfall is a server-authoritative MMORPG inspired by classic MU Online. It is an independently useful child repository in the ChronoFall project family and owns its simulation, protocol, content, presentation integration, editor and Balance Lab, build, and release lifecycle.
 
-The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a headless 60 Hz world/channel lifecycle with a provisional loaded zone, in-process admission sessions and one generic technical player. Authoritative movement, gameplay and networking remain future task-owned work.
+The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a headless 60 Hz world/channel lifecycle with a provisional loaded zone, in-process admission sessions and one generic technical player. The technical player now has bounded authoritative click-to-move and graybox collision; gameplay networking remains future task-owned work.
 
 ## Foundation commands
 
@@ -13,6 +13,14 @@ dotnet restore Starfall.slnx
 dotnet build Starfall.slnx --no-restore
 dotnet test Starfall.slnx --no-restore --no-build
 ```
+
+The authoritative Simulation consumes the coordinator-owned Box3D source boundary. From the ChronoFall family root, prepare the pinned macOS ARM64 native artifact before the Starfall build when it is not already present:
+
+```sh
+sh thirdparty/build-box3d-macos.sh
+```
+
+Linux x64 uses `thirdparty/build-box3d-linux.sh`. Windows and standalone package/feed distribution remain deferred.
 
 ## Foundation runtime checks
 
@@ -59,6 +67,6 @@ Left-click produces and logs a finite ground movement intent using the currently
 
 The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
 
-`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It owns the provisional Draft 0 graybox input together with world/channel identity, lifecycle, fixed-step scheduler and world-local technical-player state. The layout is validated immutable Content, not a serialized map, general scene format or source of gameplay behavior. The technical player is not yet bound to an admitted gameplay session. Later tasks own session-to-player binding, collision/physics, movement, gameplay and networking.
+`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It owns the provisional Draft 0 graybox input together with world/channel identity, lifecycle, fixed-step scheduler and world-local technical-player state. Simulation consumes finite ground intent at 60 Hz, moves a 0.35 m radius by 1.8 m tall capsule at the provisional 4.0 m/s speed, and stops and clears its destination at the first Box3D obstacle hit. The four walkable-boundary strips and seven catalog proxies are collision; the protected town remains traversable by players. Routes are not paths, and player-to-player collision is deferred. The layout remains validated immutable Content rather than a serialized map or general scene format. The technical player is not yet bound to an admitted gameplay session; later tasks own that binding, protocol exchange, combat and broader gameplay.
 
 Read `AGENTS.md` before beginning work. Durable architecture and workflow documentation lives in Starfall's PM wiki.
