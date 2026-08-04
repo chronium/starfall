@@ -1,4 +1,5 @@
 using Starfall.Content.Zones;
+using Starfall.World.Entities;
 using Starfall.World.Launch;
 using Starfall.World.Lifecycle;
 
@@ -38,12 +39,14 @@ internal static class WorldProgram
         try
         {
             runtime.Start();
+            WorldPlayerState technicalPlayer = runtime.CreateTechnicalPlayer();
             Console.WriteLine(
                 $"STARFALL_WORLD_READY world={runtime.WorldId} channel={runtime.ChannelId} " +
                 $"instance={runtime.InstanceId} zone={runtime.Layout.Specification.Id} " +
                 $"town={runtime.Layout.Town.Id} branches={runtime.Layout.Branches.Count} " +
                 $"routes={runtime.Layout.Branches.Count + 1} proxies={runtime.Layout.Proxies.Count} " +
                 $"spawns={runtime.Layout.Branches.Sum(static branch => branch.SampleSpawns.Count)} " +
+                $"technicalPlayer={technicalPlayer.EntityId} players={runtime.PlayerCount} " +
                 $"tickRate={WorldFixedStepLoop.TickRateHz} state=running");
 
             WorldRunResult result;
@@ -62,13 +65,15 @@ internal static class WorldProgram
             runtime.BeginDrain();
             Console.WriteLine(
                 $"STARFALL_WORLD_DRAINING world={runtime.WorldId} channel={runtime.ChannelId} " +
-                $"instance={runtime.InstanceId} ticks={runtime.CurrentTick} state=draining");
+                $"instance={runtime.InstanceId} ticks={runtime.CurrentTick} " +
+                $"players={runtime.PlayerCount} state=draining");
 
             runtime.Stop();
             Console.WriteLine(
                 $"STARFALL_WORLD_STOPPED world={runtime.WorldId} channel={runtime.ChannelId} " +
                 $"instance={runtime.InstanceId} ticks={runtime.CurrentTick} " +
-                $"catchUpClamps={result.CatchUpClampCount} reason={stopReason} state=stopped");
+                $"players={runtime.PlayerCount} catchUpClamps={result.CatchUpClampCount} " +
+                $"reason={stopReason} state=stopped");
             return 0;
         }
         catch (Exception exception)

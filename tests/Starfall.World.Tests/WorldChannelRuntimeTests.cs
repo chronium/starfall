@@ -1,5 +1,8 @@
+using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Simulation.Entities;
+using Starfall.World.Entities;
 using Starfall.World.Lifecycle;
 
 namespace Starfall.World.Tests;
@@ -125,6 +128,98 @@ public sealed class WorldChannelRuntimeTests
         Assert.Throws<InvalidOperationException>(runtime.Start);
         Assert.Throws<InvalidOperationException>(runtime.Step);
         Assert.Throws<InvalidOperationException>(runtime.BeginDrain);
+    }
+
+    [Fact]
+    public void Creates_the_technical_player_from_the_catalog_respawn_anchor()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+
+        WorldPlayerState player = runtime.CreateTechnicalPlayer();
+
+        Assert.Equal(new WorldEntityId(1), player.EntityId);
+        Assert.Equal(runtime.Layout.Town.RespawnAnchor, player.Position);
+        Assert.Equal(new GroundPoint(100.0f, 25.0f), player.Position);
+        Assert.Equal(Vector2.Zero, player.VelocityMetresPerSecond);
+        Assert.Equal(Vector2.UnitY, player.Facing);
+        Assert.Equal(1, runtime.PlayerCount);
+        Assert.True(runtime.TryGetPlayer(player.EntityId, out WorldPlayerState? found));
+        Assert.Same(player, found);
+    }
+
+    [Fact]
+    public void Orders_players_by_monotonic_identity_and_never_reuses_removed_ids()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldPlayerState first = runtime.CreateTechnicalPlayer();
+        WorldPlayerState removed = runtime.CreateTechnicalPlayer();
+        WorldPlayerState third = runtime.CreateTechnicalPlayer();
+
+        Assert.True(runtime.RemovePlayer(removed.EntityId));
+        Assert.False(runtime.RemovePlayer(removed.EntityId));
+        WorldPlayerState fourth = runtime.CreateTechnicalPlayer();
+
+        Assert.Equal(
+            [first.EntityId, third.EntityId, fourth.EntityId],
+            runtime.Players.Select(static player => player.EntityId));
+        Assert.Equal(4UL, fourth.EntityId.Value);
+        Assert.False(runtime.TryGetPlayer(removed.EntityId, out _));
+    }
+
+    [Fact]
+    public void Player_snapshots_are_stable_after_later_creation_and_removal()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldPlayerState first = runtime.CreateTechnicalPlayer();
+        IReadOnlyList<WorldPlayerState> snapshot = runtime.Players;
+
+        WorldPlayerState second = runtime.CreateTechnicalPlayer();
+        Assert.True(runtime.RemovePlayer(first.EntityId));
+
+        Assert.Single(snapshot);
+        Assert.Same(first, snapshot[0]);
+        Assert.Equal(new GroundPoint(100.0f, 25.0f), snapshot[0].Position);
+        Assert.Equal([second.EntityId], runtime.Players.Select(static player => player.EntityId));
+    }
+
+    [Fact]
+    public void Player_lifecycle_retains_during_drain_and_clears_on_stop()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+
+        Assert.Throws<InvalidOperationException>(runtime.CreateTechnicalPlayer);
+        Assert.Throws<InvalidOperationException>(() => runtime.RemovePlayer(new WorldEntityId(1)));
+
+        runtime.Start();
+        WorldPlayerState removed = runtime.CreateTechnicalPlayer();
+        WorldPlayerState retained = runtime.CreateTechnicalPlayer();
+        runtime.BeginDrain();
+
+        Assert.Equal(2, runtime.PlayerCount);
+        Assert.Equal([removed.EntityId, retained.EntityId], runtime.Players.Select(static player => player.EntityId));
+        Assert.Throws<InvalidOperationException>(runtime.CreateTechnicalPlayer);
+        Assert.True(runtime.RemovePlayer(removed.EntityId));
+        Assert.Same(retained, Assert.Single(runtime.Players));
+
+        runtime.Stop();
+        Assert.Equal(0, runtime.PlayerCount);
+        Assert.Empty(runtime.Players);
+        Assert.Throws<InvalidOperationException>(() => runtime.RemovePlayer(retained.EntityId));
+    }
+
+    [Fact]
+    public void Independent_world_runtimes_allocate_their_own_identity_space()
+    {
+        WorldChannelRuntime first = CreateRuntime(Guid.NewGuid());
+        WorldChannelRuntime second = CreateRuntime(Guid.NewGuid());
+        first.Start();
+        second.Start();
+
+        Assert.Equal(new WorldEntityId(1), first.CreateTechnicalPlayer().EntityId);
+        Assert.Equal(new WorldEntityId(1), second.CreateTechnicalPlayer().EntityId);
     }
 
     private static WorldChannelRuntime CreateRuntime(Guid instanceId) =>

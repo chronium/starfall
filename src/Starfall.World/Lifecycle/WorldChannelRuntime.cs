@@ -1,6 +1,9 @@
+using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Simulation.Entities;
 using Starfall.World.Admission;
+using Starfall.World.Entities;
 
 namespace Starfall.World.Lifecycle;
 
@@ -17,6 +20,8 @@ internal sealed class WorldChannelRuntime
     private readonly object synchronization = new();
     private readonly Dictionary<JoinTicketId, long> consumedTickets = [];
     private readonly Dictionary<GameplaySessionId, WorldGameplaySession> activeSessions = [];
+    private readonly Dictionary<WorldEntityId, WorldPlayerState> players = [];
+    private readonly WorldEntityIdSequence entityIds = new();
     private WorldChannelLifecycleState state;
     private ulong currentTick;
 
@@ -89,6 +94,29 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal int PlayerCount
+    {
+        get
+        {
+            lock (synchronization)
+                return players.Count;
+        }
+    }
+
+    internal IReadOnlyList<WorldPlayerState> Players
+    {
+        get
+        {
+            lock (synchronization)
+            {
+                WorldPlayerState[] snapshot = players.Values
+                    .OrderBy(static player => player.EntityId.Value)
+                    .ToArray();
+                return Array.AsReadOnly(snapshot);
+            }
+        }
+    }
+
     internal void Start()
     {
         lock (synchronization)
@@ -141,6 +169,49 @@ internal sealed class WorldChannelRuntime
             state = WorldChannelLifecycleState.Stopped;
             activeSessions.Clear();
             consumedTickets.Clear();
+            players.Clear();
+        }
+    }
+
+    internal WorldPlayerState CreateTechnicalPlayer()
+    {
+        lock (synchronization)
+        {
+            if (state != WorldChannelLifecycleState.Running)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot create a technical player in a world in the {state} state.");
+            }
+
+            WorldEntityId entityId = entityIds.Allocate();
+            var player = new WorldPlayerState(
+                entityId,
+                Layout.Town.RespawnAnchor,
+                Vector2.Zero,
+                Vector2.UnitY);
+            players.Add(entityId, player);
+            return player;
+        }
+    }
+
+    internal bool TryGetPlayer(WorldEntityId entityId, out WorldPlayerState? player)
+    {
+        lock (synchronization)
+            return players.TryGetValue(entityId, out player);
+    }
+
+    internal bool RemovePlayer(WorldEntityId entityId)
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot remove a player from a world in the {state} state.");
+            }
+
+            return players.Remove(entityId);
         }
     }
 

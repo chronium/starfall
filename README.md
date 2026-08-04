@@ -2,7 +2,7 @@
 
 Starfall is a server-authoritative MMORPG inspired by classic MU Online. It is an independently useful child repository in the ChronoFall project family and owns its simulation, protocol, content, presentation integration, editor and Balance Lab, build, and release lifecycle.
 
-The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a headless 60 Hz world/channel lifecycle. Gameplay, loaded zones, sessions and networking remain future task-owned work.
+The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a headless 60 Hz world/channel lifecycle with a provisional loaded zone, in-process admission sessions and one generic technical player. Authoritative movement, gameplay and networking remain future task-owned work.
 
 ## Foundation commands
 
@@ -39,7 +39,7 @@ dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-
   --world world_1 --channel channel_1
 ```
 
-Both identities are required and use the Protocol contract: 1-64 lowercase ASCII letters, digits or underscores, beginning with a letter. The host creates a fresh world-instance identity and binds the immutable `Draft0GrayboxCatalog.FirstPlayable` input before entering `Running`. Its `READY` diagnostic reports the exact zone/town identities and stable branch, route, proxy and spawn counts. It then advances only fixed 60 Hz integer ticks before reporting `DRAINING` and `STOPPED`. A real-time host caps catch-up at five ticks per outer-loop cycle and reports any backlog clamps. The finite mode advances exactly the requested positive tick count without wall-clock pacing.
+Both identities are required and use the Protocol contract: 1-64 lowercase ASCII letters, digits or underscores, beginning with a letter. The host creates a fresh world-instance identity and binds the immutable `Draft0GrayboxCatalog.FirstPlayable` input before entering `Running`. It then creates one generic technical player at the catalog town respawn anchor, with zero velocity and `+Z` facing. Its `READY` diagnostic reports that entity's world-local identity, player count, exact zone/town identities and stable branch, route, proxy and spawn counts. It advances only fixed 60 Hz integer ticks before reporting `DRAINING` with the retained player and `STOPPED` after lifecycle-owned player state is cleared. A real-time host caps catch-up at five ticks per outer-loop cycle and reports any backlog clamps. The finite mode advances exactly the requested positive tick count without wall-clock pacing.
 
 `Starfall.World` also owns a narrow in-process admission exchange over the existing signed-ticket Protocol facts. A running world validates a ticket against locally supplied public keys, consumes its ticket ID once, and creates an in-memory gameplay session bound to the selected account, character and lifecycle-specific world instance. Draining rejects new joins while retaining admitted sessions; stopping clears lifecycle-owned session and replay state. The current command-line host does not configure keys or expose a network transport, so its standalone runs still create no sessions. Production key provisioning, transport security and network framing remain separate work.
 
@@ -59,6 +59,6 @@ Left-click produces and logs a finite ground movement intent using the currently
 
 The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
 
-`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It owns the provisional Draft 0 graybox input together with the empty world/channel identity, lifecycle and fixed-step scheduler. The layout is validated immutable Content, not a serialized map, general scene format or source of gameplay behavior. Later tasks own entities, sessions, collision/physics, movement, gameplay and networking.
+`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It owns the provisional Draft 0 graybox input together with world/channel identity, lifecycle, fixed-step scheduler and world-local technical-player state. The layout is validated immutable Content, not a serialized map, general scene format or source of gameplay behavior. The technical player is not yet bound to an admitted gameplay session. Later tasks own session-to-player binding, collision/physics, movement, gameplay and networking.
 
 Read `AGENTS.md` before beginning work. Durable architecture and workflow documentation lives in Starfall's PM wiki.

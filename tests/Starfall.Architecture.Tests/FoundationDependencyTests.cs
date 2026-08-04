@@ -123,13 +123,15 @@ public sealed class FoundationDependencyTests
         Assert.Equal(
             $"STARFALL_WORLD_READY world=world_1 channel=channel_1 instance={instance} " +
             "zone=draft_0_first_playable_zone town=town_safe branches=3 routes=4 proxies=7 spawns=10 " +
-            "tickRate=60 state=running",
+            "technicalPlayer=1 players=1 tickRate=60 state=running",
             lines[0]);
         Assert.Equal(
-            $"STARFALL_WORLD_DRAINING world=world_1 channel=channel_1 instance={instance} ticks=1 state=draining",
+            $"STARFALL_WORLD_DRAINING world=world_1 channel=channel_1 instance={instance} ticks=1 " +
+            "players=1 state=draining",
             lines[1]);
         Assert.Equal(
-            $"STARFALL_WORLD_STOPPED world=world_1 channel=channel_1 instance={instance} ticks=1 catchUpClamps=0 reason=finite state=stopped",
+            $"STARFALL_WORLD_STOPPED world=world_1 channel=channel_1 instance={instance} ticks=1 " +
+            "players=0 catchUpClamps=0 reason=finite state=stopped",
             lines[2]);
     }
 

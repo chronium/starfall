@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T11:24:59.1480820Z
+modifiedAt: 2026-08-04T11:56:56.9140070Z
 ---
 
 ## Purpose
@@ -22,7 +22,9 @@ Logical identity/lobby, world, chat, operations and persistence boundaries do no
 
 `SERVER-0002` implements the first authoritative world/channel host: explicit Protocol-owned world and channel identities, a fresh lifecycle-scoped world-instance identity, `Created -> Running -> Draining -> Stopped`, and a fixed 60 Hz scheduler. Finite validation advances an exact positive tick count without wall-clock pacing; persistent execution uses a monotonic clock, caps catch-up at five ticks per outer-loop cycle, reports backlog clamps, and drains on Ctrl+C.
 
-`SERVER-0004` binds the validated immutable `Draft0GrayboxCatalog.FirstPlayable` input to every current runtime before it enters `Running`. World now owns the provisional zone/town, route/camp, proxy and spawn inputs while implementing no player/monster state, collision/navigation behavior, physics, protection enforcement or protocol exchange. Direct immutable Content consumption is deliberate evidence, not a serialized map or general scene framework.
+`SERVER-0004` binds the validated immutable `Draft0GrayboxCatalog.FirstPlayable` input to every current runtime before it enters `Running`. World now owns the provisional zone/town, route/camp, proxy and spawn inputs while implementing no monster state, collision/navigation behavior, physics, protection enforcement or protocol exchange. Direct immutable Content consumption is deliberate evidence, not a serialized map or general scene framework.
+
+`SERVER-0006` adds one generic world-owned technical player at the catalog respawn anchor after startup. Its immutable state contains a world-instance-local monotonic identity, ground position, planar velocity and normalized facing. Creation, lookup, ordered defensive snapshots and lifecycle-scoped removal are explicit; IDs never reuse or wrap, and stopping clears players. The technical player remains independent of admission sessions, selected class/content, collision, movement, networking and gameplay.
 
 ## Foundation assembly graph
 
