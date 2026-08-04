@@ -1,7 +1,7 @@
 ---
 title: World Admission and Join Tickets
 createdAt: 2026-08-03T06:08:22.0865090Z
-modifiedAt: 2026-08-03T07:56:04.1703350Z
+modifiedAt: 2026-08-04T10:16:06.2111050Z
 ---
 
 ## Purpose
@@ -86,9 +86,11 @@ A world performs the bounded work in this order:
 7. Atomically consume the unique ticket ID before creating a gameplay session.
 8. Generate a new world-owned gameplay-session ID and continue independently of identity.
 
-Steps 1-6 are implemented by `Starfall.Protocol`. The atomic consumption registry, concurrent single-use enforcement, cleanup after expiry, admission lifecycle, and session creation belong to `SERVER-0003`.
+Steps 1-6 are implemented by `Starfall.Protocol`. `SERVER-0003` implements steps 7-8 in `Starfall.World` behind one synchronized world-lifecycle gate. The gate makes ticket consumption, lifecycle eligibility, session creation, draining, and stopping one world-local ownership boundary.
 
-Exactly one concurrent admission may consume a ticket. A failed attempt before consumption may retry while the ticket remains valid. A failure after consumption never makes the credential reusable; the client must return to identity/lobby for a new ticket. A world restart changes the world-instance ID rather than attempting to recover an old in-memory replay set. No distributed replay service or transaction is introduced.
+Exactly one concurrent admission may consume a ticket. A failed attempt before consumption may retry while the ticket remains valid. A failure after consumption never makes the credential reusable; the client must return to identity/lobby for a new ticket. Consumed ticket IDs are retained through expiry plus the five-second skew and lazily pruned when a later cryptographically valid request reaches the world boundary. A world restart changes the world-instance ID and discards the lifecycle-local replay set rather than recovering or distributing it.
+
+An active in-memory session retains only its new session ID plus the admitted account, character, and world-instance identities. The raw bearer ticket is never retained. Draining rejects new admission while retaining existing sessions and fixed-step execution. Stopping terminates and clears the remaining session and replay registries.
 
 ## Failure and diagnostic boundary
 
@@ -98,7 +100,7 @@ Implementations may record bounded counters for internal diagnosis, but must nev
 
 ## Transport and availability boundaries
 
-`PROTOCOL-0002` owns the self-contained ticket encoding and transport-neutral admission facts. `SERVER-0003` owns the narrow host-specific binding that receives the bounded join request and returns the approved accept or reject fact, alongside atomic ticket consumption and world-owned session creation. This admission exchange is independent of `PROTOCOL-0004` connected-walking serialization and must not introduce a general networking or framing framework.
+`PROTOCOL-0002` owns the self-contained ticket encoding and transport-neutral admission facts. `SERVER-0003` implements the narrow host-specific binding as an internal in-process World exchange that receives one bounded join request and returns exactly one existing accept or reject fact. It is the invocation seam for a later protected host transport, not a socket, serializer, framing layer, or generic message dispatcher. The current command-line entry point does not configure public keys or expose admission over a network.
 
 TLS or an equivalent protected transport remains required because signatures provide authenticity and integrity, not confidentiality. This task does not implement transport security.
 
@@ -106,4 +108,4 @@ An unavailable identity/lobby prevents new admission but cannot terminate or con
 
 ## Non-goals
 
-This contract does not implement accounts, credentials, lobby UI, character summaries, identity or world services, networking, transport framing, replay storage, active sessions, persistence, chat, gameplay commands, gameplay events, snapshots, key provisioning, JWT, a generic token framework, or physical deployment topology.
+This bounded admission path does not implement accounts, credentials, lobby UI, character summaries, identity services, network sockets, transport security or framing, persistent or distributed replay storage, durable sessions, persistence, chat, gameplay commands, gameplay events, snapshots, key provisioning, JWT, a generic token framework, or physical deployment topology.

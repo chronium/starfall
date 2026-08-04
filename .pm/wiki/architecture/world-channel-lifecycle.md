@@ -1,12 +1,12 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T08:56:16.3147490Z
+modifiedAt: 2026-08-04T10:16:06.2264220Z
 ---
 
 ## Purpose
 
-This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel and the provisional immutable layout binding added by `SERVER-0004`. It is the timing and content-ownership foundation for later world-local state, admission and gameplay; none of those later capabilities are implemented here.
+This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding added by `SERVER-0004`, and the lifecycle-local admission/session boundary added by `SERVER-0003`. It remains the timing and content-ownership foundation for later player state and gameplay.
 
 ## Identity
 
@@ -27,7 +27,7 @@ The legal state sequence is:
 Created -> Running -> Draining -> Stopped
 ```
 
-Only `Running` is eligible to accept future admissions. Entering `Draining` closes that seam immediately. A draining runtime may continue fixed ticks so later session-owning work can define orderly session completion; the current empty runtime has no sessions and stops immediately. Repeated drain while already draining and repeated stop while already stopped are harmless. Other invalid transitions fail explicitly.
+Only `Running` is eligible to accept admission. Entering `Draining` closes that seam immediately while retaining existing world-owned sessions and allowing fixed ticks to continue. `Stopped` terminates and clears any remaining in-memory sessions and consumed-ticket records. The current command-line host configures no keys or admission transport, so its standalone run still has no sessions and stops immediately. Repeated drain while already draining and repeated stop while already stopped are harmless. Other invalid transitions fail explicitly.
 
 Ctrl+C requests graceful shutdown. It does not add an operations service, remote supervisor or hot-path dependency.
 
@@ -75,10 +75,11 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 `Starfall.World` is the headless composition root over Content, Protocol and Simulation. Its output remains free of SDL, GPU, editor and presentation dependencies.
 
+`SERVER-0003` now owns the in-process signed-ticket exchange, atomic lifecycle-local consumption registry, and active session records. The runtime retains only session/account/character/world-instance identities; it never retains the bearer token or calls identity, chat, or operations after admission.
+
 Later focused tasks own:
 
 - `SERVER-0006`: stable world-local identity and one technical player;
-- `SERVER-0003`: ticket consumption, admission exchange and gameplay-session creation;
 - `SIM-0008`: authoritative click-to-move after its shared Box3D prerequisite completes;
 - `PROTOCOL-0003` and `PROTOCOL-0004`: proven connected-walking facts and deterministic serialization;
 - `SERVER-0005`: connected movement exchange.
@@ -87,4 +88,4 @@ Those tasks may consume this lifecycle but must not retroactively turn it into a
 
 ## Non-goals
 
-This contract does not create entities, sessions, physics worlds or network sockets, construct collision/navigation behavior, validate join tickets, persist state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.
+This contract does not create entities, player state, physics worlds or network sockets, construct collision/navigation behavior, provision verification keys, persist sessions or other state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.
