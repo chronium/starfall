@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-04T08:24:34.4533070Z
+modifiedAt: 2026-08-04T11:24:59.1549890Z
 ---
 
 ## Purpose
@@ -35,6 +35,8 @@ tests/
 `BUILD-0002` established every product project as a library so compile-time ownership and dependency direction existed without placeholder gameplay or service types. `BUILD-0003` changes only `Starfall.Client` and `Starfall.World` into executable composition roots. Content, Protocol, Simulation, Editor, and BalanceLab remain libraries.
 
 The repository pins .NET SDK 10.0.301 and owns its build properties and package versions. `BUILD-0002` established a standalone library foundation; that historical result remains valid. The canonical environment for future full-client builds is now the shallow coordinator family checkout. Starfall may consume an approved coordinator source allowlist through `$(ChronoFallFamilyRoot)`, but never references Royale or imports coordinator build policy.
+
+For `EDITOR-0003`, `Starfall.Editor` and `Starfall.BalanceLab` remain libraries. `EDITOR-0004` owns any later Balance Lab executable-host decision and scaffolding. The durable authoring, compilation, headless-analysis, and operations separation is recorded at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/editor-and-balance-lab-boundaries.
 
 ## Foundation validation
 

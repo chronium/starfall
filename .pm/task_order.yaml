@@ -77,7 +77,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - EDITOR-0003
   - EDITOR-0004
   - EDITOR-0005
   - EDITOR-0006

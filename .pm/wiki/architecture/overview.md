@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T08:56:27.1483660Z
+modifiedAt: 2026-08-04T11:24:59.1480820Z
 ---
 
 ## Purpose
@@ -39,6 +39,10 @@ Starfall.BalanceLab -> Content, Simulation
 Content and Protocol remain product-dependency-free. Simulation never depends on Protocol. Client never references World or Simulation. World is the composition boundary between protocol, content and simulation. Editor authoring stays separate from compact runtime data; Balance Lab remains headless.
 
 CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through ChronoFallFamilyRoot. Future EDITOR-0007 may add a separately explicit, architecture-tested static-rendering allowlist for Editor; no such reference exists merely because the task is planned.
+
+`EDITOR-0003` preserves Editor and BalanceLab as libraries while defining their separate responsibilities. Any Balance Lab executable-host choice belongs to `EDITOR-0004`. Authoritative and presentation outputs must derive from the same fully validated authoring revision, share stable cross-output identities, and be emitted together only after complete validation; runtime consumers never depend on editor document or object identity.
+
+Editor and Balance Lab contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/editor-and-balance-lab-boundaries
 
 ## Evidence-driven vertical-slice order
 

@@ -210,6 +210,53 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
+    public void BalanceLab_output_excludes_presentation_editor_and_runtime_host_artifacts()
+    {
+        string outputDirectory = GetProductOutputDirectory("Starfall.BalanceLab");
+        string[] relativePaths = Directory
+            .EnumerateFiles(outputDirectory, "*", SearchOption.AllDirectories)
+            .Select(path => Path.GetRelativePath(outputDirectory, path))
+            .ToArray();
+
+        string[] forbiddenFragments =
+        [
+            "Starfall.Client",
+            "Starfall.Editor",
+            "Starfall.Protocol",
+            "Starfall.World",
+            "ChronoFall.CharacterPresentation",
+            "SDL",
+            "Gpu",
+            "ImGui",
+            "Blurg",
+            "Rendering",
+            "Shader",
+            "Texture",
+        ];
+        string[] forbiddenExtensions =
+        [
+            ".metal",
+            ".spv",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".ktx",
+            ".dds",
+        ];
+
+        string[] forbiddenFiles = relativePaths
+            .Where(path =>
+                forbiddenFragments.Any(fragment =>
+                    path.Contains(fragment, StringComparison.OrdinalIgnoreCase)) ||
+                forbiddenExtensions.Contains(Path.GetExtension(path), StringComparer.OrdinalIgnoreCase))
+            .ToArray();
+
+        Assert.True(
+            forbiddenFiles.Length == 0,
+            $"Starfall.BalanceLab output contains forbidden artifacts: {string.Join(", ", forbiddenFiles)}.");
+    }
+
+    [Fact]
     public void Product_project_references_match_approved_graph()
     {
         foreach ((string projectName, string[] expectedReferences) in ExpectedProductReferences)
