@@ -20,6 +20,17 @@ public sealed class WorldJoinAdmissionCodecTests
     }
 
     [Fact]
+    public void Request_encoder_rejects_non_ascii_source_text_without_substitution()
+    {
+        var request = new WorldJoinRequest("sfjt1.key.payload.signaturé");
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            WorldJoinAdmissionCodec.EncodeRequest(request));
+
+        Assert.Equal("request", exception.ParamName);
+    }
+
+    [Fact]
     public void Accepted_and_rejected_have_exact_stable_payloads()
     {
         var accepted = new WorldJoinAccepted(

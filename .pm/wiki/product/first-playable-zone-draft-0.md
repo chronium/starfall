@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-04T08:04:03.1563680Z
+modifiedAt: 2026-08-04T17:50:14.8541780Z
 ---
 
 ## Status and purpose
@@ -25,7 +25,7 @@ The first visible milestone requires:
 - a deterministic authoritative-style movement fixture;
 - one Client-owned snapshot/fact-to-presentation adapter.
 
-It requires no connection, selected final assets, World/Simulation dependency in Client, or client gameplay authority. CLIENT-0009 later maps real protocol snapshots into exactly the same adapter.
+The local milestone itself requires no connection, selected final assets, World/Simulation dependency in Client, or client gameplay authority. CLIENT-0009 now maps real protocol snapshots into exactly the same adapter for the completed connected walking milestone.
 
 ### Provisional camera, input and local presentation contract
 

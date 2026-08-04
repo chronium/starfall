@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T17:18:04.5898780Z
+modifiedAt: 2026-08-04T17:50:35.7057230Z
 ---
 
 ## Purpose
@@ -29,7 +29,7 @@ The legal state sequence is:
 Created -> Running -> Draining -> Stopped
 ```
 
-Only `Running` is eligible to accept admission or create technical players. Entering `Draining` closes those seams immediately while retaining existing world-owned sessions and players, allowing fixed ticks and explicit player removal to continue. `Stopped` terminates and clears remaining in-memory sessions, consumed-ticket records and players without resetting the runtime's entity identity sequence. The current command-line host configures no keys or admission transport, so its standalone run still has no sessions; it does create one technical player after entering `Running`. Repeated drain while already draining and repeated stop while already stopped are harmless. Other invalid transitions fail explicitly.
+Only `Running` is eligible to accept admission or create technical players. Entering `Draining` closes those seams immediately while retaining existing world-owned sessions and players, allowing fixed ticks and explicit player removal to continue. `Stopped` terminates and clears remaining in-memory sessions, consumed-ticket records and players without resetting the runtime's entity identity sequence. Offline command-line mode configures no keys or admission transport, so a standalone run has no sessions; it creates one technical player after entering `Running`. Connected mode instead configures verification keys and a listener, creates no technical player, and admits session-bound players while `Running`. Repeated drain while already draining and repeated stop while already stopped are harmless. Other invalid transitions fail explicitly.
 
 Ctrl+C requests graceful shutdown. It does not add an operations service, remote supervisor or hot-path dependency.
 
@@ -99,4 +99,4 @@ Combat, monsters, persistence, protected non-loopback transport, multiple-world 
 
 ## Non-goals
 
-This contract does not create a generic entity/component framework, ECS, character controller, navigation/pathfinding framework, network socket, message-framing system or generic exchange host. It does not provision verification keys, expose admission or movement over a network, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.
+This contract does not create a generic entity/component framework, ECS, character controller, navigation/pathfinding framework, message-framing system or generic exchange host. Connected mode creates one bounded loopback development socket and exposes only the approved admission and walking exchanges. It does not provision production verification keys, support protected non-loopback transport, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.

@@ -113,6 +113,16 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         }
         if (!admissionAccepted)
         {
+            if (channel == StarfallNetworkChannels.MovementSnapshots && delivery == NetworkDelivery.Sequenced)
+            {
+                if (ConnectedWalkingCodec.TryDecodeSnapshot(packet.Span, out PlayerMovementSnapshot? earlySnapshot))
+                {
+                    AcceptSnapshot(earlySnapshot);
+                    return;
+                }
+                failure = "World sent malformed initial movement snapshot data.";
+                return;
+            }
             if (channel != StarfallNetworkChannels.Admission || delivery != NetworkDelivery.ReliableOrdered)
             {
                 failure = "Received non-admission data before world admission.";

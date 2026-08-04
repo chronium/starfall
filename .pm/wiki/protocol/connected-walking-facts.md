@@ -1,7 +1,7 @@
 ---
 title: Connected Walking Facts
 createdAt: 2026-08-04T14:02:01.5363760Z
-modifiedAt: 2026-08-04T17:18:04.4887950Z
+modifiedAt: 2026-08-04T17:50:35.7139560Z
 ---
 
 ## Purpose
@@ -90,4 +90,4 @@ The fixed channel/delivery assignment is:
 
 These are transport datagrams, not nested generic frames. The connected Client allocates positive command sequences monotonically, retains only newer global snapshot sequences, permits nondecreasing simulation ticks, requires stable entity identity, and rejects acknowledgements beyond the last command it sent. Corrections replace the latest authoritative snapshot. No interpolation, prediction, reconciliation math or local movement authority is introduced.
 
-The World polls transport each outer fixed-step cycle and publishes only the latest post-catch-up snapshot. Admission also publishes the current tick immediately, including tick zero. This keeps snapshot evidence explicit rather than fabricating an historical backlog.
+The World polls transport each outer fixed-step cycle and publishes only the latest post-catch-up snapshot. Admission also publishes the current tick immediately, including tick zero. This keeps snapshot evidence explicit rather than fabricating an historical backlog. Because delivery ordering is not guaranteed across the reliable-ordered admission channel and sequenced snapshot channel, the Client may receive that valid initial snapshot before acceptance. It retains newer well-formed early snapshots from the expected peer/channel but does not become ready until admission acceptance arrives; corrections and malformed or misrouted data still fail closed.

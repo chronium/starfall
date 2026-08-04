@@ -85,6 +85,36 @@ public sealed class ConnectedWalkingClientSessionTests
     }
 
     [Fact]
+    public void Session_retains_valid_initial_snapshot_until_cross_channel_acceptance_arrives()
+    {
+        var transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket");
+        transport.OnPoll = handler =>
+        {
+            if (transport.PollCount != 1)
+                return;
+            handler.Connected(transport.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                transport.Peer,
+                Snapshot(1, 0, acknowledged: null),
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MovementSnapshots);
+            Assert.False(session.IsReady);
+            handler.PacketReceived(
+                transport.Peer,
+                WorldJoinAdmissionCodec.EncodeAccepted(
+                    new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                NetworkDelivery.ReliableOrdered,
+                StarfallNetworkChannels.Admission);
+        };
+
+        session.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, 7777, "unused"));
+
+        Assert.True(session.IsReady);
+        Assert.Equal(0UL, session.Snapshot!.Value.Tick);
+    }
+
+    [Fact]
     public void Admission_rejection_and_timeout_fail_without_reconnect()
     {
         var rejectedTransport = new ScriptedTransport();

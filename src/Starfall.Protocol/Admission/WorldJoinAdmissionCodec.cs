@@ -18,9 +18,10 @@ public static class WorldJoinAdmissionCodec
     public static byte[] EncodeRequest(WorldJoinRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (request.Ticket.Any(static value => value > 0x7f))
+            throw new ArgumentException("Join request must contain one canonical ASCII ticket.", nameof(request));
         byte[] ticket = Encoding.ASCII.GetBytes(request.Ticket);
-        if (ticket.Length is 0 or > WorldJoinTicketCodec.MaximumTokenLength ||
-            ticket.Any(static value => value > 0x7f))
+        if (ticket.Length is 0 or > WorldJoinTicketCodec.MaximumTokenLength)
         {
             throw new ArgumentException("Join request must contain one canonical ASCII ticket.", nameof(request));
         }
