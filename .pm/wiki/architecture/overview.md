@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-03T15:55:30.9125500Z
+modifiedAt: 2026-08-04T08:24:45.6011800Z
 ---
 
 ## Purpose
@@ -19,6 +19,8 @@ Once admitted, an active player's gameplay session does not depend on identity, 
 World/Simulation own movement, combat, character state, monsters, camps, progression, drops and equipment. Client owns input presentation, rendering, animation, IK, effects, camera and smoothing. Headless projects never depend on SDL, GPU, ImGui, renderer, editor UI or presentation assets.
 
 Logical identity/lobby, world, chat, operations and persistence boundaries do not require one process per concept. Physical topology and persistence degradation remain evidence-gated.
+
+`SERVER-0002` implements the first empty authoritative world/channel host: explicit Protocol-owned world and channel identities, a fresh lifecycle-scoped world-instance identity, `Created -> Running -> Draining -> Stopped`, and a fixed 60 Hz scheduler. Finite validation advances an exact positive tick count without wall-clock pacing; persistent execution uses a monotonic clock, caps catch-up at five ticks per outer-loop cycle, reports backlog clamps, and drains on Ctrl+C. This is lifecycle evidence only: no zone, entities, sessions, physics, protocol exchange, persistence, chat or operations dependency exists yet.
 
 ## Foundation assembly graph
 
@@ -108,6 +110,8 @@ Draft 0: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-z
 Zone contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-zone-contract
 
 Service contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/service-availability-and-ownership
+
+World lifecycle contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/world-channel-lifecycle
 
 Family contract: pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/architecture/shared-engine-boundaries
 

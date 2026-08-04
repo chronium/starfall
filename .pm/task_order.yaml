@@ -33,7 +33,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - SERVER-0002
   - SERVER-0003
   - SERVER-0004
   - SERVER-0006

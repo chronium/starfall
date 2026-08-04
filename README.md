@@ -2,7 +2,7 @@
 
 Starfall is a server-authoritative MMORPG inspired by classic MU Online. It is an independently useful child repository in the ChronoFall project family and owns its simulation, protocol, content, presentation integration, editor and Balance Lab, build, and release lifecycle.
 
-The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a bounded executable shell for the authoritative world host. Gameplay, networking, and the authoritative world loop remain future task-owned work.
+The repository contains the approved library boundaries, architecture tests, a native generated-graybox and shared-character preview in the player client, and a headless 60 Hz world/channel lifecycle. Gameplay, loaded zones, sessions and networking remain future task-owned work.
 
 ## Foundation commands
 
@@ -23,13 +23,23 @@ scripts/cook-character-presentation-for-client.sh \
   --project-id prj_pkIpzx0fzFD4URjvqBuYrGZF
 ```
 
-After restoring and building Starfall, run the headless world shell and non-graphical client content probe independently:
+After restoring and building Starfall, run a deterministic one-second headless world validation and the non-graphical client content probe independently:
 
 ```sh
-dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build
+dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build -- \
+  --world world_1 --channel channel_1 --run-ticks 60
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build -- \
   --validate-character-content
 ```
+
+Run the same empty world/channel in real time until Ctrl+C with:
+
+```sh
+dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build -- \
+  --world world_1 --channel channel_1
+```
+
+Both identities are required and use the Protocol contract: 1-64 lowercase ASCII letters, digits or underscores, beginning with a letter. The host creates a fresh world-instance identity, reports `READY`, advances only fixed 60 Hz integer ticks, then reports `DRAINING` and `STOPPED`. A real-time host caps catch-up at five ticks per outer-loop cycle and reports any backlog clamps. The finite mode advances exactly the requested positive tick count without wall-clock pacing. The current empty world drains immediately because it owns no sessions yet.
 
 Launch the persistent native SDL GPU preview with no client arguments:
 
@@ -47,6 +57,6 @@ Left-click produces and logs a finite ground movement intent using the currently
 
 The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
 
-`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It still exits after its bounded startup probe. Later tasks own its fixed-step world lifecycle and all gameplay and networking.
+`Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It owns only the empty world/channel identity, lifecycle and fixed-step scheduler today. Later tasks own loaded content, entities, sessions, gameplay and networking.
 
 Read `AGENTS.md` before beginning work. Durable architecture and workflow documentation lives in Starfall's PM wiki.

@@ -1,7 +1,7 @@
 ---
 title: Service Availability and Ownership
 createdAt: 2026-08-01T06:48:13.9601190Z
-modifiedAt: 2026-08-03T06:08:50.2457160Z
+modifiedAt: 2026-08-04T08:24:59.4588200Z
 ---
 
 ## Decision
@@ -55,7 +55,9 @@ The active-session invariant deliberately does not promise transparent persisten
 
 Each world/channel is an independent lifecycle and authoritative state owner. It owns its live population, monsters, drops, camps, progression events, and active sessions. Cross-world features must not create synchronous dependencies that stop unrelated worlds.
 
-Physical host granularity remains open. An early host may run one or more logical worlds, but the design must preserve separable state, lifecycle, and interfaces so later failure-isolation evidence can determine whether worlds require separate processes or hosts.
+`SERVER-0002` establishes the executable empty-world lifecycle contract at `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/world-channel-lifecycle`. Every process invocation requires explicit world and channel identities and creates a fresh world-instance identity. Running is the only admission-eligible state; draining immediately rejects future admission while allowing later session-owning work to define how existing sessions finish. The current empty world has no sessions and therefore stops immediately after entering drain. This lifecycle does not implement admission, session state or process supervision.
+
+Physical host granularity remains open. The current executable hosts one explicitly selected logical world/channel per invocation as the smallest evidence-producing boundary; that is not a final deployment-topology decision. A later host may run one or more logical worlds, but the design must preserve separable state, lifecycle, and interfaces so failure-isolation evidence can determine whether worlds require separate processes or hosts.
 
 ## Chat boundary
 
@@ -127,4 +129,4 @@ The result may retain modules, split processes, or use multiple host shapes. Own
 
 ## Non-goals
 
-This decision does not implement identity, lobby, chat, persistence, operations UI/API, process supervision, world hosting, or deployment infrastructure. It does not choose a permanent join-ticket format, persistence model, process count, container topology, distributed transaction scheme, population director, or general service framework.
+This decision does not implement identity, lobby, chat, persistence, operations UI/API, process supervision, production world orchestration, or deployment infrastructure. The bounded empty world/channel executable is lifecycle evidence, not an operations control plane or final topology. This decision does not choose a persistence model, process count, container topology, distributed transaction scheme, population director, or general service framework.

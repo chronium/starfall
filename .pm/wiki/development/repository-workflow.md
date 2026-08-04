@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-02T14:35:40.7867540Z
+modifiedAt: 2026-08-04T08:24:34.4533070Z
 ---
 
 ## Purpose
@@ -25,6 +25,10 @@ src/
   Starfall.BalanceLab/
 tests/
   Starfall.Architecture.Tests/
+  Starfall.Client.Tests/
+  Starfall.Content.Tests/
+  Starfall.Protocol.Tests/
+  Starfall.World.Tests/
 .agents/skills/
 ```
 
@@ -49,13 +53,16 @@ dotnet build Starfall.slnx --no-restore
 dotnet test Starfall.slnx --no-restore --no-build
 ```
 
-After the solution build, prove the headless world shell and the client content path independently:
+After the solution build, prove an exact 60-tick headless world lifecycle and the client content path independently:
 
 ```sh
-dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build
+dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build -- \
+  --world world_1 --channel channel_1 --run-ticks 60
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build -- \
   --validate-character-content
 ```
+
+For the persistent empty-world path, omit `--run-ticks` and stop it with Ctrl+C. World and channel identities are both mandatory. The finite mode is unpaced and exact; the persistent mode uses a monotonic clock, fixed 60 Hz steps, at most five catch-up ticks per outer-loop cycle, and explicit backlog-clamp diagnostics.
 
 Run the native presentation preview with:
 
@@ -63,9 +70,9 @@ Run the native presentation preview with:
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
-The preview loads the staged Quaternius humanoid, loops `Idle_Loop` through SDL GPU, and closes with Escape or the window close control. The content probe loads the same runtime cook without initializing SDL and prints a deterministic asset, joint, and clip summary. Unknown arguments fail with exit code 2. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service. `SERVER-0002` owns the fixed-step world lifecycle, while `CLIENT-0006` owns the first presentation runtime integration.
+The preview loads the staged Quaternius humanoid, loops `Idle_Loop` through SDL GPU, and closes with Escape or the window close control. The content probe loads the same runtime cook without initializing SDL and prints a deterministic asset, joint, and clip summary. Unknown arguments fail with exit code 2. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service. `SERVER-0002` owns its empty world/channel identity, `Created -> Running -> Draining -> Stopped` lifecycle and fixed-step scheduler. It does not load a zone, create entities or sessions, initialize physics, or expose networking. `CLIENT-0006` owns the first presentation runtime integration.
 
-The architecture tests enforce the expected solution projects, exact executable/library split, bounded Client and World process startup, argument rejection, approved direct project-reference graph, absence of product package dependencies, and headless output exclusion of client/editor/rendering artifacts. They also enforce the exact client-only coordinator source allowlist and reject literal repository escapes, absolute paths, arbitrary property-rooted references, coordinator imports, and Royale references.
+The architecture tests enforce the expected solution projects, exact executable/library split, bounded Client startup, exact finite World lifecycle output, required World identities, argument rejection, approved direct project-reference graph, absence of product package dependencies, and headless output exclusion of client/editor/rendering artifacts. They also enforce the exact client-only coordinator source allowlist and reject literal repository escapes, absolute paths, arbitrary property-rooted references, coordinator imports, and Royale references.
 
 When an approved task changes a dependency or executable boundary, update the tests and `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/overview` together.
 

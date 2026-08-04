@@ -25,6 +25,7 @@ public sealed class FoundationDependencyTests
         "Starfall.Client.Tests",
         "Starfall.Content.Tests",
         "Starfall.Protocol.Tests",
+        "Starfall.World.Tests",
     ];
 
     private static readonly IReadOnlySet<string> ExpectedExecutableProjects =
@@ -94,15 +95,40 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
-    public async Task World_foundation_shell_starts_and_exits_successfully()
+    public async Task World_finite_lifecycle_starts_drains_and_stops_successfully()
     {
-        ProcessResult result = await RunProductProcessAsync("Starfall.World");
+        ProcessResult result = await RunProductProcessAsync(
+            "Starfall.World",
+            "--world", "world_1",
+            "--channel", "channel_1",
+            "--run-ticks", "1");
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Equal(
-            $"Starfall.World foundation shell started.{Environment.NewLine}",
-            result.StandardOutput);
         Assert.Empty(result.StandardError);
+
+        string[] lines = result.StandardOutput.Split(
+            Environment.NewLine,
+            StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal(3, lines.Length);
+
+        string instance = Assert.IsType<System.Text.RegularExpressions.Match>(
+            System.Text.RegularExpressions.Regex.Match(
+                lines[0],
+                "instance=(?<instance>[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"))
+            .Groups["instance"]
+            .Value;
+        Assert.True(Guid.TryParseExact(instance, "D", out Guid parsedInstance));
+        Assert.NotEqual(Guid.Empty, parsedInstance);
+
+        Assert.Equal(
+            $"STARFALL_WORLD_READY world=world_1 channel=channel_1 instance={instance} tickRate=60 state=running",
+            lines[0]);
+        Assert.Equal(
+            $"STARFALL_WORLD_DRAINING world=world_1 channel=channel_1 instance={instance} ticks=1 state=draining",
+            lines[1]);
+        Assert.Equal(
+            $"STARFALL_WORLD_STOPPED world=world_1 channel=channel_1 instance={instance} ticks=1 catchUpClamps=0 reason=finite state=stopped",
+            lines[2]);
     }
 
     [Fact]
@@ -121,7 +147,7 @@ public sealed class FoundationDependencyTests
     }
 
     [Theory]
-    [InlineData("Starfall.World", "Starfall.World foundation shell does not accept arguments.")]
+    [InlineData("Starfall.World", "Starfall.World: does not recognize argument '--unexpected'.")]
     [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview, --validate-character-content, or --capture-graybox-suite <directory>.")]
     public async Task Foundation_processes_reject_unknown_arguments(
         string projectName,
@@ -132,6 +158,18 @@ public sealed class FoundationDependencyTests
         Assert.Equal(2, result.ExitCode);
         Assert.Empty(result.StandardOutput);
         Assert.Equal(expectedError + Environment.NewLine, result.StandardError);
+    }
+
+    [Fact]
+    public async Task World_requires_explicit_world_and_channel_identities()
+    {
+        ProcessResult result = await RunProductProcessAsync("Starfall.World");
+
+        Assert.Equal(2, result.ExitCode);
+        Assert.Empty(result.StandardOutput);
+        Assert.Equal(
+            $"Starfall.World: requires both --world <id> and --channel <id>.{Environment.NewLine}",
+            result.StandardError);
     }
 
     [Fact]
