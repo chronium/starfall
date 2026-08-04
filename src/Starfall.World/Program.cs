@@ -1,3 +1,4 @@
+using Starfall.Content.Zones;
 using Starfall.World.Launch;
 using Starfall.World.Lifecycle;
 
@@ -31,14 +32,19 @@ internal static class WorldProgram
         var runtime = new WorldChannelRuntime(
             options.WorldId,
             options.ChannelId,
-            new(Guid.NewGuid()));
+            new(Guid.NewGuid()),
+            Draft0GrayboxCatalog.FirstPlayable);
 
         try
         {
             runtime.Start();
             Console.WriteLine(
                 $"STARFALL_WORLD_READY world={runtime.WorldId} channel={runtime.ChannelId} " +
-                $"instance={runtime.InstanceId} tickRate={WorldFixedStepLoop.TickRateHz} state=running");
+                $"instance={runtime.InstanceId} zone={runtime.Layout.Specification.Id} " +
+                $"town={runtime.Layout.Town.Id} branches={runtime.Layout.Branches.Count} " +
+                $"routes={runtime.Layout.Branches.Count + 1} proxies={runtime.Layout.Proxies.Count} " +
+                $"spawns={runtime.Layout.Branches.Sum(static branch => branch.SampleSpawns.Count)} " +
+                $"tickRate={WorldFixedStepLoop.TickRateHz} state=running");
 
             WorldRunResult result;
             string stopReason;

@@ -1,3 +1,4 @@
+using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 
 namespace Starfall.World.Lifecycle;
@@ -15,11 +16,15 @@ internal sealed class WorldChannelRuntime
     internal WorldChannelRuntime(
         WorldId worldId,
         ChannelId channelId,
-        WorldInstanceId instanceId)
+        WorldInstanceId instanceId,
+        Draft0GrayboxLayout layout)
     {
+        ArgumentNullException.ThrowIfNull(layout);
+
         WorldId = worldId;
         ChannelId = channelId;
         InstanceId = instanceId;
+        Layout = layout;
     }
 
     internal WorldId WorldId { get; }
@@ -27,6 +32,8 @@ internal sealed class WorldChannelRuntime
     internal ChannelId ChannelId { get; }
 
     internal WorldInstanceId InstanceId { get; }
+
+    internal Draft0GrayboxLayout Layout { get; }
 
     internal WorldChannelLifecycleState State { get; private set; }
 

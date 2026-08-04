@@ -1,3 +1,4 @@
+using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.World.Lifecycle;
 
@@ -84,7 +85,8 @@ public sealed class WorldFixedStepLoopTests
         var runtime = new WorldChannelRuntime(
             new("world_1"),
             new("channel_1"),
-            new(Guid.NewGuid()));
+            new(Guid.NewGuid()),
+            Draft0GrayboxCatalog.FirstPlayable);
         runtime.Start();
         return runtime;
     }

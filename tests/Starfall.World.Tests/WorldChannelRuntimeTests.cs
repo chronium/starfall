@@ -1,3 +1,4 @@
+using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.World.Lifecycle;
 
@@ -20,8 +21,68 @@ public sealed class WorldChannelRuntimeTests
         Assert.Equal("world_1", first.WorldId.Value);
         Assert.Equal("channel_1", first.ChannelId.Value);
         Assert.NotEqual(first.InstanceId, second.InstanceId);
+        Assert.Same(first.Layout, second.Layout);
         Assert.Equal(2UL, first.CurrentTick);
         Assert.Equal(1UL, second.CurrentTick);
+    }
+
+    [Fact]
+    public void Owns_the_exact_validated_draft_0_layout_without_reordering_inputs()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+
+        Assert.Same(Draft0GrayboxCatalog.FirstPlayable, runtime.Layout);
+        Assert.Equal(
+            new GroundBounds(new GroundPoint(5.0f, 5.0f), new GroundPoint(195.0f, 195.0f)),
+            runtime.Layout.WalkableBounds);
+        Assert.Equal("town_safe", runtime.Layout.Town.Id);
+        Assert.Equal(new GroundPoint(100.0f, 25.0f), runtime.Layout.Town.RespawnAnchor);
+        Assert.Equal(
+            ["branch_short", "branch_medium", "branch_long"],
+            runtime.Layout.Branches.Select(static branch => branch.Id));
+        Assert.Equal(
+            ["route_town_exit", "route_branch_short", "route_branch_medium", "route_branch_long"],
+            runtime.Layout.Branches
+                .Select(static branch => branch.Route.Id)
+                .Prepend(runtime.Layout.ExitRoute.Id));
+        Assert.Equal(
+            ["camp_easy", "camp_mixed", "camp_hard"],
+            runtime.Layout.Branches.Select(static branch => branch.Camp.Id));
+        Assert.Equal(
+        [
+            "landmark_west_south",
+            "landmark_east_south",
+            "landmark_west_north",
+            "mixed_divider",
+            "hard_bowl_wall_west",
+            "hard_bowl_wall_east",
+            "hard_bowl_wall_north",
+        ],
+        runtime.Layout.Proxies.Select(static proxy => proxy.Id));
+        Assert.Equal(
+        [
+            "spawn_easy_01",
+            "spawn_easy_02",
+            "spawn_easy_03",
+            "spawn_mixed_01",
+            "spawn_mixed_02",
+            "spawn_mixed_03",
+            "spawn_mixed_04",
+            "spawn_hard_01",
+            "spawn_hard_02",
+            "spawn_hard_03",
+        ],
+        runtime.Layout.Branches.SelectMany(static branch => branch.SampleSpawns).Select(static spawn => spawn.Id));
+    }
+
+    [Fact]
+    public void Rejects_a_missing_world_layout()
+    {
+        Assert.Throws<ArgumentNullException>(() => new WorldChannelRuntime(
+            new("world_1"),
+            new("channel_1"),
+            new(Guid.NewGuid()),
+            null!));
     }
 
     [Fact]
@@ -67,5 +128,9 @@ public sealed class WorldChannelRuntimeTests
     }
 
     private static WorldChannelRuntime CreateRuntime(Guid instanceId) =>
-        new(new("world_1"), new("channel_1"), new(instanceId));
+        new(
+            new("world_1"),
+            new("channel_1"),
+            new(instanceId),
+            Draft0GrayboxCatalog.FirstPlayable);
 }

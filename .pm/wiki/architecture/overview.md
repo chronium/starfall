@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T08:24:45.6011800Z
+modifiedAt: 2026-08-04T08:56:27.1483660Z
 ---
 
 ## Purpose
@@ -20,7 +20,9 @@ World/Simulation own movement, combat, character state, monsters, camps, progres
 
 Logical identity/lobby, world, chat, operations and persistence boundaries do not require one process per concept. Physical topology and persistence degradation remain evidence-gated.
 
-`SERVER-0002` implements the first empty authoritative world/channel host: explicit Protocol-owned world and channel identities, a fresh lifecycle-scoped world-instance identity, `Created -> Running -> Draining -> Stopped`, and a fixed 60 Hz scheduler. Finite validation advances an exact positive tick count without wall-clock pacing; persistent execution uses a monotonic clock, caps catch-up at five ticks per outer-loop cycle, reports backlog clamps, and drains on Ctrl+C. This is lifecycle evidence only: no zone, entities, sessions, physics, protocol exchange, persistence, chat or operations dependency exists yet.
+`SERVER-0002` implements the first authoritative world/channel host: explicit Protocol-owned world and channel identities, a fresh lifecycle-scoped world-instance identity, `Created -> Running -> Draining -> Stopped`, and a fixed 60 Hz scheduler. Finite validation advances an exact positive tick count without wall-clock pacing; persistent execution uses a monotonic clock, caps catch-up at five ticks per outer-loop cycle, reports backlog clamps, and drains on Ctrl+C.
+
+`SERVER-0004` binds the validated immutable `Draft0GrayboxCatalog.FirstPlayable` input to every current runtime before it enters `Running`. World now owns the provisional zone/town, route/camp, proxy and spawn inputs while implementing no player/monster state, collision/navigation behavior, physics, protection enforcement or protocol exchange. Direct immutable Content consumption is deliberate evidence, not a serialized map or general scene framework.
 
 ## Foundation assembly graph
 

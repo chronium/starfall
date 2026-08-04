@@ -1,12 +1,12 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T08:25:28.2799600Z
+modifiedAt: 2026-08-04T08:56:16.3147490Z
 ---
 
 ## Purpose
 
-This page records the bounded executable contract established by `SERVER-0002` for one empty authoritative Starfall world/channel. It is the timing and lifecycle foundation for later loaded content, world-local state, admission and gameplay; none of those later capabilities are implemented here.
+This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel and the provisional immutable layout binding added by `SERVER-0004`. It is the timing and content-ownership foundation for later world-local state, admission and gameplay; none of those later capabilities are implemented here.
 
 ## Identity
 
@@ -17,7 +17,7 @@ Every invocation requires both:
 
 Both values use the existing Protocol identity contract: 1-64 lowercase ASCII letters, digits or underscores, beginning with a letter. The host creates a fresh non-empty `WorldInstanceId` for every invocation. The instance identity distinguishes lifecycle incarnations of the same semantic world/channel and is not owner-configurable.
 
-Each runtime owns its identity, tick and lifecycle state without static mutable world state. Independent invocations therefore do not share gameplay authority merely because their semantic identities match.
+Each runtime owns its identity, tick, lifecycle state and selected immutable layout without static mutable world state. Independent invocations therefore do not share gameplay authority merely because their semantic identities match.
 
 ## Lifecycle
 
@@ -31,6 +31,14 @@ Only `Running` is eligible to accept future admissions. Entering `Draining` clos
 
 Ctrl+C requests graceful shutdown. It does not add an operations service, remote supervisor or hot-path dependency.
 
+## Provisional loaded layout
+
+Before entering `Running`, the World composition root binds exactly `Draft0GrayboxCatalog.FirstPlayable` to the runtime. The catalog is already validated immutable executable Content, so World retains it directly instead of introducing a second runtime map model, serialization format or loader abstraction.
+
+The loaded input preserves the durable 200 x 200 metre envelope, 5..195 metre walkable bounds, protected-town description and respawn anchor, four ordered route corridors, three ordered camp regions, seven ordered proxy blocks and ten branch/local ordered sample spawns. These are owned inputs only. The runtime does not yet enforce protection, construct collision/navigation, create entities, spawn monsters or interpret routes as paths.
+
+All current world/channel invocations use this one provisional layout. A zone-selection interface is deferred until more than one real authoritative input exists. `SERVER-0012` later replaces this disposable catalog with the bounded authoritative output of the proper Editor-authored Draft 0 scene.
+
 ## Fixed-step scheduling
 
 Authoritative time advances only through integer ticks at 60 Hz. No gameplay API receives variable frame time.
@@ -43,7 +51,7 @@ The optional `--run-ticks <positive>` mode advances exactly the requested number
 
 A successful run prints exactly one line for each lifecycle checkpoint:
 
-- `STARFALL_WORLD_READY` with world, channel, fresh instance, 60 Hz rate and running state;
+- `STARFALL_WORLD_READY` with world, channel, fresh instance, exact zone/town identities, branch/route/proxy/spawn counts, 60 Hz rate and running state;
 - `STARFALL_WORLD_DRAINING` with the same identity and final tick;
 - `STARFALL_WORLD_STOPPED` with final tick, catch-up clamp count, stop reason and stopped state.
 
@@ -69,7 +77,6 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 Later focused tasks own:
 
-- `SERVER-0004`: load and own the provisional graybox;
 - `SERVER-0006`: stable world-local identity and one technical player;
 - `SERVER-0003`: ticket consumption, admission exchange and gameplay-session creation;
 - `SIM-0008`: authoritative click-to-move after its shared Box3D prerequisite completes;
@@ -80,4 +87,4 @@ Those tasks may consume this lifecycle but must not retroactively turn it into a
 
 ## Non-goals
 
-This contract does not load a zone, create entities, sessions, physics worlds or network sockets, validate join tickets, persist state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology.
+This contract does not create entities, sessions, physics worlds or network sockets, construct collision/navigation behavior, validate join tickets, persist state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.

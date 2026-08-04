@@ -34,7 +34,6 @@ orders:
   milestone: M2
   taskIds:
   - SERVER-0003
-  - SERVER-0004
   - SERVER-0006
   - SERVER-0005
   - SERVER-0007

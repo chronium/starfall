@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Zone Contract
 createdAt: 2026-08-02T18:32:00.1104310Z
-modifiedAt: 2026-08-03T10:01:20.8876460Z
+modifiedAt: 2026-08-04T08:56:40.9513870Z
 ---
 
 ## Ownership
@@ -80,7 +80,11 @@ Collidable diagnostic proxies remain in this stable order:
 
 Neutral sample spawns are also stable and branch-local: easy uses `spawn_easy_01 (55,65)`, `spawn_easy_02 (60,75)`, and `spawn_easy_03 (65,65)`; mixed uses `spawn_mixed_01 (95,122)`, `spawn_mixed_02 (105,122)`, `spawn_mixed_03 (95,144)`, and `spawn_mixed_04 (105,144)`; hard uses `spawn_hard_01 (140,104)`, `spawn_hard_02 (150,104)`, and `spawn_hard_03 (145,114)`.
 
-Construction validates ordinal global identity uniqueness; finite dimensions and coordinates; zone, walkable, owner and actual-camp containment; proxy ownership; unobstructed critical anchors and spawns; route linkage and lengths with a 0.001 m tolerance; and square bounds plus boundary entry for the circular camp. Collections are copied into read-only views. These values are coarse content inputs only: they add no Box3D, renderer, editor, serialization, movement or monster contract and are expected to be replaced by the later editor-authored scene.
+Construction validates ordinal global identity uniqueness; finite dimensions and coordinates; zone, walkable, owner and actual-camp containment; proxy ownership; unobstructed critical anchors and spawns; route linkage and lengths with a 0.001 m tolerance; and square bounds plus boundary entry for the circular camp. Collections are copied into read-only views.
+
+`SERVER-0004` binds this exact immutable catalog to each current world/channel runtime before lifecycle start. World preserves the Content object and its ordering directly rather than copying it into a parallel map model. The deterministic `READY` diagnostic identifies `draft_0_first_playable_zone`, `town_safe`, three branches, four routes, seven proxies and ten sample spawns. Loading does not interpret routes as navigation paths, proxies as physics bodies, town metadata as enforced protection or sample spawns as entities.
+
+These values are coarse content inputs only: they add no Box3D, renderer, editor, serialization, movement or monster contract and are expected to be replaced by the later editor-authored scene.
 
 ## Deferred decisions
 
