@@ -18,14 +18,12 @@ internal readonly record struct TechnicalPlayerSnapshot
 
     internal TechnicalPlayerSnapshot(
         string identity,
-        long tick,
+        ulong tick,
         GroundPoint position,
         Vector2 velocityMetresPerSecond,
         Vector2 facing)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(identity);
-        if (tick < 0)
-            throw new ArgumentOutOfRangeException(nameof(tick), "Snapshot ticks cannot be negative.");
         if (!IsFinite(velocityMetresPerSecond))
             throw new ArgumentException("Snapshot velocity must be finite.", nameof(velocityMetresPerSecond));
         if (!IsFinite(facing))
@@ -46,7 +44,7 @@ internal readonly record struct TechnicalPlayerSnapshot
         get;
     }
 
-    internal long Tick
+    internal ulong Tick
     {
         get;
     }
@@ -105,7 +103,7 @@ internal sealed class Draft0LocalWalkingFixture
     private GroundPoint? destination;
     private GroundPoint position;
     private Vector2 facing = Vector2.UnitY;
-    private long tick;
+    private ulong tick;
 
     internal Draft0LocalWalkingFixture(GroundPoint initialPosition)
     {

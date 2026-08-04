@@ -1,14 +1,14 @@
 ---
 title: Client World Presentation Adapter
 createdAt: 2026-08-04T07:46:57.3592710Z
-modifiedAt: 2026-08-04T14:55:48.3110060Z
+modifiedAt: 2026-08-04T17:26:13.4791450Z
 ---
 
 ## Ownership and purpose
 
-Starfall.Client owns one narrow snapshot/fact-to-presentation adapter for the local and connected walking milestones. CLIENT-0021 proves it with `local_technical_player`; CLIENT-0009 must translate accepted protocol snapshots into this same adapter instead of creating a second movement-presentation path.
+Starfall.Client owns one narrow snapshot/fact-to-presentation adapter for the local and connected walking milestones. CLIENT-0021 proves it with `local_technical_player`; CLIENT-0009 translates accepted protocol snapshots into this same adapter instead of creating a second movement-presentation path.
 
-The adapter is Client-internal. It does not change Starfall's project graph or create a shared engine, scene/entity framework, wire contract or gameplay dependency.
+The adapter is Client-internal. It does not change Starfall's product graph or create a shared engine, scene/entity framework, wire contract or gameplay dependency.
 
 ## Snapshot and presentation contract
 
@@ -49,8 +49,10 @@ The title displays the active view, one-decimal speed derived from integer tenth
 
 ## Capture and downstream continuity
 
-The CLIENT-0024 seven-view capture suite remains historical graybox evidence. It supplies an explicit idle snapshot at `(100,0,100)` and the frozen 22.5-metre F1 distance through the same adapter/render path; it is not the live gameplay spawn.
+The CLIENT-0024 seven-view capture suite remains historical graybox evidence. It supplies an explicit idle snapshot at `(100,0,100)` and the frozen 22.5-metre F1 distance; connected work does not mutate its fingerprints.
 
-`SERVER-0005` now produces encoded authoritative snapshots and corrections through a bounded in-process World exchange. `CLIENT-0009` later replaces only the deterministic fixture source with decoded accepted protocol facts, preserving this adapter and presentation path.
+`CLIENT-0009` now proves the planned reuse boundary. The connected session decodes authoritative movement snapshots/corrections and converts them to the same immutable `TechnicalPlayerSnapshot` consumed by `TechnicalPlayerPresentationAdapter`. The native renderer, locomotion selection, camera focus and graybox rendering are unchanged. Left-click sends intent instead of mutating the local fixture; the latest accepted snapshot is rendered directly with no smoothing or prediction.
 
-That Client work must not activate merely because its current PM dependencies are complete. A separately planned coordinator-owned shared transport boundary and focused Starfall adoption/wiring cycle must first provide the real client/server delivery seam. Socket choice, message framing, connection lifecycle, stale-fact handling and any reconciliation remain outside the local fixture and outside `SERVER-0005`.
+Local no-argument preview remains available with its 60 Hz fixture and Numpad speed tuning. Connected mode disables that tuning, preserves F1-F7/Tab and F1 Up/Down camera controls, and reports entity, latest tick and camera distance in the title. A disconnect or protocol failure ends connected mode; window close performs a clean disconnect.
+
+If native observation later exposes snapshot stepping, a focused Client presentation-smoothing task should interpolate between authoritative samples while preserving corrections as authoritative replacement facts. That work must not add client movement authority or make the stateless adapter responsible for network reconciliation.

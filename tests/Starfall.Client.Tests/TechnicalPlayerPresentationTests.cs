@@ -17,7 +17,7 @@ public sealed class TechnicalPlayerPresentationTests
         var fixture = new Draft0LocalWalkingFixture(respawn);
 
         Assert.Equal(Draft0LocalWalkingFixture.Identity, fixture.Snapshot.Identity);
-        Assert.Equal(0, fixture.Snapshot.Tick);
+        Assert.Equal(0UL, fixture.Snapshot.Tick);
         Assert.Equal(respawn, fixture.Snapshot.Position);
         Assert.Equal(Vector2.Zero, fixture.Snapshot.VelocityMetresPerSecond);
         Assert.Equal(Vector2.UnitY, fixture.Snapshot.Facing);
@@ -47,7 +47,7 @@ public sealed class TechnicalPlayerPresentationTests
         Assert.Equal(Vector2.Zero, fixture.Snapshot.VelocityMetresPerSecond);
         Assert.Equal(Vector2.UnitX, fixture.Snapshot.Facing);
         Assert.Null(fixture.Destination);
-        Assert.Equal(61, fixture.Snapshot.Tick);
+        Assert.Equal(61UL, fixture.Snapshot.Tick);
     }
 
     [Fact]
@@ -179,8 +179,6 @@ public sealed class TechnicalPlayerPresentationTests
         GroundPoint point = new(1.0f, 2.0f);
         Assert.Throws<ArgumentException>(() =>
             new TechnicalPlayerSnapshot("", 0, point, Vector2.Zero, Vector2.UnitY));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new TechnicalPlayerSnapshot("player", -1, point, Vector2.Zero, Vector2.UnitY));
         Assert.Throws<ArgumentException>(() =>
             new TechnicalPlayerSnapshot("player", 0, point, new Vector2(float.NaN, 0.0f), Vector2.UnitY));
         Assert.Throws<ArgumentException>(() =>

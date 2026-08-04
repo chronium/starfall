@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Xml.Linq;
+using Starfall.Protocol.Admission;
 
 namespace Starfall.Architecture.Tests;
 
@@ -30,6 +32,8 @@ public sealed class FoundationDependencyTests
         "Starfall.Protocol.Tests",
         "Starfall.Simulation.Tests",
         "Starfall.World.Tests",
+        "Starfall.ConnectedWalking.Tests",
+        "Starfall.DevelopmentAdmission",
     ];
 
     private static readonly IReadOnlySet<string> ExpectedExecutableProjects =
@@ -140,7 +144,7 @@ public sealed class FoundationDependencyTests
         Assert.Equal(
             $"STARFALL_WORLD_READY world=world_1 channel=channel_1 instance={instance} " +
             "zone=draft_0_first_playable_zone town=town_safe branches=3 routes=4 proxies=7 spawns=10 " +
-            "technicalPlayer=1 players=1 tickRate=60 state=running",
+            "mode=offline listenPort=none technicalPlayer=1 players=1 tickRate=60 state=running",
             lines[0]);
         Assert.Equal(
             $"STARFALL_WORLD_DRAINING world=world_1 channel=channel_1 instance={instance} ticks=1 " +
@@ -167,9 +171,70 @@ public sealed class FoundationDependencyTests
         Assert.Empty(result.StandardError);
     }
 
+    [Fact]
+    public async Task Development_admission_tool_generates_non_overwriting_private_inputs_without_printing_secrets()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), $"starfall-admission-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            string assembly = Path.Combine(
+                GetProjectOutputDirectory("tools", "Starfall.DevelopmentAdmission"),
+                "Starfall.DevelopmentAdmission.dll");
+            ProcessResult generated = await RunAssemblyProcessAsync(
+                assembly,
+                "generate-key", "--key-id", "development", "--output-directory", directory);
+            Assert.Equal(0, generated.ExitCode);
+            string privatePath = Path.Combine(directory, "development.private.pem");
+            string publicPath = Path.Combine(directory, "development.public.pem");
+            Assert.True(File.Exists(privatePath));
+            Assert.True(File.Exists(publicPath));
+            Assert.DoesNotContain("PRIVATE KEY", generated.StandardOutput, StringComparison.Ordinal);
+
+            Guid instance = Guid.NewGuid();
+            string ticketPath = Path.Combine(directory, "world_1-channel_1.ticket");
+            ProcessResult issued = await RunAssemblyProcessAsync(
+                assembly,
+                "issue-ticket", "--key-id", "development", "--key-directory", directory,
+                "--world", "world_1", "--channel", "channel_1", "--world-instance", instance.ToString("D"),
+                "--output", ticketPath);
+            Assert.Equal(0, issued.ExitCode);
+            string ticket = File.ReadAllText(ticketPath);
+            Assert.DoesNotContain(ticket, issued.StandardOutput, StringComparison.Ordinal);
+            using ECDsa publicKey = ECDsa.Create();
+            publicKey.ImportFromPem(File.ReadAllText(publicPath));
+            WorldJoinTicketValidationResult validation = WorldJoinTicketCodec.Validate(
+                ticket,
+                new WorldJoinTicketVerificationKeyRing(
+                [
+                    new WorldJoinTicketVerificationKey("development", publicKey.ExportSubjectPublicKeyInfo()),
+                ]),
+                new WorldJoinTicketAudience(
+                    new WorldId("world_1"),
+                    new ChannelId("channel_1"),
+                    new WorldInstanceId(instance)),
+                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+            Assert.True(validation.IsValid);
+
+            ProcessResult overwrite = await RunAssemblyProcessAsync(
+                assembly,
+                "generate-key", "--key-id", "development", "--output-directory", directory);
+            Assert.Equal(2, overwrite.ExitCode);
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(privatePath));
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(ticketPath));
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("Starfall.World", "Starfall.World: does not recognize argument '--unexpected'.")]
-    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview, --validate-character-content, or --capture-graybox-suite <directory>.")]
+    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview, --validate-character-content, --capture-graybox-suite <directory>, or connected walking options.")]
     public async Task Foundation_processes_reject_unknown_arguments(
         string projectName,
         string expectedError)
@@ -365,6 +430,23 @@ public sealed class FoundationDependencyTests
 
             Assert.Equal(expectedReferences.Order(StringComparer.Ordinal), actualReferences);
         }
+    }
+
+    [Fact]
+    public void Development_admission_tool_is_protocol_and_bcl_only()
+    {
+        string path = Path.Combine(
+            RepositoryRoot,
+            "tools",
+            "Starfall.DevelopmentAdmission",
+            "Starfall.DevelopmentAdmission.csproj");
+        XDocument project = XDocument.Load(path);
+        string[] references = ReadProjectReferences(project)
+            .Select(Path.GetFileNameWithoutExtension)
+            .Order(StringComparer.Ordinal)
+            .ToArray()!;
+        Assert.Equal(["Starfall.Protocol"], references);
+        Assert.Equal("Exe", Assert.Single(project.Descendants("OutputType")).Value);
     }
 
     [Fact]
@@ -752,6 +834,15 @@ public sealed class FoundationDependencyTests
         return outputDirectory;
     }
 
+    private static string GetProjectOutputDirectory(string folder, string projectName)
+    {
+        DirectoryInfo testOutputDirectory = new(AppContext.BaseDirectory);
+        string targetFramework = testOutputDirectory.Name;
+        string configuration = testOutputDirectory.Parent?.Name ??
+            throw new DirectoryNotFoundException("Could not determine test build configuration.");
+        return Path.Combine(RepositoryRoot, folder, projectName, "bin", configuration, targetFramework);
+    }
+
     private static async Task<ProcessResult> RunProductProcessAsync(
         string projectName,
         params string[] arguments)
@@ -759,6 +850,13 @@ public sealed class FoundationDependencyTests
         string assemblyPath = Path.Combine(
             GetProductOutputDirectory(projectName),
             $"{projectName}.dll");
+        return await RunAssemblyProcessAsync(assemblyPath, arguments);
+    }
+
+    private static async Task<ProcessResult> RunAssemblyProcessAsync(
+        string assemblyPath,
+        params string[] arguments)
+    {
         Assert.True(File.Exists(assemblyPath), $"Expected executable assembly {assemblyPath} does not exist.");
 
         var startInfo = new ProcessStartInfo("dotnet")
@@ -773,7 +871,7 @@ public sealed class FoundationDependencyTests
             startInfo.ArgumentList.Add(argument);
 
         using var process = new Process { StartInfo = startInfo };
-        Assert.True(process.Start(), $"Failed to start {projectName}.");
+        Assert.True(process.Start(), $"Failed to start {Path.GetFileName(assemblyPath)}.");
 
         Task<string> standardOutput = process.StandardOutput.ReadToEndAsync();
         Task<string> standardError = process.StandardError.ReadToEndAsync();
@@ -789,7 +887,7 @@ public sealed class FoundationDependencyTests
                 process.Kill(entireProcessTree: true);
 
             await process.WaitForExitAsync();
-            throw new TimeoutException($"{projectName} did not exit within 10 seconds.");
+            throw new TimeoutException($"{Path.GetFileName(assemblyPath)} did not exit within 10 seconds.");
         }
 
         return new ProcessResult(

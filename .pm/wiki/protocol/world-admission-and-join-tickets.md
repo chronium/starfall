@@ -1,7 +1,7 @@
 ---
 title: World Admission and Join Tickets
 createdAt: 2026-08-03T06:08:22.0865090Z
-modifiedAt: 2026-08-04T10:16:06.2111050Z
+modifiedAt: 2026-08-04T17:26:13.3818190Z
 ---
 
 ## Purpose
@@ -100,12 +100,26 @@ Implementations may record bounded counters for internal diagnosis, but must nev
 
 ## Transport and availability boundaries
 
-`PROTOCOL-0002` owns the self-contained ticket encoding and transport-neutral admission facts. `SERVER-0003` implements the narrow host-specific binding as an internal in-process World exchange that receives one bounded join request and returns exactly one existing accept or reject fact. It is the invocation seam for a later protected host transport, not a socket, serializer, framing layer, or generic message dispatcher. The current command-line entry point does not configure public keys or expose admission over a network.
+`PROTOCOL-0002` continues to own the self-contained `sfjt1` ticket and transport-neutral admission facts. `CLIENT-0009` adds one host-specific datagram binding without changing that ticket format or introducing a generic framing layer.
 
-TLS or an equivalent protected transport remains required because signatures provide authenticity and integrity, not confidentiality. This task does not implement transport security.
+Channel 0 uses reliable ordered delivery. Its exact schema-version-1 datagrams are:
 
-An unavailable identity/lobby prevents new admission but cannot terminate or continuously reauthorize sessions already owned by a world. Chat and operations remain optional from gameplay's perspective. Persistence degradation is still unresolved and is not implied by admission success.
+| Fact | Layout |
+| --- | --- |
+| Join request | version `1`, kind `1`, unsigned 16-bit big-endian ticket-byte length, then 1-512 canonical ASCII ticket bytes; total 5-516 bytes |
+| Accepted | version `1`, kind `2`, then the 16-byte gameplay-session GUID in RFC 4122 network byte order; exactly 18 bytes |
+| Rejected | version `1`, kind `3`, then one bounded `WorldJoinRejectionReason` byte; exactly 3 bytes |
+
+Unsupported versions or kinds, invalid ASCII/GUID/reason values, inconsistent lengths, truncation and trailing bytes fail closed. The server binds the transport peer to the newly created world-owned session after ticket consumption. A pending loopback peer has ten seconds to submit exactly one valid admission request. Packets on the wrong channel or delivery mode are protocol violations.
+
+The first executable development transport is intentionally plaintext and loopback-only. The Client accepts only a literal `127.0.0.1` or `::1` destination. World rejects non-loopback peers before parsing admission data. Production/non-loopback use still requires a later protected-transport decision because signatures provide authenticity and integrity, not confidentiality.
+
+The ignored `Starfall.DevelopmentAdmission` tool generates a local P-256 key pair and one-minute test tickets. It refuses overwrites, keeps private keys and tickets owner-readable on Unix, never prints their contents, and gives the World only the public PEM. Identity/lobby remains the production issuer; this tool is development evidence, not an identity service.
+
+Once admitted, gameplay does not call identity, chat or operations. Disconnect immediately terminates that world gameplay session, walking state and player. There is no resume or automatic reconnect in this slice; a later connection requires a fresh process and ticket.
 
 ## Non-goals
 
-This bounded admission path does not implement accounts, credentials, lobby UI, character summaries, identity services, network sockets, transport security or framing, persistent or distributed replay storage, durable sessions, persistence, chat, gameplay commands, gameplay events, snapshots, key provisioning, JWT, a generic token framework, or physical deployment topology.
+This admission contract still does not implement accounts, credentials, lobby UI, character summaries, identity services, protected non-loopback transport, production key storage/distribution, persistent or distributed replay storage, durable or resumable sessions, persistence, chat, JWT, a generic token framework or physical deployment topology.
+
+CLIENT-0009 adds only a loopback development socket binding and local key/ticket utility around the existing admission facts. Movement commands and snapshots remain separately specified by the connected-walking contract; they are not part of the ticket or admission schema.

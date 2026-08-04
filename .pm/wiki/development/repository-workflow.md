@@ -1,7 +1,7 @@
 ---
 title: Repository Workflow
 createdAt: 2026-08-02T08:58:34.7128420Z
-modifiedAt: 2026-08-04T16:39:28.9006310Z
+modifiedAt: 2026-08-04T17:26:13.2772600Z
 ---
 
 ## Purpose
@@ -42,43 +42,24 @@ For `EDITOR-0003`, `Starfall.Editor` and `Starfall.BalanceLab` remain libraries.
 
 First stage the selected client cook from the coordinator root by stable project ID:
 
-```sh
+~~~sh
 scripts/cook-character-presentation-for-client.sh \
   --project-id prj_pkIpzx0fzFD4URjvqBuYrGZF
-```
+~~~
 
-Then run from the Starfall repository root:
+Then validate Starfall:
 
-```sh
+~~~sh
 dotnet restore Starfall.slnx
-dotnet build Starfall.slnx --no-restore
-dotnet test Starfall.slnx --no-restore --no-build
-```
+dotnet build Starfall.slnx -m:1 --no-restore
+dotnet test Starfall.slnx -m:1 --no-restore --no-build
+~~~
 
-After the solution build, prove an exact 60-tick headless world lifecycle and the client content path independently:
+The solution includes a real UDP loopback connected-walking integration test. It generates an ephemeral P-256 ticket, admits one player, moves through the authoritative World/Simulation path, receives an invalid-destination correction, disconnects, and verifies atomic session/player cleanup.
 
-```sh
-dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-build -- \
-  --world world_1 --channel channel_1 --run-ticks 60
-dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build -- \
-  --validate-character-content
-```
+For a native connected run, use `tools/Starfall.DevelopmentAdmission` to generate ignored keys, copy the fresh world-instance GUID from the connected World READY diagnostic, issue one ticket, and launch Client with a literal loopback address and ticket-file path. The exact commands live in the repository README. Generated keys and tickets stay under ignored `artifacts/`; never commit or log them.
 
-For the persistent empty-world path, omit `--run-ticks` and stop it with Ctrl+C. World and channel identities are both mandatory. The finite mode is unpaced and exact; the persistent mode uses a monotonic clock, fixed 60 Hz steps, at most five catch-up ticks per outer-loop cycle, and explicit backlog-clamp diagnostics.
-
-Run the native presentation preview with:
-
-```sh
-dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
-```
-
-The preview loads the staged Quaternius humanoid, loops `Idle_Loop` through SDL GPU, and closes with Escape or the window close control. The content probe loads the same runtime cook without initializing SDL and prints a deterministic asset, joint, and clip summary. Unknown arguments fail with exit code 2. `Starfall.World` means the headless authoritative world-server host; it is not a client-side world and does not imply one executable per logical service.
-
-The architecture tests enforce the expected solution projects, executable/library split, bounded process behavior, required World identities, approved local graph, absence of product packages, and headless output exclusions. Family-source policy is exact per consumer: Client may use the approved character-presentation set and network adapter; World may use only the network adapter; Simulation may use only the managed Box3D boundary. Content, Protocol, Editor and Balance Lab have no family references. Tests reject literal repository escapes, absolute paths, arbitrary property roots, direct upstream references, coordinator imports and Royale references.
-
-The network composition smoke tests start each process-local factory on an ephemeral port and dispose it without changing either executable's runtime behavior. Output tests require the contracts, adapter and LiteNetLib assemblies in Client and World only.
-
-When an approved task changes a dependency or executable boundary, update the tests and `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/overview` together.
+Debug and Release builds/tests are required before completion. Native owner validation must cover authoritative walking, collision correction, camera/animation continuity and disconnect. Captures remain a separate owner-curated visual-checkpoint decision.
 
 ## Coordinator family checkout
 
@@ -93,9 +74,9 @@ The exact direct family-source references are:
 
 Every direct reference is rooted at `$(ChronoFallFamilyRoot)` and preserves the selected Debug or Release configuration. Nested coordinator dependencies remain transitive: Client does not reference SDL3-CS or network contracts/upstream LiteNetLib directly, World does not reference those network dependencies directly, and Simulation does not reference raw Box3D bindings directly.
 
-`CLIENT-0006` owns character-presentation adoption and the generated-content workflow. `BUILD-0006` owns network-transport adoption in the Client and World composition roots. The internal factories do not activate networking; `CLIENT-0009` owns the separately planned Starfall packet and runtime binding.
+`CLIENT-0006` owns character-presentation adoption and generated-content staging. `BUILD-0006` owns the transport source boundary and inert factories. `CLIENT-0009` owns the active Starfall packet policy, Client/World hosts and the development admission tool. The tool sits outside the product graph and references only Protocol.
 
-Generated character content remains under the workflow-owned ignored `artifacts/chronofall/character-presentation/client/` tree. The coordinator command validates stable linked identity, resolved checkout, gitlink ownership, the exact ignored/untracked output boundary, known files and symlink safety before writing. Raw supplied assets, generated output and presentation dependencies never enter headless projects.
+Generated character content remains under the workflow-owned ignored `artifacts/chronofall/character-presentation/client/` tree. Development admission keys/tickets remain under ignored `artifacts/` or another owner-local location and are never committed. Raw supplied assets, generated output, bearer tickets, private keys and presentation dependencies never enter headless outputs.
 
 Network adoption contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/network-transport-adoption
 

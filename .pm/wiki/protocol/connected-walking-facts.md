@@ -1,7 +1,7 @@
 ---
 title: Connected Walking Facts
 createdAt: 2026-08-04T14:02:01.5363760Z
-modifiedAt: 2026-08-04T14:55:39.1001330Z
+modifiedAt: 2026-08-04T17:18:04.4887950Z
 ---
 
 ## Purpose
@@ -75,13 +75,19 @@ Spatial facts use finite BCL `System.Numerics` single-precision metre values. Fi
 
 ## Downstream ownership
 
-- `PROTOCOL-0004` owns deterministic serialization, bounded payload representation and malformed-input rejection for these exact facts.
-- `SERVER-0005` owns immutable session-to-player binding, active-zone validation, command ordering, checked snapshot-sequence allocation, authoritative intent submission and the bounded in-process snapshot/correction exchange.
-- `CLIENT-0009` owns consuming the latest accepted facts and translating them into the presentation adapter proven by `CLIENT-0021`. Before activation it still needs separately planned shared transport adoption; `SERVER-0005` does not choose sockets or framing.
-- Monster, combat, progression, drop and inventory/equipment facts remain in their focused later tasks.
+- `PROTOCOL-0004` owns deterministic fact serialization and malformed-input rejection.
+- `SERVER-0005` owns session-to-player resolution, authoritative destination validation, snapshot sequencing and corrections.
+- `CLIENT-0009` owns the first transport exchange and stale-fact consumer.
 
-This contract does not add wire framing, sockets, transport choice, quantization, prediction, smoothing, a generic entity/message framework or gameplay authority to Client.
+The fixed channel/delivery assignment is:
 
-Architecture overview: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/overview
+| Channel | Fact | Delivery |
+| --- | --- | --- |
+| 0 | admission request, accept or reject | reliable ordered |
+| 1 | movement command | reliable sequenced |
+| 2 | routine latest snapshot | sequenced |
+| 3 | authoritative correction | reliable ordered |
 
-World lifecycle: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/world-channel-lifecycle
+These are transport datagrams, not nested generic frames. The connected Client allocates positive command sequences monotonically, retains only newer global snapshot sequences, permits nondecreasing simulation ticks, requires stable entity identity, and rejects acknowledgements beyond the last command it sent. Corrections replace the latest authoritative snapshot. No interpolation, prediction, reconciliation math or local movement authority is introduced.
+
+The World polls transport each outer fixed-step cycle and publishes only the latest post-catch-up snapshot. Admission also publishes the current tick immediately, including tick zero. This keeps snapshot evidence explicit rather than fabricating an historical backlog.

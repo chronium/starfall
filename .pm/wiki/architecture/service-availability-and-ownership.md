@@ -1,7 +1,7 @@
 ---
 title: Service Availability and Ownership
 createdAt: 2026-08-01T06:48:13.9601190Z
-modifiedAt: 2026-08-04T14:56:14.1459820Z
+modifiedAt: 2026-08-04T17:18:30.1705080Z
 ---
 
 ## Decision
@@ -59,7 +59,7 @@ Each world/channel is an independent lifecycle and authoritative state owner. It
 
 `SERVER-0002` establishes the executable world lifecycle at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/world-channel-lifecycle. Every process invocation requires explicit world and channel identities and creates a fresh world-instance identity. Running is the only admission-eligible state; draining immediately rejects future admission while retaining existing sessions and their authoritative fixed ticks until stop.
 
-`SERVER-0003` adds the bounded admission/session seam. `SERVER-0005` proves that an admitted session can continue driving its bound player's authoritative movement and receive current snapshots or corrections while the world drains, without any identity, chat or operations call. Stopping clears lifecycle-local session, walking publication and player state. The current command-line host still has no key provisioning or network admission/movement transport, so standalone execution uses its separate technical player fixture.
+`SERVER-0003` and `SERVER-0005` establish lifecycle-local ticket consumption, gameplay-session ownership and session-to-player movement. `CLIENT-0009` now supplies executable loopback evidence: the World validates a locally signed ticket using only configured public keys, binds the peer to one player, continues authoritative walking without identity/chat/operations calls, and removes exactly that session/player/movement state on disconnect. There is no reconnect or session resume in this slice.
 
 Physical host granularity remains open. The current executable hosts one explicitly selected logical world/channel per invocation as the smallest evidence-producing boundary; that is not a final deployment-topology decision. A later host may run one or more logical worlds, but the design must preserve separable state, lifecycle and interfaces so failure-isolation evidence can determine whether worlds require separate processes or hosts.
 

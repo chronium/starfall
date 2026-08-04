@@ -284,6 +284,29 @@ internal sealed class WorldChannelRuntime
             return activeSessions.TryGetValue(sessionId, out session);
     }
 
+    internal bool TerminateGameplaySession(GameplaySessionId sessionId)
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot terminate a gameplay session in a world in the {state} state.");
+            }
+
+            if (!activeSessions.Remove(sessionId, out WorldGameplaySession? session))
+                return false;
+            if (!walkingSessions.Remove(sessionId))
+                throw new InvalidOperationException("Gameplay and walking session ownership diverged.");
+            bool playerRemoved = players.Remove(session.PlayerEntityId);
+            bool movementRemoved = movement.RemovePlayer(session.PlayerEntityId);
+            if (!playerRemoved || !movementRemoved)
+                throw new InvalidOperationException("Session player and movement ownership diverged.");
+            return true;
+        }
+    }
+
     internal WorldWalkingCommandResult HandleWalkingCommand(
         GameplaySessionId sessionId,
         GroundMovementCommand command)

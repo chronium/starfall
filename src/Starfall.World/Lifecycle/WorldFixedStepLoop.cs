@@ -67,7 +67,8 @@ internal static class WorldFixedStepLoop
 
     internal static async Task<WorldRunResult> RunRealtimeAsync(
         WorldChannelRuntime runtime,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Action? postCycle = null)
     {
         ArgumentNullException.ThrowIfNull(runtime);
 
@@ -86,6 +87,8 @@ internal static class WorldFixedStepLoop
             FixedStepAdvanceResult advance = accumulator.Advance(elapsedSeconds, runtime.Step);
             if (advance.BacklogClamped)
                 catchUpClampCount = checked(catchUpClampCount + 1);
+
+            postCycle?.Invoke();
 
             if (advance.TicksRun == 0)
             {

@@ -5,8 +5,12 @@ namespace Starfall.World.Launch;
 internal sealed record WorldLaunchOptions(
     WorldId WorldId,
     ChannelId ChannelId,
-    int? RunTicks)
+    int? RunTicks,
+    int? ListenPort,
+    IReadOnlyDictionary<string, string> VerificationKeyPaths)
 {
+    internal bool IsConnected => ListenPort is not null;
+
     internal static WorldLaunchOptions Parse(IReadOnlyList<string> arguments)
     {
         ArgumentNullException.ThrowIfNull(arguments);
@@ -14,6 +18,8 @@ internal sealed record WorldLaunchOptions(
         WorldId? worldId = null;
         ChannelId? channelId = null;
         int? runTicks = null;
+        int? listenPort = null;
+        var verificationKeys = new Dictionary<string, string>(StringComparer.Ordinal);
 
         for (var index = 0; index < arguments.Count; index++)
         {
@@ -48,6 +54,24 @@ internal sealed record WorldLaunchOptions(
                     runTicks = parsedRunTicks;
                     break;
 
+                case "--listen-port":
+                    if (listenPort is not null)
+                        throw new WorldLaunchOptionsException("--listen-port may be specified only once.");
+                    if (!int.TryParse(value, out int parsedPort) || parsedPort is < 1 or > 65535)
+                        throw new WorldLaunchOptionsException("--listen-port must be between 1 and 65535.");
+                    listenPort = parsedPort;
+                    break;
+
+                case "--verification-key":
+                    int separator = value.IndexOf('=');
+                    if (separator <= 0 || separator == value.Length - 1 ||
+                        !verificationKeys.TryAdd(value[..separator], Path.GetFullPath(value[(separator + 1)..])))
+                    {
+                        throw new WorldLaunchOptionsException(
+                            "--verification-key must be a unique <key-id>=<public-pem-path> pair.");
+                    }
+                    break;
+
                 default:
                     throw new WorldLaunchOptionsException(
                         $"does not recognize argument '{option}'.");
@@ -60,7 +84,14 @@ internal sealed record WorldLaunchOptions(
                 "requires both --world <id> and --channel <id>.");
         }
 
-        return new(worldId.Value, channelId.Value, runTicks);
+        if (listenPort is not null && verificationKeys.Count == 0)
+            throw new WorldLaunchOptionsException("--listen-port requires at least one --verification-key.");
+        if (listenPort is null && verificationKeys.Count != 0)
+            throw new WorldLaunchOptionsException("--verification-key requires --listen-port.");
+        if (listenPort is not null && runTicks is not null)
+            throw new WorldLaunchOptionsException("--listen-port cannot be combined with --run-ticks.");
+
+        return new(worldId.Value, channelId.Value, runTicks, listenPort, verificationKeys);
     }
 
     private static string ReadValue(
@@ -68,7 +99,8 @@ internal sealed record WorldLaunchOptions(
         ref int index,
         string option)
     {
-        if (option is not "--world" and not "--channel" and not "--run-ticks")
+        if (option is not "--world" and not "--channel" and not "--run-ticks" and
+            not "--listen-port" and not "--verification-key")
             throw new WorldLaunchOptionsException($"does not recognize argument '{option}'.");
 
         int valueIndex = index + 1;

@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Starfall.World.Tests" />
+    <InternalsVisibleTo Include="Starfall.ConnectedWalking.Tests" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T16:38:55.7648640Z
+modifiedAt: 2026-08-04T17:26:13.1806640Z
 ---
 
 ## Purpose
@@ -44,7 +44,9 @@ Content and Protocol remain product-dependency-free. Simulation never depends on
 
 CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through ChronoFallFamilyRoot. BUILD-0006 adds only the coordinator network adapter to Client and World; its BCL contracts and pinned LiteNetLib source remain transitive. The local Starfall product graph does not change. Content, Protocol, Simulation, Editor and Balance Lab remain network-transport-free, and World remains presentation-free.
 
-The Client and World network factories are internal composition seams only. BUILD-0006 does not invoke them from either executable or define product framing, channels, delivery policy, admission serialization, peer/session binding, key provisioning or disconnect behavior. Those decisions remain with the separately planned CLIENT-0009 cycle.
+CLIENT-0009 activates those internal Client/World factories through narrow process-owned hosts. Starfall Protocol supplies exact admission/walking codecs and public channel constants without referencing transport. Client and World own polling, delivery assignments, peer/session binding, development public-key configuration and disconnect cleanup. No generic dispatcher, framing system or transport dependency enters another product project.
+
+`tools/Starfall.DevelopmentAdmission` is a development executable outside the product graph. It references only Protocol and BCL cryptography. `tests/Starfall.ConnectedWalking.Tests` is the explicit cross-process integration-test boundary; it does not alter runtime dependency direction.
 
 Future EDITOR-0007 may add a separately explicit, architecture-tested static-rendering allowlist for Editor; no such reference exists merely because the task is planned.
 
@@ -86,26 +88,17 @@ Generated graybox, isometric camera, ground picking, technical humanoid, click i
 
 ### Connected walking world
 
-```text
+~~~text
 PROTOCOL-0002 -> SERVER-0003
 PROTOCOL-0003 -> PROTOCOL-0004
-SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004
-  -> SERVER-0005
+SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004 -> SERVER-0005
+parent SHARED-0023 + BUILD-0003 + BUILD-0005 -> BUILD-0006
+SERVER-0005 + PROTOCOL-0004 + CLIENT-0021 + BUILD-0006 -> CLIENT-0009
+~~~
 
-parent SHARED-0023 + BUILD-0003 + BUILD-0005
-  -> BUILD-0006
+This visible milestone is now executable over real UDP loopback. A development-only tool issues a one-minute signed ticket for the exact world instance; World consumes it, creates and binds one authoritative player, and Client sends ground intent and renders current authoritative snapshots/corrections through the same adapter proven locally.
 
-SERVER-0005 + PROTOCOL-0004 + CLIENT-0021 + BUILD-0006
-  -> CLIENT-0009
-```
-
-`SERVER-0005` closes the authoritative in-process lane: admission creates and binds one generic player, encoded movement commands resolve through host-context session identity, Simulation remains authoritative for spatial acceptance, and World emits ordered encoded snapshots or immediate corrections. Draining preserves the active exchange; stopping clears it.
-
-Coordinator `SHARED-0023` supplies the opaque low-level transport. Starfall `BUILD-0006` adopts its source-built adapter only in Client and World and makes that adoption a real dependency of `CLIENT-0009`. Neither task defines Starfall's later product packet policy by implication.
-
-`CLIENT-0009` remains the separately planned connected-walking implementation. It must define Starfall-owned admission and gameplay transport binding and reuse the same stateless fact-to-presentation adapter proven by the local fixture; it does not create another movement presentation path.
-
-Monster snapshots are not part of this core connected-player walking exchange. Their later focused server exchange and Client consumer extend the connected world after bounded monster behavior exists, without delaying the local walking graybox or inflating this first player-only boundary.
+The shared transport remains opaque infrastructure. Starfall owns exact channels/delivery, admission datagrams, peer/session binding and disconnect policy. Plaintext is restricted to literal loopback. No interpolation, client movement authority, monsters, combat, persistence, service topology or production security has been inferred.
 
 ## Map authoring boundary
 

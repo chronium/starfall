@@ -17,6 +17,8 @@ public sealed class WorldLaunchOptionsTests
         Assert.Equal("world_1", options.WorldId.Value);
         Assert.Equal("channel_2", options.ChannelId.Value);
         Assert.Equal(120, options.RunTicks);
+        Assert.Null(options.ListenPort);
+        Assert.Empty(options.VerificationKeyPaths);
     }
 
     [Fact]
@@ -26,6 +28,28 @@ public sealed class WorldLaunchOptionsTests
             ["--world", "world_1", "--channel", "channel_1"]);
 
         Assert.Null(options.RunTicks);
+    }
+
+    [Fact]
+    public void Parses_connected_mode_and_requires_key_without_finite_ticks()
+    {
+        WorldLaunchOptions options = WorldLaunchOptions.Parse(
+        [
+            "--world", "world_1", "--channel", "channel_1",
+            "--listen-port", "7777",
+            "--verification-key", "development=keys/public.pem",
+        ]);
+        Assert.True(options.IsConnected);
+        Assert.Equal(7777, options.ListenPort);
+        Assert.EndsWith(Path.Combine("keys", "public.pem"), options.VerificationKeyPaths["development"]);
+        Assert.Null(options.RunTicks);
+
+        Assert.Throws<WorldLaunchOptionsException>(() => WorldLaunchOptions.Parse(
+            ["--world", "world_1", "--channel", "channel_1", "--listen-port", "7777"]));
+        Assert.Throws<WorldLaunchOptionsException>(() => WorldLaunchOptions.Parse(
+            ["--world", "world_1", "--channel", "channel_1", "--verification-key", "development=x"]));
+        Assert.Throws<WorldLaunchOptionsException>(() => WorldLaunchOptions.Parse(
+            ["--world", "world_1", "--channel", "channel_1", "--run-ticks", "1", "--listen-port", "7777", "--verification-key", "development=x"]));
     }
 
     [Theory]

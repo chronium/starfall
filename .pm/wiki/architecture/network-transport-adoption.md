@@ -1,7 +1,7 @@
 ---
 title: Network Transport Adoption
 createdAt: 2026-08-04T16:38:15.6691070Z
-modifiedAt: 2026-08-04T16:38:15.6691070Z
+modifiedAt: 2026-08-04T17:18:04.7917050Z
 ---
 
 ## Decision
@@ -34,18 +34,8 @@ The coordinator transport does not supply confidentiality. Protected transport r
 
 ## Connected walking continuation
 
-`CLIENT-0009` depends on `BUILD-0006` and remains todo. Its separately approved plan must define:
+`CLIENT-0009` completes the first concrete use of the BUILD-0006 composition factories.
 
-- product channel and delivery assignments;
-- admission request, accept and reject serialization;
-- Client and World polling/composition;
-- transport-peer to gameplay-session binding;
-- disconnect and reconnect behavior;
-- development key provisioning;
-- the protected-development-transport stance.
+Starfall assigns channel 0 reliable ordered admission, channel 1 reliable sequenced commands, channel 2 sequenced routine snapshots, and channel 3 reliable ordered corrections. Protocol remains free of transport references; it publishes only channel byte constants and exact fact codecs. Client and World alone own LiteNetLib polling and process lifecycle.
 
-That task must reuse the presentation adapter proven by `CLIENT-0021` and the in-process authoritative exchange proven by `SERVER-0005`. It must not infer product policy from the shared opaque transport.
-
-Coordinator ownership: `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/architecture/shared-network-transport`
-
-Connected walking facts: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-walking-facts`
+The World binds each admitted peer to one world gameplay session/player and disconnect cleans up only that ownership chain. The Client connects only to a literal loopback address, uses a ticket file rather than a raw command-line bearer token, waits up to ten seconds for admission plus the initial snapshot, and does not reconnect or resume. Plaintext loopback is approved solely for this development proof. Protected non-loopback transport, production key provisioning and broader packet policy remain future contracts.

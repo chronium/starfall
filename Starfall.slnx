@@ -15,5 +15,9 @@
     <Project Path="tests/Starfall.Protocol.Tests/Starfall.Protocol.Tests.csproj" />
     <Project Path="tests/Starfall.Simulation.Tests/Starfall.Simulation.Tests.csproj" />
     <Project Path="tests/Starfall.World.Tests/Starfall.World.Tests.csproj" />
+    <Project Path="tests/Starfall.ConnectedWalking.Tests/Starfall.ConnectedWalking.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Starfall.DevelopmentAdmission/Starfall.DevelopmentAdmission.csproj" />
   </Folder>
 </Solution>

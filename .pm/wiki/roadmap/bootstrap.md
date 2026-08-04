@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-04T16:40:45.6002340Z
+modifiedAt: 2026-08-04T17:18:30.0713750Z
 ---
 
 ## Execution standard
@@ -81,9 +81,9 @@ SERVER-0005 + PROTOCOL-0004 + CLIENT-0021 + BUILD-0006
   -> CLIENT-0009
 ~~~
 
-CLIENT-0009 replaces CLIENT-0021's deterministic fixture with real snapshots through the same Client-owned adapter. This is the second visible milestone. Monsters do not block it.
+CLIENT-0009 completes the second visible milestone: a signed loopback admission creates one world-owned player, left-click sends intent, World/Simulation decides movement and collision, and Client renders latest authoritative snapshots/corrections through CLIENT-0021's exact adapter.
 
-BUILD-0006 adopts the coordinator-owned transport contracts and LiteNetLib adapter in only the Client and World composition roots. Its factories remain inactive until CLIENT-0009 makes the separately planned Starfall-specific channel, delivery, admission-message, polling, peer/session, disconnect/reconnect, development-key and protected-transport decisions. Protocol remains transport-independent.
+The first exchange is deliberately bounded: channel-specific datagrams over the approved shared transport, plaintext literal loopback only, one-minute development tickets, no reconnect/resume, and immediate disconnect cleanup. Production key provisioning, protected non-loopback transport, smoothing, monsters and combat remain future task-owned work.
 
 ### Camps and connected monsters
 

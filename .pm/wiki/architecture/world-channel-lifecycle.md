@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T14:55:15.9951610Z
+modifiedAt: 2026-08-04T17:18:04.5898780Z
 ---
 
 ## Purpose
@@ -87,17 +87,15 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 ## Ownership and next seams
 
-`Starfall.World` is the headless composition root over Content, Protocol and Simulation. Its output remains free of SDL, GPU, editor and presentation dependencies.
+`Starfall.World` remains the headless composition root over Content, Protocol, Simulation and the one approved coordinator transport adapter. Its output remains free of SDL, GPU, editor and presentation dependencies.
 
-`SERVER-0003` owns the in-process signed-ticket exchange, atomic lifecycle-local consumption registry, and active session records. `SERVER-0005` extends each accepted session with one immutable world-player binding and lock-confined walking publication state. The runtime retains no bearer token and never calls identity, chat or operations after admission.
+Offline mode still creates one standalone technical player and supports finite or persistent execution. Connected mode requires `--listen-port` plus one or more repeatable `--verification-key <key-id>=<public-pem-path>` values, creates no player before admission, and cannot combine with `--run-ticks`.
 
-`SERVER-0006` owns the stable Simulation/World identity and generic technical-player state. The standalone command-line fixture and admitted session players use that same narrow state contract without conflating their lifecycle.
+`WorldConnectedWalkingNetworkHost` owns one caller-polled peer/session registry. It rejects non-loopback endpoints before parsing, enforces the exact admission and walking channel/delivery contract, binds accepted peers to gameplay sessions, routes movement commands through `WorldWalkingExchange`, publishes latest snapshots, and sends immediate corrections. Network errors and one-peer send failures are diagnostic and isolate cleanup to that peer/session; they do not stop the world.
 
-`PROTOCOL-0003` owns transport-neutral movement facts and `PROTOCOL-0004` owns their exact deterministic codecs. `SERVER-0005` now resolves host-context sessions, accepts newer non-zero sequence gaps, ignores stale or duplicate commands, routes destinations into authoritative Simulation, and emits encoded snapshots or corrections through a narrow in-process exchange. Routine snapshots and corrections share a checked per-session sequence beginning at 1. Initial state is available at the admission tick, including tick zero; later routine capture emits at most the latest state once per session per fixed tick, ordered by bound player identity. Spatial rejection produces one immediate correction acknowledging the processed intent. Malformed payloads and unknown sessions produce bounded dispositions and no gameplay mutation.
+Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions but rejects new admission. There is no reconnect grace or resumable session in this slice.
 
-No socket, framing or generic message host is implied. `CLIENT-0009` must later consume accepted snapshots through its existing presentation adapter, but it remains blocked in practice until separately planned shared transport adoption is completed.
-
-Connected walking facts: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-walking-facts
+Combat, monsters, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
 
 ## Non-goals
 

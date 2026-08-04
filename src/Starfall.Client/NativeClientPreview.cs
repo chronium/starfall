@@ -7,6 +7,7 @@ using System.Text;
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.SdlGpu;
 using SDL;
+using Starfall.Client.Networking;
 using Starfall.Content.Zones;
 using static SDL.SDL3;
 
@@ -17,12 +18,14 @@ internal static unsafe class NativeClientPreview
     private const int WindowWidth = 1920;
     private const int WindowHeight = 1080;
 
-    internal static void Run(CharacterPresentationContent content)
+    internal static void Run(
+        CharacterPresentationContent content,
+        ConnectedWalkingClientSession? connectedSession = null)
     {
         ArgumentNullException.ThrowIfNull(content);
         ConfigureNativeSdl();
         using var session = new PreviewSession(content.Cooked.Asset.Mesh, visible: true);
-        session.Run(content.IdleAnimation, content.WalkAnimation, content.Cooked.Asset.Mesh.Skin);
+        session.Run(content.IdleAnimation, content.WalkAnimation, content.Cooked.Asset.Mesh.Skin, connectedSession);
     }
 
     internal static void CaptureSuite(CharacterPresentationContent content, string outputDirectory)
@@ -96,7 +99,7 @@ internal static unsafe class NativeClientPreview
             try
             {
                 window = SDL_CreateWindow(
-                    CreateWindowTitle(),
+                    CreateWindowTitle(null),
                     WindowWidth,
                     WindowHeight,
                     visible ? (SDL_WindowFlags)0 : SDL_WindowFlags.SDL_WINDOW_HIDDEN);
@@ -158,7 +161,8 @@ internal static unsafe class NativeClientPreview
         internal void Run(
             AnimationClip idleAnimation,
             AnimationClip walkAnimation,
-            SkinDefinition skin)
+            SkinDefinition skin,
+            ConnectedWalkingClientSession? connectedSession)
         {
             ArgumentNullException.ThrowIfNull(idleAnimation);
             ArgumentNullException.ThrowIfNull(walkAnimation);
@@ -172,10 +176,11 @@ internal static unsafe class NativeClientPreview
             var playback = new TechnicalPlayerLocomotionPlayback(idleAnimation, walkAnimation);
 
             Console.WriteLine(
-                "STARFALL_CLIENT_CONTROLS LeftClick=move-intent KPPlus/KPMinus=speed " +
+                $"STARFALL_CLIENT_CONTROLS mode={(connectedSession is null ? "local" : "connected")} " +
+                "LeftClick=move-intent KPPlus/KPMinus=local-speed " +
                 "F1-F7=view Tab=next-view Up/Down=F1-distance Escape=close");
-            SetWindowTitle(CreateWindowTitle());
-            EmitCameraDiagnostic();
+            SetWindowTitle(CreateWindowTitle(connectedSession));
+            EmitCameraDiagnostic(connectedSession);
             ulong frequency = SDL_GetPerformanceFrequency();
             if (frequency == 0)
                 throw new InvalidOperationException("SDL returned a zero performance-counter frequency.");
@@ -197,26 +202,32 @@ internal static unsafe class NativeClientPreview
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN &&
                         sdlEvent.button.Button == SDLButton.SDL_BUTTON_LEFT)
                     {
-                        SubmitMovementIntent(sdlEvent.button);
+                        SubmitMovementIntent(sdlEvent.button, connectedSession);
                     }
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
-                        HandlePreviewKey(sdlEvent.key.key, sdlEvent.key.repeat))
+                        HandlePreviewKey(sdlEvent.key.key, sdlEvent.key.repeat, connectedSession is not null))
                     {
-                        SetWindowTitle(CreateWindowTitle());
-                        EmitCameraDiagnostic();
+                        SetWindowTitle(CreateWindowTitle(connectedSession));
+                        EmitCameraDiagnostic(connectedSession);
                     }
                 }
 
                 if (!running)
                     break;
 
+                connectedSession?.Poll();
+                if (connectedSession is not null)
+                    SetWindowTitle(CreateWindowTitle(connectedSession));
+
                 ulong counter = SDL_GetPerformanceCounter();
                 double elapsedSeconds = (counter - previousCounter) / (double)frequency;
                 previousCounter = counter;
                 double presentationElapsed = Math.Min(elapsedSeconds, FixedTickAccumulator.MaximumElapsedSeconds);
-                fixedTicks.Advance(elapsedSeconds, fixture.AdvanceTick);
+                if (connectedSession is null)
+                    fixedTicks.Advance(elapsedSeconds, fixture.AdvanceTick);
+                TechnicalPlayerSnapshot currentSnapshot = connectedSession?.Snapshot ?? fixture.Snapshot;
                 TechnicalPlayerPresentationState presentation =
-                    TechnicalPlayerPresentationAdapter.Adapt(fixture.Snapshot);
+                    TechnicalPlayerPresentationAdapter.Adapt(currentSnapshot);
                 playback.SetLocomotion(presentation.Locomotion);
                 playback.Advance(
                     presentationElapsed,
@@ -230,7 +241,7 @@ internal static unsafe class NativeClientPreview
                     throw new InvalidOperationException(
                         $"Starfall local walking presentation failed at tick {presentation.Snapshot.Tick} " +
                         $"(joints={skin.Skeleton.JointCount}, view={cameras.CurrentPreset.Name}, " +
-                        $"speed={fixture.SpeedMetresPerSecond:F1} m/s).",
+                        $"mode={(connectedSession is null ? "local" : "connected")}).",
                         exception);
                 }
                 SDL_Delay(16);
@@ -536,7 +547,9 @@ internal static unsafe class NativeClientPreview
             return command;
         }
 
-        private void SubmitMovementIntent(SDL_MouseButtonEvent mouseButton)
+        private void SubmitMovementIntent(
+            SDL_MouseButtonEvent mouseButton,
+            ConnectedWalkingClientSession? connectedSession)
         {
             int logicalWidth;
             int logicalHeight;
@@ -550,7 +563,8 @@ internal static unsafe class NativeClientPreview
             if (drawableWidth <= 0 || drawableHeight <= 0)
                 return;
 
-            PerspectiveIsometricCamera camera = cameras.CreateCamera(fixture.Snapshot.Position);
+            TechnicalPlayerSnapshot currentSnapshot = connectedSession?.Snapshot ?? fixture.Snapshot;
+            PerspectiveIsometricCamera camera = cameras.CreateCamera(currentSnapshot.Position);
             if (!GroundMovementInput.TryCreateIntent(
                     camera,
                     validGround,
@@ -565,16 +579,21 @@ internal static unsafe class NativeClientPreview
                 return;
             }
 
-            fixture.Submit(intent);
+            if (connectedSession is null)
+                fixture.Submit(intent);
+            else
+                connectedSession.SendMovementIntent(intent.Destination);
             Console.WriteLine(string.Create(
                 CultureInfo.InvariantCulture,
                 $"STARFALL_CLIENT_MOVE_INTENT x={intent.Destination.XMetres:F3} z={intent.Destination.ZMetres:F3}"));
         }
 
-        private bool HandlePreviewKey(SDL_Keycode key, bool repeated)
+        private bool HandlePreviewKey(SDL_Keycode key, bool repeated, bool connected)
         {
             if (cameras.HandleKey(key, repeated))
                 return true;
+            if (connected)
+                return false;
             if (!Draft0LocalWalkingControls.TryAdjustSpeed(fixture, key, repeated))
                 return false;
 
@@ -663,21 +682,31 @@ internal static unsafe class NativeClientPreview
             return texture;
         }
 
-        private void EmitCameraDiagnostic()
+        private void EmitCameraDiagnostic(ConnectedWalkingClientSession? connectedSession)
         {
             Draft0GrayboxCameraPreset preset = cameras.CurrentPreset;
-            PerspectiveIsometricCamera camera = cameras.CreateCamera(fixture.Snapshot.Position);
+            TechnicalPlayerSnapshot currentSnapshot = connectedSession?.Snapshot ?? fixture.Snapshot;
+            PerspectiveIsometricCamera camera = cameras.CreateCamera(currentSnapshot.Position);
             Console.WriteLine(string.Create(
                 CultureInfo.InvariantCulture,
                 $"STARFALL_CLIENT_CAMERA view={preset.Name} key=F{cameras.SelectedIndex + 1} " +
                 $"focus=({camera.Focus.XMetres:F1},{camera.Focus.ZMetres:F1}) " +
-                $"distance={cameras.CurrentDistanceMetres:F1} speed={fixture.SpeedMetresPerSecond:F1}"));
+                $"distance={cameras.CurrentDistanceMetres:F1} " +
+                $"mode={(connectedSession is null ? "local" : "connected")} tick={currentSnapshot.Tick}"));
         }
 
-        private string CreateWindowTitle() => Draft0LocalPreviewTitle.Create(
-            cameras.CurrentPreset.Name,
-            fixture.SpeedTenths,
-            cameras.CurrentDistanceMetres);
+        private string CreateWindowTitle(ConnectedWalkingClientSession? connectedSession) =>
+            connectedSession is null
+                ? Draft0LocalPreviewTitle.Create(
+                    cameras.CurrentPreset.Name,
+                    fixture.SpeedTenths,
+                    cameras.CurrentDistanceMetres)
+                : string.Create(
+                    CultureInfo.InvariantCulture,
+                    $"Starfall - Connected Walking [{cameras.CurrentPreset.Name}] " +
+                    $"[entity {connectedSession.Snapshot?.Identity ?? "pending"}] " +
+                    $"[tick {connectedSession.Snapshot?.Tick ?? 0}] " +
+                    $"[camera {cameras.CurrentDistanceMetres:F1} m]");
 
         private void SetWindowTitle(string title)
         {

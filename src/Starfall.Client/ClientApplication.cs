@@ -1,5 +1,6 @@
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.Cooking;
+using Starfall.Client.Networking;
 
 namespace Starfall.Client;
 
@@ -38,9 +39,24 @@ internal static class ClientApplication
                 return 0;
             }
 
+            if (args.Contains("--connect-address", StringComparer.Ordinal))
+            {
+                ConnectedClientLaunchOptions options = ConnectedClientLaunchOptions.Parse(args);
+                string ticket = File.ReadAllText(options.JoinTicketPath).Trim();
+                CharacterPresentationContent content = CharacterPresentationContent.LoadFromRuntimeOutput();
+                using var session = new ConnectedWalkingClientSession(ClientNetworkTransportFactory.Create(), ticket);
+                session.ConnectAndAwaitInitialSnapshot(options);
+                Console.WriteLine(
+                    $"STARFALL_CLIENT_CONNECTED session={session.SessionId} " +
+                    $"entity={session.Snapshot!.Value.Identity} tick={session.Snapshot.Value.Tick}");
+                NativeClientPreview.Run(content, session);
+                Console.WriteLine("STARFALL_CLIENT_CONNECTED_STOP");
+                return 0;
+            }
+
             Console.Error.WriteLine(
                 $"Starfall.Client accepts no arguments for the native preview, {ValidateContentArgument}, " +
-                $"or {CaptureGrayboxSuiteArgument} <directory>.");
+                $"{CaptureGrayboxSuiteArgument} <directory>, or connected walking options.");
             return 2;
         }
         catch (Exception exception)
