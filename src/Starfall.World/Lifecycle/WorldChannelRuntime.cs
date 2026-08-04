@@ -1,10 +1,14 @@
 using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
-using Starfall.Simulation.Entities;
+using Starfall.Protocol.Movement;
 using Starfall.Simulation.Movement;
 using Starfall.World.Admission;
 using Starfall.World.Entities;
+using Starfall.World.Movement;
+using ProtocolCollisionCapsule = Starfall.Protocol.Movement.PlayerCollisionCapsule;
+using ProtocolEntityId = Starfall.Protocol.Movement.WorldEntityId;
+using SimulationEntityId = Starfall.Simulation.Entities.WorldEntityId;
 
 namespace Starfall.World.Lifecycle;
 
@@ -21,7 +25,8 @@ internal sealed class WorldChannelRuntime
     private readonly object synchronization = new();
     private readonly Dictionary<JoinTicketId, long> consumedTickets = [];
     private readonly Dictionary<GameplaySessionId, WorldGameplaySession> activeSessions = [];
-    private readonly Dictionary<WorldEntityId, WorldPlayerState> players = [];
+    private readonly Dictionary<GameplaySessionId, WorldWalkingSessionState> walkingSessions = [];
+    private readonly Dictionary<SimulationEntityId, WorldPlayerState> players = [];
     private readonly WorldEntityIdSequence entityIds = new();
     private readonly Draft0PlayerMovementSimulation movement;
     private WorldChannelLifecycleState state;
@@ -195,6 +200,7 @@ internal sealed class WorldChannelRuntime
 
             state = WorldChannelLifecycleState.Stopped;
             activeSessions.Clear();
+            walkingSessions.Clear();
             consumedTickets.Clear();
             players.Clear();
             movement.Dispose();
@@ -211,7 +217,7 @@ internal sealed class WorldChannelRuntime
                     $"Cannot create a technical player in a world in the {state} state.");
             }
 
-            WorldEntityId entityId = entityIds.Allocate();
+            SimulationEntityId entityId = entityIds.Allocate();
             AuthoritativePlayerMovementState movementState = movement.RegisterPlayer(
                 entityId,
                 Layout.Town.RespawnAnchor,
@@ -223,7 +229,7 @@ internal sealed class WorldChannelRuntime
     }
 
     internal GroundMovementIntentDisposition SubmitMovementIntent(
-        WorldEntityId entityId,
+        SimulationEntityId entityId,
         GroundPoint destination)
     {
         lock (synchronization)
@@ -239,13 +245,13 @@ internal sealed class WorldChannelRuntime
         }
     }
 
-    internal bool TryGetPlayer(WorldEntityId entityId, out WorldPlayerState? player)
+    internal bool TryGetPlayer(SimulationEntityId entityId, out WorldPlayerState? player)
     {
         lock (synchronization)
             return players.TryGetValue(entityId, out player);
     }
 
-    internal bool RemovePlayer(WorldEntityId entityId)
+    internal bool RemovePlayer(SimulationEntityId entityId)
     {
         lock (synchronization)
         {
@@ -254,6 +260,12 @@ internal sealed class WorldChannelRuntime
             {
                 throw new InvalidOperationException(
                     $"Cannot remove a player from a world in the {state} state.");
+            }
+
+            if (activeSessions.Values.Any(session => session.PlayerEntityId == entityId))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot remove session-bound player {entityId} through the technical player seam.");
             }
 
             bool removedPlayer = players.Remove(entityId);
@@ -270,6 +282,67 @@ internal sealed class WorldChannelRuntime
     {
         lock (synchronization)
             return activeSessions.TryGetValue(sessionId, out session);
+    }
+
+    internal WorldWalkingCommandResult HandleWalkingCommand(
+        GameplaySessionId sessionId,
+        GroundMovementCommand command)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+
+        lock (synchronization)
+        {
+            if (!walkingSessions.TryGetValue(sessionId, out WorldWalkingSessionState? walkingSession))
+                return new(WorldWalkingCommandDisposition.UnknownSession);
+
+            if (walkingSession.LastProcessedIntentSequence is { } lastProcessed &&
+                command.Sequence.Value <= lastProcessed.Value)
+            {
+                return new(WorldWalkingCommandDisposition.StaleOrDuplicate);
+            }
+
+            GroundMovementIntentDisposition movementDisposition = movement.Submit(
+                new GroundMovementIntent(
+                    walkingSession.Session.PlayerEntityId,
+                    new GroundPoint(
+                        command.Destination.XMetres,
+                        command.Destination.ZMetres)));
+
+            if (movementDisposition == GroundMovementIntentDisposition.UnknownPlayer)
+            {
+                throw new InvalidOperationException(
+                    $"Session {sessionId} is bound to missing player {walkingSession.Session.PlayerEntityId}.");
+            }
+
+            walkingSession.LastProcessedIntentSequence = command.Sequence;
+            if (movementDisposition == GroundMovementIntentDisposition.Accepted)
+                return new(WorldWalkingCommandDisposition.Accepted);
+
+            PlayerMovementSnapshot snapshot = CreateMovementSnapshot(walkingSession);
+            return new(
+                WorldWalkingCommandDisposition.Corrected,
+                new PlayerMovementCorrection(command.Sequence, snapshot));
+        }
+    }
+
+    internal IReadOnlyList<WorldWalkingSnapshot> CaptureWalkingSnapshots()
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                return [];
+            }
+
+            return walkingSessions.Values
+                .OrderBy(static session => session.Session.PlayerEntityId.Value)
+                .Where(session => session.LastPublishedTick != currentTick)
+                .Select(session => new WorldWalkingSnapshot(
+                    session.Session.SessionId,
+                    CreateMovementSnapshot(session)))
+                .ToArray();
+        }
     }
 
     internal WorldJoinAdmissionOutcome ConsumeTicketAndCreateSession(
@@ -306,8 +379,10 @@ internal sealed class WorldChannelRuntime
                 sessionId,
                 claims.AccountId,
                 claims.CharacterId,
-                claims.WorldInstanceId);
+                claims.WorldInstanceId,
+                CreateSessionPlayer().EntityId);
             activeSessions.Add(sessionId, session);
+            walkingSessions.Add(sessionId, new WorldWalkingSessionState(session));
 
             return WorldJoinAdmissionOutcome.Accept(new WorldJoinAccepted(sessionId));
         }
@@ -331,6 +406,49 @@ internal sealed class WorldChannelRuntime
                 $"Cannot {operation} a world in the {state} state; expected {required}.");
         }
     }
+
+    private WorldPlayerState CreateSessionPlayer()
+    {
+        SimulationEntityId entityId = entityIds.Allocate();
+        AuthoritativePlayerMovementState movementState = movement.RegisterPlayer(
+            entityId,
+            Layout.Town.RespawnAnchor,
+            Vector2.UnitY);
+        WorldPlayerState player = CreateWorldPlayerState(movementState);
+        players.Add(entityId, player);
+        return player;
+    }
+
+    private PlayerMovementSnapshot CreateMovementSnapshot(WorldWalkingSessionState walkingSession)
+    {
+        if (!players.TryGetValue(walkingSession.Session.PlayerEntityId, out WorldPlayerState? player))
+        {
+            throw new InvalidOperationException(
+                $"Session {walkingSession.Session.SessionId} is bound to missing player {walkingSession.Session.PlayerEntityId}.");
+        }
+
+        var snapshot = new PlayerMovementSnapshot(
+            walkingSession.SnapshotSequences.Allocate(),
+            currentTick,
+            new ProtocolEntityId(player.EntityId.Value),
+            new GroundPosition(
+                CanonicalizeZero(player.Position.XMetres),
+                CanonicalizeZero(player.Position.ZMetres)),
+            CanonicalizeZero(player.VelocityMetresPerSecond),
+            CanonicalizeZero(player.Facing),
+            new ProtocolCollisionCapsule(
+                CanonicalizeZero(player.Collision.RadiusMetres),
+                CanonicalizeZero(player.Collision.HeightMetres)),
+            walkingSession.LastProcessedIntentSequence);
+        walkingSession.LastPublishedTick = currentTick;
+        return snapshot;
+    }
+
+    private static Vector2 CanonicalizeZero(Vector2 value) =>
+        new(CanonicalizeZero(value.X), CanonicalizeZero(value.Y));
+
+    private static float CanonicalizeZero(float value) =>
+        value == 0.0f ? 0.0f : value;
 
     private static WorldPlayerState CreateWorldPlayerState(
         AuthoritativePlayerMovementState movementState) =>

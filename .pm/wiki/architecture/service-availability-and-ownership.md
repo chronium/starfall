@@ -1,7 +1,7 @@
 ---
 title: Service Availability and Ownership
 createdAt: 2026-08-01T06:48:13.9601190Z
-modifiedAt: 2026-08-04T10:17:41.6762690Z
+modifiedAt: 2026-08-04T14:56:14.1459820Z
 ---
 
 ## Decision
@@ -37,7 +37,9 @@ The intended handoff is:
 5. The selected world validates and consumes the ticket and creates its own gameplay session.
 6. The active gameplay session no longer calls identity for continuing authorization.
 
-The executable admission contract is defined by `PROTOCOL-0002` at `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/world-admission-and-join-tickets`. It uses a versioned ECDSA P-256 ticket bound to the selected account, character, world, channel, and lifecycle-specific world instance. Worlds validate with locally configured public keys, then atomically consume the unique ticket ID before creating a session. `SERVER-0003` implements that responsibility as lifecycle-local in-memory replay and session state behind a synchronized World boundary. The admitted session retains no live identity, chat, or operations dependency.
+The executable admission contract is defined by `PROTOCOL-0002` at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/world-admission-and-join-tickets. It uses a versioned ECDSA P-256 ticket bound to the selected account, character, world, channel and lifecycle-specific world instance. Worlds validate with locally configured public keys, then atomically consume the unique ticket ID before creating a session.
+
+`SERVER-0003` implements lifecycle-local replay protection and immutable account/character/world session identity. `SERVER-0005` now atomically creates one generic world player at the configured respawn anchor and binds its immutable world-local entity identity to each accepted session. Connected movement commands resolve that host-context binding and never carry a caller-selected entity identity. The admitted session retains no bearer ticket and no live identity, chat or operations dependency.
 
 ## Availability behaviour
 
@@ -53,11 +55,13 @@ The active-session invariant deliberately does not promise transparent persisten
 
 ## Worlds and channels
 
-Each world/channel is an independent lifecycle and authoritative state owner. It owns its live population, monsters, drops, camps, progression events, and active sessions. Cross-world features must not create synchronous dependencies that stop unrelated worlds.
+Each world/channel is an independent lifecycle and authoritative state owner. It owns its live population, monsters, drops, camps, progression events and active sessions. Cross-world features must not create synchronous dependencies that stop unrelated worlds.
 
-`SERVER-0002` establishes the executable empty-world lifecycle contract at `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/world-channel-lifecycle`. Every process invocation requires explicit world and channel identities and creates a fresh world-instance identity. Running is the only admission-eligible state; draining immediately rejects future admission while retaining existing sessions and allowing their authoritative fixed ticks to continue until stop. `SERVER-0003` adds the bounded admission and session seam: running accepts validated joins, draining rejects new joins while retaining existing sessions, and stopping clears lifecycle-local session and replay state. The current command-line host still has no key provisioning or network admission transport, so its standalone lifecycle run creates no sessions and stops immediately after entering drain. This remains independent of process supervision.
+`SERVER-0002` establishes the executable world lifecycle at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/world-channel-lifecycle. Every process invocation requires explicit world and channel identities and creates a fresh world-instance identity. Running is the only admission-eligible state; draining immediately rejects future admission while retaining existing sessions and their authoritative fixed ticks until stop.
 
-Physical host granularity remains open. The current executable hosts one explicitly selected logical world/channel per invocation as the smallest evidence-producing boundary; that is not a final deployment-topology decision. A later host may run one or more logical worlds, but the design must preserve separable state, lifecycle, and interfaces so failure-isolation evidence can determine whether worlds require separate processes or hosts.
+`SERVER-0003` adds the bounded admission/session seam. `SERVER-0005` proves that an admitted session can continue driving its bound player's authoritative movement and receive current snapshots or corrections while the world drains, without any identity, chat or operations call. Stopping clears lifecycle-local session, walking publication and player state. The current command-line host still has no key provisioning or network admission/movement transport, so standalone execution uses its separate technical player fixture.
+
+Physical host granularity remains open. The current executable hosts one explicitly selected logical world/channel per invocation as the smallest evidence-producing boundary; that is not a final deployment-topology decision. A later host may run one or more logical worlds, but the design must preserve separable state, lifecycle and interfaces so failure-isolation evidence can determine whether worlds require separate processes or hosts.
 
 ## Chat boundary
 

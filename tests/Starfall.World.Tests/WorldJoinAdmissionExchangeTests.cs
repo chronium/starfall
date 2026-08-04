@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Simulation.Entities;
 using Starfall.World.Admission;
 using Starfall.World.Lifecycle;
 
@@ -31,7 +32,12 @@ public sealed class WorldJoinAdmissionExchangeTests
         Assert.Equal(claims.AccountId, session.AccountId);
         Assert.Equal(claims.CharacterId, session.CharacterId);
         Assert.Equal(runtime.InstanceId, session.WorldInstanceId);
+        Assert.Equal(new WorldEntityId(1), session.PlayerEntityId);
+        Assert.True(runtime.TryGetPlayer(session.PlayerEntityId, out var player));
+        Assert.NotNull(player);
+        Assert.Equal(runtime.Layout.Town.RespawnAnchor, player.Position);
         Assert.Equal(1, runtime.ActiveSessionCount);
+        Assert.Equal(1, runtime.PlayerCount);
         Assert.Equal(1, runtime.ConsumedTicketCount);
     }
 
@@ -65,6 +71,7 @@ public sealed class WorldJoinAdmissionExchangeTests
             WorldJoinRejectionReason.WrongDestination);
 
         Assert.Equal(0, runtime.ActiveSessionCount);
+        Assert.Equal(0, runtime.PlayerCount);
         Assert.Equal(0, runtime.ConsumedTicketCount);
     }
 
@@ -84,6 +91,7 @@ public sealed class WorldJoinAdmissionExchangeTests
         runtime.Start();
         Assert.True(exchange.Handle(request, NowUnixMilliseconds).IsAccepted);
         Assert.Equal(1, runtime.ActiveSessionCount);
+        Assert.Equal(1, runtime.PlayerCount);
         Assert.Equal(1, runtime.ConsumedTicketCount);
     }
 
@@ -107,6 +115,7 @@ public sealed class WorldJoinAdmissionExchangeTests
             outcomes.Count(static outcome =>
                 outcome.Rejected?.Reason == WorldJoinRejectionReason.AlreadyConsumed));
         Assert.Equal(1, runtime.ActiveSessionCount);
+        Assert.Equal(1, runtime.PlayerCount);
         Assert.Equal(1, runtime.ConsumedTicketCount);
     }
 
@@ -131,6 +140,7 @@ public sealed class WorldJoinAdmissionExchangeTests
             first.ExpiresAtUnixMilliseconds + WorldJoinTicketCodec.AllowedClockSkewMilliseconds).IsAccepted);
 
         Assert.Equal(2, runtime.ActiveSessionCount);
+        Assert.Equal(2, runtime.PlayerCount);
         Assert.Equal(1, runtime.ConsumedTicketCount);
     }
 
@@ -163,6 +173,7 @@ public sealed class WorldJoinAdmissionExchangeTests
 
         Assert.False(runtime.TryGetGameplaySession(sessionId, out _));
         Assert.Equal(0, runtime.ActiveSessionCount);
+        Assert.Equal(0, runtime.PlayerCount);
         Assert.Equal(0, runtime.ConsumedTicketCount);
         Assert.Equal(2UL, runtime.CurrentTick);
     }

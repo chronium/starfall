@@ -1,7 +1,7 @@
 ---
 title: Client World Presentation Adapter
 createdAt: 2026-08-04T07:46:57.3592710Z
-modifiedAt: 2026-08-04T08:04:03.1498990Z
+modifiedAt: 2026-08-04T14:55:48.3110060Z
 ---
 
 ## Ownership and purpose
@@ -51,4 +51,6 @@ The title displays the active view, one-decimal speed derived from integer tenth
 
 The CLIENT-0024 seven-view capture suite remains historical graybox evidence. It supplies an explicit idle snapshot at `(100,0,100)` and the frozen 22.5-metre F1 distance through the same adapter/render path; it is not the live gameplay spawn.
 
-CLIENT-0009 later replaces only the deterministic fixture source with accepted real protocol snapshots. Protocol ordering, serialization, network exchange and reconciliation remain owned by their focused tasks.
+`SERVER-0005` now produces encoded authoritative snapshots and corrections through a bounded in-process World exchange. `CLIENT-0009` later replaces only the deterministic fixture source with decoded accepted protocol facts, preserving this adapter and presentation path.
+
+That Client work must not activate merely because its current PM dependencies are complete. A separately planned coordinator-owned shared transport boundary and focused Starfall adoption/wiring cycle must first provide the real client/server delivery seam. Socket choice, message framing, connection lifecycle, stale-fact handling and any reconciliation remain outside the local fixture and outside `SERVER-0005`.

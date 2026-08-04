@@ -15,9 +15,15 @@ internal sealed class WorldJoinAdmissionOutcome
 
     internal bool IsAccepted => Accepted is not null;
 
-    internal WorldJoinAccepted? Accepted { get; }
+    internal WorldJoinAccepted? Accepted
+    {
+        get;
+    }
 
-    internal WorldJoinRejected? Rejected { get; }
+    internal WorldJoinRejected? Rejected
+    {
+        get;
+    }
 
     internal static WorldJoinAdmissionOutcome Accept(WorldJoinAccepted accepted)
     {

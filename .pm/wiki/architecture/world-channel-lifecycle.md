@@ -1,12 +1,12 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T14:02:40.5739610Z
+modifiedAt: 2026-08-04T14:55:15.9951610Z
 ---
 
 ## Purpose
 
-This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding added by `SERVER-0004`, the lifecycle-local admission/session boundary added by `SERVER-0003`, the generic technical player state added by `SERVER-0006`, and authoritative movement added by `SIM-0008`. It remains the timing and content-ownership foundation for later gameplay.
+This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding added by `SERVER-0004`, the lifecycle-local admission/session boundary added by `SERVER-0003`, the generic technical player state added by `SERVER-0006`, authoritative movement added by `SIM-0008`, and the admitted-session walking exchange added by `SERVER-0005`. It remains the timing and content-ownership foundation for later gameplay.
 
 ## Identity
 
@@ -43,11 +43,13 @@ All current world/channel invocations use this one provisional layout. A zone-se
 
 ## Technical player state
 
-After entering `Running`, the standalone host creates one generic authoritative player at `town_safe`'s configured respawn anchor `(100,0,25)`, with zero planar velocity and normalized `+Z` facing. This is a technical world fixture, not the selected dark-elf class, combat kit, equipment or presentation identity, and it is not yet bound to an admitted gameplay session.
+After entering `Running`, the standalone host creates one generic authoritative player at `town_safe`'s configured respawn anchor `(100,0,25)`, with zero planar velocity and normalized `+Z` facing. This command-line fixture is separate from admitted gameplay sessions and remains useful for deterministic lifecycle checks.
+
+Successful admission now atomically creates a distinct generic player at the same configured anchor and binds its immutable `WorldEntityId` to the new gameplay session. Rejected and replayed admissions create no player. The binding is host-owned context: connected movement commands carry no entity identity, so a session cannot nominate another player.
 
 `WorldPlayerState` is an immutable World-owned bucket containing its world-local entity identity, finite ground position, finite planar velocity in metres/second, normalized planar facing, 0.35 m radius by 1.8 m tall collision capsule, and latest movement outcome. Lookup never exposes mutable runtime-owned state. Movement replaces whole states under the runtime lock; ordered defensive snapshots therefore remain stable after later movement, creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary or native query enumeration.
 
-Creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`. Draining retains players. Stopping clears them. Distinct runtime instances each own an independent identity sequence beginning at 1.
+Standalone technical-player creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`, but the technical removal seam rejects any session-bound player. Draining retains admitted players. Stopping clears them. Distinct runtime instances each own an independent identity sequence beginning at 1.
 
 `Draft0PlayerMovementSimulation` owns a zero-gravity Box3D collision world and accepts entity-targeted finite ground destinations. Movement uses a provisional 4.0 m/s speed at 60 Hz. A destination outside capsule-adjusted walkable bounds or overlapping a proxy is rejected without replacing the current destination. Unobstructed motion advances directly; arrival clamps exactly; a sweep hit moves to Box3D's safe fraction, reports blocked, clears the destination and does not slide or retry. Players do not collide with one another in this task. The town remains traversable by players; `SIM-0011` later owns hostile-action rejection, monster exclusion/disengagement, defeat and respawn.
 
@@ -87,22 +89,16 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 `Starfall.World` is the headless composition root over Content, Protocol and Simulation. Its output remains free of SDL, GPU, editor and presentation dependencies.
 
-`SERVER-0003` owns the in-process signed-ticket exchange, atomic lifecycle-local consumption registry, and active session records. The runtime retains only session/account/character/world-instance identities; it never retains the bearer token or calls identity, chat, or operations after admission.
+`SERVER-0003` owns the in-process signed-ticket exchange, atomic lifecycle-local consumption registry, and active session records. `SERVER-0005` extends each accepted session with one immutable world-player binding and lock-confined walking publication state. The runtime retains no bearer token and never calls identity, chat or operations after admission.
 
-`SERVER-0006` owns the stable Simulation/World identity and one generic technical player. Session-to-player binding remains deliberately absent.
+`SERVER-0006` owns the stable Simulation/World identity and generic technical-player state. The standalone command-line fixture and admitted session players use that same narrow state contract without conflating their lifecycle.
 
-`PROTOCOL-0003` owns separate transport-neutral boundary facts: a session-bound sequenced movement command, world-instance-local protocol entity identity, ordered fixed-tick snapshots and correlated corrections. Protocol's similarly named values do not move Simulation identity or state authority into Protocol. World performs the later one-to-one mapping.
+`PROTOCOL-0003` owns transport-neutral movement facts and `PROTOCOL-0004` owns their exact deterministic codecs. `SERVER-0005` now resolves host-context sessions, accepts newer non-zero sequence gaps, ignores stale or duplicate commands, routes destinations into authoritative Simulation, and emits encoded snapshots or corrections through a narrow in-process exchange. Routine snapshots and corrections share a checked per-session sequence beginning at 1. Initial state is available at the admission tick, including tick zero; later routine capture emits at most the latest state once per session per fixed tick, ordered by bound player identity. Spatial rejection produces one immediate correction acknowledging the processed intent. Malformed payloads and unknown sessions produce bounded dispositions and no gameplay mutation.
 
-Later focused tasks own:
-
-- `PROTOCOL-0004`: deterministic serialization and malformed-input handling for the completed facts;
-- `SERVER-0005`: admitted-session mapping, active-zone validation, checked sequence allocation and connected movement exchange;
-- `CLIENT-0009`: consumption of the latest authoritative facts through the existing presentation adapter.
-
-Those tasks may consume this lifecycle but must not retroactively turn it into a generic host framework.
+No socket, framing or generic message host is implied. `CLIENT-0009` must later consume accepted snapshots through its existing presentation adapter, but it remains blocked in practice until separately planned shared transport adoption is completed.
 
 Connected walking facts: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-walking-facts
 
 ## Non-goals
 
-This contract does not create a generic entity/component framework, ECS, character controller, navigation/pathfinding framework or network socket, bind sessions to players, provision verification keys, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.
+This contract does not create a generic entity/component framework, ECS, character controller, navigation/pathfinding framework, network socket, message-framing system or generic exchange host. It does not provision verification keys, expose admission or movement over a network, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.

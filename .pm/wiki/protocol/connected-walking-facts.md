@@ -1,7 +1,7 @@
 ---
 title: Connected Walking Facts
 createdAt: 2026-08-04T14:02:01.5363760Z
-modifiedAt: 2026-08-04T14:25:25.0627130Z
+modifiedAt: 2026-08-04T14:55:39.1001330Z
 ---
 
 ## Purpose
@@ -17,11 +17,11 @@ Protocol owns immutable facts and structural validation only. Simulation remains
 - a positive `MovementIntentSequence`;
 - one finite `GroundPosition` containing single-precision X/Z metres.
 
-The command deliberately carries no entity identity. `SERVER-0005` must resolve the admitted gameplay session to its world-owned player before submitting intent to Simulation. A client cannot nominate another entity to control.
+The command deliberately carries no entity identity. `SERVER-0005` resolves the admitted gameplay session supplied by host context to its immutable world-owned player before submitting intent to Simulation. A client cannot nominate another entity to control.
 
-Intent sequences begin at 1 and are allocated monotonically with checked arithmetic within one gameplay session. They do not wrap, reset or re-enter the available range during that session. Exact duplicate, stale and gap handling belongs to the later server-exchange contract.
+Intent sequences begin at 1 and are client-allocated monotonically with checked arithmetic within one gameplay session. The World exchange accepts any sequence newer than the last processed value, including gaps that may result from transport loss. Exact duplicates and stale values are ignored without changing movement, acknowledgements or snapshot sequencing. A malformed payload or unknown session returns a bounded host disposition and produces no gameplay fact.
 
-Protocol accepts any finite X/Z metre components. It does not hard-code the Draft 0 200 x 200 metre envelope. World validates the destination against the currently loaded zone and walkable/collision policy.
+Protocol accepts any finite X/Z metre components. It does not hard-code the Draft 0 200 x 200 metre envelope. World validates the destination through the currently loaded authoritative Simulation layout and collision policy.
 
 ## Authoritative snapshot
 
@@ -37,13 +37,17 @@ Protocol accepts any finite X/Z metre components. It does not hard-code the Draf
 
 `WorldEntityId` is local to one world instance. It is not an account, character, session or persistent identity and must not be retained across world-instance replacement.
 
-Snapshot sequence is the freshness order for connected-walking facts within one gameplay session. Routine snapshots and corrections share that sequence stream. Simulation ticks may repeat or skip between emitted facts, so consumers do not use tick or arrival order as a substitute for snapshot sequence. Producer allocation and consumer stale-fact handling belong to `SERVER-0005` and `CLIENT-0009`.
+Routine snapshots and corrections share one checked monotonic snapshot sequence per gameplay session, beginning at 1 and failing explicitly on exhaustion. Initial state may be captured at the session's admission tick, including tick zero. Later routine capture emits at most one latest snapshot for each session at each newer fixed tick; skipped captures do not create a queued historical backlog. Multi-session routine output is ordered by bound world entity identity, not dictionary enumeration.
+
+Simulation ticks may repeat across synchronous corrections or skip between emitted facts, so consumers use snapshot sequence—not tick or arrival order—as the freshness order. `CLIENT-0009` owns stale-fact handling after the transport boundary is approved.
 
 ## Correction fact
 
 `PlayerMovementCorrection` correlates one processed intent sequence with one complete authoritative snapshot. The embedded snapshot must acknowledge the same intent sequence.
 
-The fact does not define why correction was required. Rejection, collision, exchange and later reconciliation policies remain with their task-owned domains. Client presentation never changes the authoritative result.
+`SERVER-0005` emits exactly one immediate correction when a newer valid command is rejected by authoritative walkable-bound or proxy validation. Rejection still counts as processing that intent. Accepted commands are instead acknowledged by the next routine snapshot. Corrections report current authoritative state and never let presentation change the result.
+
+The fact does not encode a rejection reason. Collision, exchange and later reconciliation policies remain with their task-owned domains.
 
 ## Deterministic serialization
 
@@ -71,9 +75,9 @@ Spatial facts use finite BCL `System.Numerics` single-precision metre values. Fi
 
 ## Downstream ownership
 
-- `PROTOCOL-0004` owns deterministic serialization, bounded packet representation and malformed-input rejection for these exact facts.
-- `SERVER-0005` owns session-to-player mapping, active-zone validation, checked sequence allocation, intent submission and snapshot/correction exchange.
-- `CLIENT-0009` owns consuming the latest facts and translating them into the presentation adapter proven by `CLIENT-0021`.
+- `PROTOCOL-0004` owns deterministic serialization, bounded payload representation and malformed-input rejection for these exact facts.
+- `SERVER-0005` owns immutable session-to-player binding, active-zone validation, command ordering, checked snapshot-sequence allocation, authoritative intent submission and the bounded in-process snapshot/correction exchange.
+- `CLIENT-0009` owns consuming the latest accepted facts and translating them into the presentation adapter proven by `CLIENT-0021`. Before activation it still needs separately planned shared transport adoption; `SERVER-0005` does not choose sockets or framing.
 - Monster, combat, progression, drop and inventory/equipment facts remain in their focused later tasks.
 
 This contract does not add wire framing, sockets, transport choice, quantization, prediction, smoothing, a generic entity/message framework or gameplay authority to Client.

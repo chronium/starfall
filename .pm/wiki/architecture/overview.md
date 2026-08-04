@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T14:25:34.7430240Z
+modifiedAt: 2026-08-04T14:55:58.0159370Z
 ---
 
 ## Purpose
@@ -80,19 +80,19 @@ Generated graybox, isometric camera, ground picking, technical humanoid, click i
 
 ### Connected walking world
 
-~~~text
+```text
 PROTOCOL-0002 -> SERVER-0003
 PROTOCOL-0003 -> PROTOCOL-0004
 SERVER-0003 + SERVER-0006 + SIM-0008 + PROTOCOL-0004
   -> SERVER-0005
   -> CLIENT-0009
-~~~
+```
 
-This milestone proves real world-owned player identity/state, authoritative movement, serialized snapshots, world-host exchange and Client adapter reuse. Monsters do not block it.
+`SERVER-0005` now closes the authoritative in-process lane: admission creates and binds one generic player, encoded movement commands resolve through host-context session identity, Simulation remains authoritative for spatial acceptance, and World emits ordered encoded snapshots or immediate corrections. Draining preserves the active exchange; stopping clears it.
 
-`PROTOCOL-0003` defines the transport-neutral session-bound movement command, world-instance-local entity identity, monotonic intent/snapshot sequences, fixed-tick authoritative player snapshot and correction facts. `PROTOCOL-0004` serializes those exact facts as separate fixed-layout schema-version-1 command, snapshot and correction payloads. Exact lengths, unsigned 64-bit big-endian integers, canonical finite single-precision values, explicit acknowledgement encoding and non-throwing untrusted decode are frozen without adding transport framing or active-zone policy. `SERVER-0005` owns admitted-session mapping and exchange, and `CLIENT-0009` owns mapping the newest authoritative facts into the existing presentation adapter.
+The second visible milestone still requires a real transport boundary before `CLIENT-0009` can activate. Shared transport selection/promotion and its Starfall adoption must be separately planned from the coordinator family. The eventual Client consumer reuses the same stateless fact-to-presentation adapter proven by the local fixture; it does not create another movement presentation path.
 
-Connected walking facts: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-walking-facts
+Monster snapshots are not part of this core connected-player walking exchange. Their later focused server exchange and Client consumer extend the connected world after bounded monster behavior exists, without delaying the local walking graybox or inflating this first player-only boundary.
 
 ## Map authoring boundary
 
