@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-04T17:18:30.0713750Z
+modifiedAt: 2026-08-05T06:19:31.3650200Z
 ---
 
 ## Execution standard
@@ -90,7 +90,7 @@ The first exchange is deliberately bounded: channel-specific datagrams over the 
 ~~~text
 CONTENT-0007 -> SIM-0003
 SIM-0003 + SERVER-0006 -> SIM-0006
-SIM-0006 + SIM-0008 -> SIM-0004
+CONTENT-0003 + SIM-0006 + SIM-0008 -> SIM-0004
 SIM-0004 + SIM-0006 + SIM-0008 + CONTENT-0007 -> SIM-0010
 SIM-0010 + SIM-0008 + CONTENT-0014 -> SIM-0011
 
@@ -113,8 +113,12 @@ Placeholder monsters use generated shapes or separately approved temporary asset
 ### Combat contract and exchange
 
 ~~~text
-SIM-0004 + CONTENT-0003 -> SIM-0009  Fire Arrow
-SIM-0004 + CONTENT-0003 -> SIM-0007  Arrow Rain
+CONTENT-0003 + SIM-0006 + SIM-0008
+  -> SIM-0004  Basic Arrow + integer damage/death
+
+SIM-0004 + CONTENT-0003
+  -> SIM-0009  Fire Arrow
+  -> SIM-0007  Arrow Rain
 
 SIM-0004 + SIM-0009 + SIM-0007 + SIM-0011
   -> PROTOCOL-0006  combat facts
@@ -130,9 +134,15 @@ CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
   -> CLIENT-0012
 ~~~
 
+CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. SIM-0004 owns Basic Arrow's exact range/facing/cadence/interruption/tick inputs; SIM-0009 owns mana state/regeneration and Fire inputs; SIM-0007 owns Arrow Rain cost/range/radius/cadence/interruption/timing/order. EDITOR-0005 compares candidate values without promoting defaults.
+
+No current task promotes Balance Lab evidence into one selected connected-M2 combat preset. Groom that focused ownership before SERVER-0008 activates. Primary-attribute taxonomy and starting values also remain an explicit nonblocking gap.
+
 SERVER-0008 depends on the exact monster server exchange, never a Client task. Basic/Fire/Rain arrows remain presentation and all outcomes resolve at authoritative fixed ticks.
 
 CLIENT-0007/0010/0011/0018/0019 retain focused locomotion, action, weapon, projectile, targeting and feedback presentation after these gates.
+
+Durable catalog: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
 ### Progression, drops and equipment transport
 

@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-04T17:50:14.8541780Z
+modifiedAt: 2026-08-05T06:16:38.0120290Z
 ---
 
 ## Status and purpose
@@ -78,17 +78,21 @@ EDITOR-0007 later authors the proper scene from the durable requirements, graybo
 
 ## Provisional class and combat kit
 
-The connected walking slice uses a generic technical player and does not depend on class or combat content. The later class/combat lane owns the dark-elf archer through CONTENT-0003.
+The connected walking slice uses a generic technical player and does not depend on class or combat content. The later class/combat lane now consumes CONTENT-0003's immutable Draft 0 catalog.
 
-The intended class begins in a non-equipment underlayer with a basic wooden bow, visually presented unlimited arrows and no equipped armour. The first armour family is a visibly meaningful Ranger/leather set.
+The provisional class identity is `dark_elf_archer`. It begins with 2,500 authoritative health units, unlimited authoritative ammunition, and the exact ordered actions `basic_arrow`, `fire_arrow`, `arrow_rain`. Unlimited ammunition means no ammunition resource, inventory or purchasing; it does not prohibit visual arrows.
 
-| Action | Target | Displayed damage | Internal damage |
-| --- | --- | ---: | ---: |
-| Basic Arrow | One enemy | 3 | 300 |
-| Fire Arrow | Selected enemy | 7 | 700 |
-| Arrow Rain | Ground circle, each valid victim | 5 | 500 |
+| Action | Target | Displayed damage | Internal damage | Mana |
+| --- | --- | ---: | ---: | --- |
+| Basic Arrow | One selected enemy | 3 | 300 | no |
+| Fire Arrow | One selected enemy | 7 | 700 | yes |
+| Arrow Rain | Ground circle, each valid victim | 5 | 500 | yes |
 
-Right-click enemy requests Basic Arrow, 1 requests Fire Arrow on the selected target, and 2 enters Arrow Rain ground targeting. Input is intent only. The server decides validity, range, facing, victims, damage, mana, cadence, death and success.
+The intended presentation still begins in a non-equipment underlayer with a basic wooden bow and visually presented arrows. The first armour family remains a visibly meaningful Ranger/leather set.
+
+Right-click enemy requests Basic Arrow, 1 requests Fire Arrow on the selected target, and 2 enters Arrow Rain ground targeting. Input is intent only. Simulation decides validity, range, facing, victims, damage, mana, cadence, death and success.
+
+Exact downstream ownership, tuning gaps and authority details: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
 ## Numerical contract
 

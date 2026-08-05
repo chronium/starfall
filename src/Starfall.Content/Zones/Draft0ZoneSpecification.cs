@@ -19,7 +19,7 @@ public sealed class Draft0BranchSpecification
         float approximateTravelDistanceMetres,
         Draft0CampGeometry campGeometry)
     {
-        ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         if (!float.IsFinite(approximateTravelDistanceMetres) || approximateTravelDistanceMetres <= 0.0f)
         {
             throw new ArgumentOutOfRangeException(
@@ -49,19 +49,6 @@ public sealed class Draft0BranchSpecification
         get;
     }
 
-    internal static void ValidateIdentity(string value, string parameterName)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(value, parameterName);
-        if (value[0] is < 'a' or > 'z' || value.Any(static character =>
-                character is not (>= 'a' and <= 'z') &&
-                character is not (>= '0' and <= '9') &&
-                character != '_'))
-        {
-            throw new ArgumentException(
-                "Content identities must use lowercase ASCII letters, digits and underscores and begin with a letter.",
-                parameterName);
-        }
-    }
 }
 
 public sealed class Draft0TownSpecification
@@ -134,9 +121,9 @@ public sealed class Draft0EnvironmentSpecification
         string routeSurfaceId,
         string boundaryPresentationId)
     {
-        Draft0BranchSpecification.ValidateIdentity(defaultSurfaceId, nameof(defaultSurfaceId));
-        Draft0BranchSpecification.ValidateIdentity(routeSurfaceId, nameof(routeSurfaceId));
-        Draft0BranchSpecification.ValidateIdentity(boundaryPresentationId, nameof(boundaryPresentationId));
+        ContentIdentityRules.Validate(defaultSurfaceId, nameof(defaultSurfaceId));
+        ContentIdentityRules.Validate(routeSurfaceId, nameof(routeSurfaceId));
+        ContentIdentityRules.Validate(boundaryPresentationId, nameof(boundaryPresentationId));
         if (new[] { defaultSurfaceId, routeSurfaceId, boundaryPresentationId }
             .Distinct(StringComparer.Ordinal)
             .Count() != 3)
@@ -175,7 +162,7 @@ public sealed class Draft0ZoneSpecification
         IEnumerable<Draft0BranchSpecification> branches,
         Draft0EnvironmentSpecification environment)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         ArgumentNullException.ThrowIfNull(town);
         ArgumentNullException.ThrowIfNull(branches);
         ArgumentNullException.ThrowIfNull(environment);

@@ -17,7 +17,7 @@ public sealed class Draft0TownLayout
         GroundPoint respawnAnchor,
         GroundPoint exitAnchor)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         if (!bounds.Contains(respawnAnchor))
             throw new ArgumentOutOfRangeException(nameof(respawnAnchor), respawnAnchor, "Respawn anchor lies outside the town.");
         if (!Draft0GrayboxLayout.IsOnBoundsBoundary(bounds, exitAnchor))
@@ -57,7 +57,7 @@ public sealed class Draft0RouteCorridor
         float widthMetres,
         IEnumerable<GroundPoint> points)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         ArgumentNullException.ThrowIfNull(points);
         if (!float.IsFinite(widthMetres) || widthMetres <= 0.0f)
             throw new ArgumentOutOfRangeException(nameof(widthMetres), "Route width must be a positive finite metre value.");
@@ -144,7 +144,7 @@ public sealed class Draft0CampLayout
         GroundPoint entryAnchor,
         Draft0CampGeometry geometry)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         if (!Enum.IsDefined(geometry))
             throw new ArgumentOutOfRangeException(nameof(geometry));
         if (geometry == Draft0CampGeometry.BroadOpenCircle &&
@@ -228,7 +228,7 @@ public sealed class Draft0ProxyBlock
         GroundBounds footprint,
         float heightMetres)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         if (!Enum.IsDefined(role))
             throw new ArgumentOutOfRangeException(nameof(role));
         if (!float.IsFinite(heightMetres) || heightMetres <= 0.0f)
@@ -267,7 +267,7 @@ public sealed class Draft0SampleSpawn
 {
     public Draft0SampleSpawn(string id, GroundPoint point)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         Id = id;
         Point = point;
     }
@@ -291,7 +291,7 @@ public sealed class Draft0BranchLayout
         Draft0CampLayout camp,
         IEnumerable<Draft0SampleSpawn> sampleSpawns)
     {
-        Draft0BranchSpecification.ValidateIdentity(id, nameof(id));
+        ContentIdentityRules.Validate(id, nameof(id));
         ArgumentNullException.ThrowIfNull(route);
         ArgumentNullException.ThrowIfNull(camp);
         ArgumentNullException.ThrowIfNull(sampleSpawns);

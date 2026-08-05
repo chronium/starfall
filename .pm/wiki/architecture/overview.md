@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-04T17:26:13.1806640Z
+modifiedAt: 2026-08-05T06:16:38.0229970Z
 ---
 
 ## Purpose
@@ -118,6 +118,8 @@ Integer authoritative state covers HP, mana, damage, XP, levels, currency, item 
 Spatial/physics authority uses finite Box3D-native single-precision metres. Content authoring uses BCL-only immutable System.Numerics-backed values with identical units/precision and rejects NaN, infinity and out-of-zone data. Simulation converts components one-to-one without maintaining a parallel integer-millimetre model. Stable identities and explicit sorting protect gameplay from unordered native query results.
 
 Completed coordinator task `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0021` supplies the only approved headless family-source reference: `$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj`. `SIM-0008` consumes that managed project directly from Starfall.Simulation; raw bindings and the matching native library remain transitive. Starfall retains entity identity, fixed-tick scheduling, collision layers, content conversion and movement outcomes.
+
+CONTENT-0003 freezes the provisional `dark_elf_archer` catalog at 2,500 health units and the ordered `basic_arrow`, `fire_arrow`, `arrow_rain` actions with 300, 700 and 500 damage units. The catalog records deterministic identities and integer inputs only; Simulation owns validity and outcomes, while Client owns animation, attachments, projectiles and effects. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
 ## Family source and asset boundaries
 
