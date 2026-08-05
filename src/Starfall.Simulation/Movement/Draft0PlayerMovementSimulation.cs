@@ -227,6 +227,26 @@ public sealed class Draft0PlayerMovementSimulation : IDisposable
         return GroundMovementIntentDisposition.Accepted;
     }
 
+    public AuthoritativePlayerMovementState StopAndFace(
+        WorldEntityId entityId,
+        Vector2 facing)
+    {
+        ThrowIfDisposed();
+        if (!players.TryGetValue(entityId, out PlayerMover? player))
+            throw new InvalidOperationException($"Cannot stop unknown player {entityId}.");
+        if (!IsFiniteNormalized(facing))
+            throw new ArgumentException("Player facing must be finite and normalized.", nameof(facing));
+
+        player.Destination = null;
+        player.State = WithMotion(
+            player.State,
+            player.State.Position,
+            Vector2.Zero,
+            facing,
+            GroundMovementTickOutcome.Idle);
+        return player.State;
+    }
+
     public IReadOnlyList<AuthoritativePlayerMovementState> Step()
     {
         ThrowIfDisposed();

@@ -2,6 +2,7 @@ using System.Numerics;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Simulation.Combat;
 using Starfall.Simulation.Entities;
 using Starfall.Simulation.Movement;
 using Starfall.World.Entities;
@@ -441,6 +442,137 @@ public sealed class WorldChannelRuntimeTests
         runtime.Stop();
         Assert.Throws<InvalidOperationException>(() =>
             runtime.SubmitMovementIntent(player.EntityId, new GroundPoint(100.0f, 30.0f)));
+    }
+
+    [Fact]
+    public void Basic_arrow_stops_faces_resolves_exact_damage_and_replenishes_defeat_once()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldPlayerState player = runtime.CreateTechnicalPlayer();
+        MovePlayerTo(runtime, player.EntityId, new GroundPoint(100.0f, 70.0f));
+        MovePlayerTo(runtime, player.EntityId, new GroundPoint(70.0f, 65.0f));
+
+        WorldMonsterState original = Assert.Single(
+            runtime.Monsters,
+            static monster => monster.SpawnId == "spawn_easy_03");
+        IReadOnlyList<WorldMonsterState> originalSnapshot = runtime.Monsters;
+        ulong? previousStartTick = null;
+
+        for (var shot = 0; shot < 3; shot++)
+        {
+            BasicArrowStartEvaluation started = runtime.SubmitBasicArrow(
+                new BasicArrowIntent("basic_arrow", player.EntityId, original.EntityId));
+            Assert.Equal(BasicArrowStartDisposition.Accepted, started.Disposition);
+            PendingBasicArrow pending = Assert.IsType<PendingBasicArrow>(started.PendingAction);
+            Assert.Equal(runtime.CurrentTick, pending.StartTick);
+            Assert.Equal(pending.StartTick + 12, pending.ResolveTick);
+            Assert.Equal(pending.StartTick + 48, pending.NextAllowedStartTick);
+            if (previousStartTick is { } prior)
+                Assert.Equal(48UL, pending.StartTick - prior);
+            previousStartTick = pending.StartTick;
+
+            Assert.True(runtime.TryGetPlayer(player.EntityId, out WorldPlayerState? stopped));
+            Assert.NotNull(stopped);
+            Assert.Equal(Vector2.Zero, stopped.VelocityMetresPerSecond);
+            Assert.Equal(-Vector2.UnitX, stopped.Facing);
+            Assert.Equal(1, runtime.PendingBasicArrowCount);
+            if (shot == 0)
+            {
+                Assert.Equal(
+                    GroundMovementIntentDisposition.OutsideWalkableBounds,
+                    runtime.SubmitMovementIntent(player.EntityId, new GroundPoint(5.0f, 100.0f)));
+                Assert.Equal(1, runtime.PendingBasicArrowCount);
+            }
+
+            for (var tick = 0; tick < 11; tick++)
+            {
+                runtime.Step();
+                Assert.Empty(runtime.LastBasicArrowResolutions);
+                Assert.True(runtime.TryGetMonster(original.EntityId, out _));
+            }
+
+            runtime.Step();
+            BasicArrowResolution resolution = Assert.Single(runtime.LastBasicArrowResolutions);
+            Assert.Equal(BasicArrowResolutionDisposition.Resolved, resolution.Disposition);
+            AuthoritativeDamageResult damage = Assert.IsType<AuthoritativeDamageResult>(resolution.Damage);
+            Assert.Equal(300, damage.RequestedDamageUnits);
+            Assert.Equal(shot == 2 ? 100 : 300, damage.AppliedDamageUnits);
+            Assert.Equal(shot == 0 ? 400 : shot == 1 ? 100 : 0, damage.RemainingHealthUnits);
+            Assert.Equal(shot == 2, damage.Defeated);
+            Assert.Equal(0, runtime.PendingBasicArrowCount);
+
+            if (shot < 2)
+            {
+                Assert.True(runtime.TryGetMonster(original.EntityId, out WorldMonsterState? damaged));
+                Assert.NotNull(damaged);
+                Assert.Equal(damage.RemainingHealthUnits, damaged.HealthUnits);
+                while (runtime.CurrentTick < pending.NextAllowedStartTick)
+                    runtime.Step();
+            }
+        }
+
+        Assert.False(runtime.TryGetMonster(original.EntityId, out _));
+        Assert.Equal(9, runtime.MonsterCount);
+        Assert.Equal(700, Assert.Single(originalSnapshot, monster => monster.EntityId == original.EntityId).HealthUnits);
+
+        ulong defeatedAtTick = runtime.CurrentTick;
+        for (var tick = 0; tick < 599; tick++)
+            runtime.Step();
+        Assert.DoesNotContain(runtime.Monsters, static monster => monster.SpawnId == "spawn_easy_03");
+        runtime.Step();
+
+        WorldMonsterState replacement = Assert.Single(
+            runtime.Monsters,
+            static monster => monster.SpawnId == "spawn_easy_03");
+        Assert.NotEqual(original.EntityId, replacement.EntityId);
+        Assert.Equal(700, replacement.HealthUnits);
+        Assert.Equal(defeatedAtTick + 600, replacement.SpawnedAtTick);
+        Assert.Equal(10, runtime.MonsterCount);
+    }
+
+    [Fact]
+    public void Basic_arrow_rejects_unknown_facts_and_follows_world_lifecycle()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        BasicArrowIntent unknown = new("basic_arrow", new WorldEntityId(100), new WorldEntityId(101));
+
+        Assert.Throws<InvalidOperationException>(() => runtime.SubmitBasicArrow(unknown));
+        runtime.Start();
+        Assert.Equal(BasicArrowStartDisposition.UnknownActor, runtime.SubmitBasicArrow(unknown).Disposition);
+
+        WorldPlayerState player = runtime.CreateTechnicalPlayer();
+        Assert.Equal(
+            BasicArrowStartDisposition.UnknownTarget,
+            runtime.SubmitBasicArrow(new BasicArrowIntent("basic_arrow", player.EntityId, new WorldEntityId(101))).Disposition);
+        WorldMonsterState distant = runtime.Monsters[0];
+        Assert.Equal(
+            BasicArrowStartDisposition.TargetOutOfRange,
+            runtime.SubmitBasicArrow(new BasicArrowIntent("basic_arrow", player.EntityId, distant.EntityId)).Disposition);
+
+        runtime.Stop();
+        Assert.Throws<InvalidOperationException>(() => runtime.SubmitBasicArrow(unknown));
+    }
+
+    private static void MovePlayerTo(
+        WorldChannelRuntime runtime,
+        WorldEntityId playerId,
+        GroundPoint destination)
+    {
+        Assert.Equal(
+            GroundMovementIntentDisposition.Accepted,
+            runtime.SubmitMovementIntent(playerId, destination));
+        for (var tick = 0; tick < 2_000; tick++)
+        {
+            runtime.Step();
+            Assert.True(runtime.TryGetPlayer(playerId, out WorldPlayerState? player));
+            Assert.NotNull(player);
+            if (player.Position == destination)
+                return;
+            Assert.NotEqual(GroundMovementTickOutcome.Blocked, player.MovementOutcome);
+        }
+
+        throw new InvalidOperationException("Technical player did not reach the combat fixture position.");
     }
 
     private static WorldChannelRuntime CreateRuntime(Guid instanceId) =>

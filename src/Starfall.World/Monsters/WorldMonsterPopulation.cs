@@ -1,6 +1,7 @@
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Camps;
+using Starfall.Simulation.Combat;
 using Starfall.Simulation.Entities;
 using Starfall.World.Entities;
 
@@ -92,6 +93,31 @@ internal sealed class WorldMonsterPopulation
             throw new InvalidOperationException("Monster entity and placement-slot ownership diverged.");
         vacanciesBySpawnId.Add(monster.SpawnId, vacancy);
         return true;
+    }
+
+    internal AuthoritativeDamageResult? ApplyDamage(
+        WorldEntityId entityId,
+        int requestedDamageUnits,
+        ulong resolvedAtTick)
+    {
+        RequireInitialized();
+        if (!monsters.TryGetValue(entityId, out WorldMonsterState? monster))
+            return null;
+
+        AuthoritativeDamageResult damage = AuthoritativeIntegerDamage.Apply(
+            monster.HealthUnits,
+            requestedDamageUnits);
+        if (damage.Defeated)
+        {
+            if (!Remove(entityId, resolvedAtTick))
+                throw new InvalidOperationException("A defeated monster disappeared before removal.");
+        }
+        else
+        {
+            monsters[entityId] = monster.WithHealth(damage.RemainingHealthUnits);
+        }
+
+        return damage;
     }
 
     internal void ApplyEligible(ulong currentTick, Func<WorldEntityId> allocateEntityId)

@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T12:04:36.8751680Z
+modifiedAt: 2026-08-05T12:32:15.7852170Z
 ---
 
 ## Purpose and ownership
@@ -64,7 +64,7 @@ Players and monsters share one checked monotonic world-local identity sequence. 
 
 - Completed `SIM-0003` owns the immutable camp-policy inputs and pure replenishment schedule.
 - Completed `SIM-0006` owns authoritative World runtime occupancy, immutable monster records, shared identity allocation, validated removal handling and fixed-tick spawn application.
-- `SIM-0004` owns integer damage and death; the current removal seam consumes an already-authoritative outcome and does not decide either.
+- Completed `SIM-0004` owns Basic Arrow integer damage/death and applies first defeat through the existing validated removal seam.
 - `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
 - `SIM-0011` owns protected-town exclusion, disengagement at its boundary and player defeat/respawn behavior.
 - `CONTENT-0013` owns exact monster presentation selection.
@@ -73,5 +73,7 @@ Players and monsters share one checked monotonic world-local identity sequence. 
 Running and Draining use the same deterministic camp rules; draining blocks new admission/technical creation but continues retained gameplay until its separately owned deadline policy. Stopping clears entities, occupancy and pending replenishments without reusing identities.
 
 The starter-monster composition catalog itself still contains no runtime capacity state, spawn templates, replenishment schedule, authoritative entity identity, asset choice or presentation contract. The separate camp-policy catalog adds only immutable inputs; World owns application and outcomes.
+
+`SIM-0004` now applies `basic_arrow` to these immutable health values. Nonlethal hits replace only current health while preserving monster identity and all placement facts. The 700-unit light archetype is defeated by its third 300-unit request; the 2,000-unit heavy archetype by its seventh. Effective overkill is clamped to remaining health, defeat occurs once, and first defeat enters the existing vacancy schedule at the action's exact resolve tick. This does not add monster behavior, presentation, drops, rewards or random replacement.
 
 Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps.

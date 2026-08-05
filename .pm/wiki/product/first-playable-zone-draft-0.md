@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T12:04:56.0552350Z
+modifiedAt: 2026-08-05T12:31:50.4464550Z
 ---
 
 ## Status and purpose
@@ -110,9 +110,11 @@ Accepted level 2-20 requirements:
 
 ## Authority and arrow presentation
 
-Basic Arrow and Fire Arrow resolve at explicit authoritative fixed ticks without spatial projectile entities or server-side travel/collision. Arrow Rain resolves an explicitly ordered victim set and damage at an authoritative tick.
+Basic Arrow now resolves through the authoritative `SIM-0004` rule. It uses an inclusive 12-metre ground-plane range, stops and faces the selected monster on acceptance, resolves 12 ticks later, and permits the next start after 48 ticks. Accepted movement during windup cancels the shot while retaining the cadence; rejected movement does not. At resolution the actor must remain stationary and the target must remain alive, in range and within an inclusive 45-degree facing cone.
 
-Protocol facts later carry action, target, timing, resource and outcome information. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
+The rule requests 300 integer damage units. A light monster reaches zero on the third hit and a heavy monster on the seventh; effective overkill is clamped while defeat occurs only once. World applies nonlethal immutable health replacement, then routes first defeat into the existing camp vacancy/replenishment lifecycle at the exact resolve tick.
+
+Basic Arrow and Fire Arrow create no authoritative spatial projectile, server-side travel, projectile collision or line-of-sight query. Arrow Rain likewise resolves an explicitly ordered victim set and damage at an authoritative tick. Protocol facts later carry action, target, timing, cancellation, resource and outcome information; Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
 
 ## Monsters, camps, town and respawn
 
@@ -127,7 +129,7 @@ The exact initial camp composition is three light assignments in `camp_easy`; tw
 
 Authoritative removal at tick `T` validates checked eligibility before vacating a slot. The occupant remains if `T + 600` overflows. After World advances to tick `T + 600`, the same slot receives a fresh entity with the same camp, archetype, exact point and full initial health. Simultaneous decisions apply by eligibility, canonical camp and canonical slot order. No randomness is consumed.
 
-Draining blocks new admission and technical creation but continues retained gameplay, monster removal and due replenishment under ordinary rules. Stopping clears entities, occupancy and pending replenishments. `SIM-0004` later owns integer damage/death; `SIM-0010` owns radius, movement, targeting, awareness, pursuit/leash, attacks and return.
+Draining blocks new admission and technical creation but continues retained gameplay, monster removal and due replenishment under ordinary rules. Stopping clears entities, occupancy and pending replenishments. `SIM-0004` now owns Basic Arrow integer damage/death; `SIM-0010` owns radius, movement, targeting, awareness, pursuit/leash, outgoing attacks and return.
 
 “Flyer” remains a provisional technical identity. Both archetypes are ordinary authoritative ground-plane occupants. Hovering, bobbing or lunging is presentation only and grants no altitude, airborne navigation, vertical targeting or special collision semantics. The town's hostile-action rejection, monster exclusion and defeat/respawn behavior remain `SIM-0011` work.
 

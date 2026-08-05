@@ -2,7 +2,10 @@ using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
+using Starfall.Simulation.Combat;
+using Starfall.Simulation.Movement;
 using Starfall.World.Admission;
+using Starfall.World.Entities;
 using Starfall.World.Lifecycle;
 using Starfall.World.Movement;
 
@@ -63,6 +66,34 @@ public sealed class WorldWalkingExchangeTests
         Assert.True(firstSnapshot.Position.XMetres > 100.0f);
         Assert.Null(secondSnapshot.LastProcessedIntentSequence);
         Assert.Equal(100.0f, secondSnapshot.Position.XMetres);
+    }
+
+    [Fact]
+    public void Accepted_connected_movement_cancels_a_pending_basic_arrow()
+    {
+        WorldChannelRuntime runtime = CreateRuntime();
+        WorldGameplaySession session = Admit(runtime, 1);
+        MovePlayerTo(runtime, session.PlayerEntityId, new GroundPoint(100.0f, 70.0f));
+        MovePlayerTo(runtime, session.PlayerEntityId, new GroundPoint(70.0f, 65.0f));
+        WorldMonsterState target = Assert.Single(
+            runtime.Monsters,
+            static monster => monster.SpawnId == "spawn_easy_03");
+        Assert.Equal(
+            BasicArrowStartDisposition.Accepted,
+            runtime.SubmitBasicArrow(
+                new BasicArrowIntent("basic_arrow", session.PlayerEntityId, target.EntityId)).Disposition);
+
+        var exchange = new WorldWalkingExchange(runtime);
+        WorldWalkingCommandOutcome outcome = exchange.HandleCommand(
+            session.SessionId,
+            EncodeCommand(1, 70.0f, 70.0f));
+
+        Assert.Equal(WorldWalkingCommandDisposition.Accepted, outcome.Disposition);
+        Assert.Equal(0, runtime.PendingBasicArrowCount);
+        BasicArrowResolution canceled = Assert.Single(runtime.LastBasicArrowResolutions);
+        Assert.Equal(BasicArrowResolutionDisposition.CanceledByMovement, canceled.Disposition);
+        Assert.Equal(runtime.CurrentTick, canceled.OutcomeTick);
+        Assert.Equal(700, target.HealthUnits);
     }
 
     [Fact]
@@ -234,6 +265,26 @@ public sealed class WorldWalkingExchangeTests
         GameplaySessionId sessionId = Assert.IsType<WorldJoinAccepted>(outcome.Accepted).SessionId;
         Assert.True(runtime.TryGetGameplaySession(sessionId, out WorldGameplaySession? session));
         return Assert.IsType<WorldGameplaySession>(session);
+    }
+
+    private static void MovePlayerTo(
+        WorldChannelRuntime runtime,
+        Starfall.Simulation.Entities.WorldEntityId playerId,
+        GroundPoint destination)
+    {
+        Assert.Equal(
+            GroundMovementIntentDisposition.Accepted,
+            runtime.SubmitMovementIntent(playerId, destination));
+        for (var tick = 0; tick < 2_000; tick++)
+        {
+            runtime.Step();
+            Assert.True(runtime.TryGetPlayer(playerId, out WorldPlayerState? player));
+            Assert.NotNull(player);
+            if (player.Position == destination)
+                return;
+        }
+
+        throw new InvalidOperationException("Connected player did not reach the combat fixture position.");
     }
 
     private static byte[] EncodeCommand(

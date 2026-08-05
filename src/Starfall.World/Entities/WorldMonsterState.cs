@@ -63,4 +63,14 @@ internal sealed class WorldMonsterState
     {
         get;
     }
+
+    internal WorldMonsterState WithHealth(int healthUnits) =>
+        new(
+            EntityId,
+            CampId,
+            SpawnId,
+            ArchetypeId,
+            Position,
+            healthUnits,
+            SpawnedAtTick);
 }

@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-05T12:04:18.5115340Z
+modifiedAt: 2026-08-05T12:32:02.5004750Z
 ---
 
 ## Purpose
@@ -67,7 +67,15 @@ Startup fills every approved fixed slot in canonical camp then slot order at tic
 
 After each fixed World tick advances, every due vacancy is applied in eligibility, canonical camp and canonical slot order. A replacement uses the same camp, slot, archetype, exact position and full initial health, but receives a fresh entity identity and the current spawn tick. Capacity is exactly 3/4/3 and no placement slot can hold more than one entity. The current fixed-slot rule consumes no seed or randomness.
 
-This is occupancy and lifecycle state only. `SIM-0004` later owns integer damage and death; `SIM-0010` owns collision radius, movement, target selection, awareness, pursuit, attacks and return. No monster protocol or presentation is emitted here.
+`SIM-0004` now extends this occupancy with Basic Arrow integer damage and first-defeat removal; `SIM-0010` owns collision radius, movement, target selection, awareness, pursuit, outgoing attacks and return. No monster protocol or presentation is emitted here.
+
+## Basic Arrow combat scheduling
+
+`SIM-0004` adds one bounded authoritative combat lane without changing the world lifecycle or project graph. Simulation owns immutable Basic Arrow intent, tuning, pending-action, cancellation/resolution and integer-damage facts. World owns per-actor pending/cadence state, immutable player/monster replacement and application to the fixed-slot monster population.
+
+At an accepted start tick `T`, World stops the actor's current destination, zeroes velocity, faces the target, records resolution at `T + 12` and reserves the next start at `T + 48`. Accepted movement before resolution cancels the shot while preserving cadence. After movement advances and the world tick increments, due shots resolve in ascending actor identity order before camp replenishment. Nonlethal damage replaces monster health; first defeat validates and creates the vacancy at the resolve tick. Running and Draining share these rules. Player/session removal clears that actor's combat state, and Stop clears all pending combat state.
+
+The current seam is intentionally local and headless. It creates no Protocol encoding, network exchange, Client presentation, projectile entity, generic ability runtime, monster behavior, protected-town rule, drop, XP or respawn behavior.
 
 ## Fixed-step scheduling
 
@@ -77,7 +85,7 @@ Persistent execution uses a monotonic clock and an accumulator. One outer-loop c
 
 The optional `--run-ticks <positive>` mode advances exactly the requested number of ticks without wall-clock pacing. It exists for deterministic validation and automation, not as a second simulation model.
 
-World first applies the existing authoritative player-movement step, then increments the checked World tick, then applies camp replacements whose eligibility is less than or equal to that new tick. A monster removed at tick `T` is therefore absent through `T + 599` and recreated exactly at `T + 600`. This ordering is identical in Running and Draining.
+World first applies authoritative player movement, then increments the checked World tick, resolves due Basic Arrows in actor-identity order, and finally applies camp replacements whose eligibility is less than or equal to that new tick. A monster removed at tick `T` is therefore absent through `T + 599` and recreated exactly at `T + 600`. This ordering is identical in Running and Draining.
 
 ## Process diagnostics
 
@@ -113,7 +121,7 @@ Offline mode creates one standalone technical player and supports finite or pers
 
 Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions and ordinary deterministic camp simulation but rejects new admission. There is no reconnect grace or resumable session in this slice.
 
-Monster combat/behavior, monster protocol and presentation, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
+Monster behavior and outgoing combat, combat/monster protocol and presentation, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
 
 ## Non-goals
 

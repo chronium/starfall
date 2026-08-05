@@ -3,8 +3,10 @@ using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
+using Starfall.Simulation.Combat;
 using Starfall.Simulation.Movement;
 using Starfall.World.Admission;
+using Starfall.World.Combat;
 using Starfall.World.Entities;
 using Starfall.World.Monsters;
 using Starfall.World.Movement;
@@ -32,6 +34,8 @@ internal sealed class WorldChannelRuntime
     private readonly WorldEntityIdSequence entityIds = new();
     private readonly Draft0PlayerMovementSimulation movement;
     private readonly WorldMonsterPopulation monsterPopulation;
+    private readonly WorldBasicArrowCombat basicArrowCombat = new();
+    private IReadOnlyList<BasicArrowResolution> lastBasicArrowResolutions = [];
     private WorldChannelLifecycleState state;
     private ulong currentTick;
 
@@ -140,6 +144,24 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal int PendingBasicArrowCount
+    {
+        get
+        {
+            lock (synchronization)
+                return basicArrowCombat.PendingCount;
+        }
+    }
+
+    internal IReadOnlyList<BasicArrowResolution> LastBasicArrowResolutions
+    {
+        get
+        {
+            lock (synchronization)
+                return lastBasicArrowResolutions;
+        }
+    }
+
     internal IReadOnlyList<WorldPlayerState> Players
     {
         get
@@ -197,6 +219,7 @@ internal sealed class WorldChannelRuntime
             }
 
             currentTick = checked(currentTick + 1);
+            lastBasicArrowResolutions = ResolveBasicArrows();
             monsterPopulation.ApplyEligible(currentTick, entityIds.Allocate);
         }
     }
@@ -231,6 +254,8 @@ internal sealed class WorldChannelRuntime
             walkingSessions.Clear();
             consumedTickets.Clear();
             players.Clear();
+            basicArrowCombat.Clear();
+            lastBasicArrowResolutions = [];
             monsterPopulation.Clear();
             movement.Dispose();
         }
@@ -270,8 +295,58 @@ internal sealed class WorldChannelRuntime
                     $"Cannot submit movement in a world in the {state} state.");
             }
 
-            return movement.Submit(new GroundMovementIntent(entityId, destination));
+            GroundMovementIntentDisposition disposition = movement.Submit(
+                new GroundMovementIntent(entityId, destination));
+            if (disposition == GroundMovementIntentDisposition.Accepted)
+                RecordAcceptedMovement(entityId);
+            return disposition;
         }
+    }
+
+    internal BasicArrowStartEvaluation SubmitBasicArrow(BasicArrowIntent intent)
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot submit Basic Arrow in a world in the {state} state.");
+            }
+
+            if (!players.TryGetValue(intent.ActorId, out WorldPlayerState? player))
+                return BasicArrowStartEvaluation.Reject(BasicArrowStartDisposition.UnknownActor);
+            if (!monsterPopulation.TryGet(intent.TargetId, out WorldMonsterState? monster) || monster is null)
+                return BasicArrowStartEvaluation.Reject(BasicArrowStartDisposition.UnknownTarget);
+
+            BasicArrowStartEvaluation evaluation = basicArrowCombat.TryStart(
+                intent,
+                CreateBasicArrowActorState(player),
+                CreateBasicArrowTargetState(monster),
+                currentTick);
+            if (evaluation.PendingAction is not { } pending)
+                return evaluation;
+
+            AuthoritativePlayerMovementState stopped = movement.StopAndFace(
+                player.EntityId,
+                pending.AcceptedFacing);
+            players[player.EntityId] = CreateWorldPlayerState(stopped);
+            return evaluation;
+        }
+    }
+
+    internal bool TryGetPendingBasicArrow(
+        SimulationEntityId actorId,
+        out PendingBasicArrow pending)
+    {
+        lock (synchronization)
+            return basicArrowCombat.TryGetPending(actorId, out pending);
+    }
+
+    internal ulong GetNextBasicArrowStartTick(SimulationEntityId actorId)
+    {
+        lock (synchronization)
+            return basicArrowCombat.GetNextAllowedStartTick(actorId);
     }
 
     internal bool TryGetPlayer(SimulationEntityId entityId, out WorldPlayerState? player)
@@ -322,6 +397,8 @@ internal sealed class WorldChannelRuntime
             bool removedMovement = movement.RemovePlayer(entityId);
             if (removedPlayer != removedMovement)
                 throw new InvalidOperationException("World player and movement ownership diverged.");
+            if (removedPlayer)
+                basicArrowCombat.RemoveActor(entityId);
             return removedPlayer;
         }
     }
@@ -353,6 +430,7 @@ internal sealed class WorldChannelRuntime
             bool movementRemoved = movement.RemovePlayer(session.PlayerEntityId);
             if (!playerRemoved || !movementRemoved)
                 throw new InvalidOperationException("Session player and movement ownership diverged.");
+            basicArrowCombat.RemoveActor(session.PlayerEntityId);
             return true;
         }
     }
@@ -389,7 +467,10 @@ internal sealed class WorldChannelRuntime
 
             walkingSession.LastProcessedIntentSequence = command.Sequence;
             if (movementDisposition == GroundMovementIntentDisposition.Accepted)
+            {
+                RecordAcceptedMovement(walkingSession.Session.PlayerEntityId);
                 return new(WorldWalkingCommandDisposition.Accepted);
+            }
 
             PlayerMovementSnapshot snapshot = CreateMovementSnapshot(walkingSession);
             return new(
@@ -532,4 +613,70 @@ internal sealed class WorldChannelRuntime
             movementState.Facing,
             movementState.Collision,
             movementState.Outcome);
+
+    private void RecordAcceptedMovement(SimulationEntityId entityId)
+    {
+        if (basicArrowCombat.CancelForMovement(entityId, currentTick) is { } cancellation)
+            lastBasicArrowResolutions = Array.AsReadOnly([cancellation]);
+    }
+
+    private IReadOnlyList<BasicArrowResolution> ResolveBasicArrows()
+    {
+        IReadOnlyList<PendingBasicArrow> due = basicArrowCombat.TakeDue(currentTick);
+        if (due.Count == 0)
+            return [];
+
+        var resolutions = new List<BasicArrowResolution>(due.Count);
+        foreach (PendingBasicArrow action in due)
+        {
+            if (!players.TryGetValue(action.ActorId, out WorldPlayerState? player))
+            {
+                resolutions.Add(BasicArrowResolution.Cancel(
+                    action,
+                    currentTick,
+                    BasicArrowResolutionDisposition.ActorUnavailable));
+                continue;
+            }
+
+            if (!monsterPopulation.TryGet(action.TargetId, out WorldMonsterState? monster) || monster is null)
+            {
+                resolutions.Add(BasicArrowResolution.Cancel(
+                    action,
+                    currentTick,
+                    BasicArrowResolutionDisposition.TargetUnavailable));
+                continue;
+            }
+
+            BasicArrowResolution resolution = Draft0BasicArrowRules.Resolve(
+                Draft0BasicArrowTuning.FirstPlayable,
+                action,
+                CreateBasicArrowActorState(player),
+                CreateBasicArrowTargetState(monster),
+                currentTick);
+            if (resolution.Damage is { } expectedDamage)
+            {
+                AuthoritativeDamageResult appliedDamage = monsterPopulation.ApplyDamage(
+                    monster.EntityId,
+                    expectedDamage.RequestedDamageUnits,
+                    currentTick) ?? throw new InvalidOperationException(
+                        $"Basic Arrow target {monster.EntityId} disappeared during resolution.");
+                if (appliedDamage != expectedDamage)
+                    throw new InvalidOperationException("Basic Arrow rule and world health application diverged.");
+            }
+
+            resolutions.Add(resolution);
+        }
+
+        return Array.AsReadOnly(resolutions.ToArray());
+    }
+
+    private static BasicArrowActorState CreateBasicArrowActorState(WorldPlayerState player) =>
+        new(
+            player.EntityId,
+            player.Position,
+            player.VelocityMetresPerSecond,
+            player.Facing);
+
+    private static BasicArrowTargetState CreateBasicArrowTargetState(WorldMonsterState monster) =>
+        new(monster.EntityId, monster.Position, monster.HealthUnits);
 }

@@ -61,6 +61,27 @@ public sealed class Draft0PlayerMovementSimulationTests
     }
 
     [Fact]
+    public void Stop_and_face_cancels_the_destination_immediately()
+    {
+        using var simulation = CreateSimulation();
+        WorldEntityId entityId = Register(simulation, new GroundPoint(100.0f, 25.0f));
+        simulation.Submit(new GroundMovementIntent(entityId, new GroundPoint(100.0f, 35.0f)));
+        Assert.Equal(GroundMovementTickOutcome.Moving, Assert.Single(simulation.Step()).Outcome);
+
+        AuthoritativePlayerMovementState stopped = simulation.StopAndFace(entityId, Vector2.UnitX);
+        AuthoritativePlayerMovementState nextTick = Assert.Single(simulation.Step());
+
+        Assert.Equal(Vector2.Zero, stopped.VelocityMetresPerSecond);
+        Assert.Equal(Vector2.UnitX, stopped.Facing);
+        Assert.Equal(GroundMovementTickOutcome.Idle, stopped.Outcome);
+        Assert.Equal(stopped.Position, nextTick.Position);
+        Assert.Equal(Vector2.UnitX, nextTick.Facing);
+        Assert.Equal(GroundMovementTickOutcome.Idle, nextTick.Outcome);
+        Assert.Throws<ArgumentException>(() => simulation.StopAndFace(entityId, Vector2.Zero));
+        Assert.Throws<InvalidOperationException>(() => simulation.StopAndFace(new WorldEntityId(99), Vector2.UnitX));
+    }
+
+    [Fact]
     public void Arrival_clamps_exactly_and_preserves_last_facing()
     {
         using var simulation = CreateSimulation();
