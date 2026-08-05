@@ -1,7 +1,7 @@
 ---
 title: Editor and Balance Lab Boundaries
 createdAt: 2026-08-04T11:24:42.1457150Z
-modifiedAt: 2026-08-04T11:24:42.1457150Z
+modifiedAt: 2026-08-05T07:42:31.6796350Z
 ---
 
 ## Purpose
@@ -21,6 +21,26 @@ For `EDITOR-0003`, both `Starfall.Editor` and `Starfall.BalanceLab` remain libra
 | World | Authoritative runtime entities, sessions, camps, spawning, deaths, replenishment, drops, and active gameplay lifecycle | Content authoring UI or balance-analysis presentation |
 
 Camp definitions and spawn/replenishment policy inputs may be shared through Content, and their deterministic rules may be shared through Simulation. Actual camp entities and outcomes remain World-owned. This sharing does not create a camp service.
+
+## Editor UI boundary
+
+The statement that `Starfall.Editor` and `Starfall.BalanceLab` remained libraries is historical and task-local to completed EDITOR-0003. EDITOR-0008 owns the later decision to make Starfall.Editor a native desktop executable over the approved coordinator backend. EDITOR-0004 continues to own only the separate Balance Lab executable-host decision.
+
+The editor UI sequence is:
+
+~~~text
+parent SHARED-0024
+  -> EDITOR-0008  native UI foundation
+  -> EDITOR-0009  interaction and generic command history
+  -> EDITOR-0007  real Draft 0 document and compilation
+  -> EDITOR-0010  auxiliary-surface polish
+~~~
+
+EDITOR-0008 owns proposed design tokens, fonts, thin editor-specific primitives and an explicitly synthetic visual showcase. It has no Draft 0 content dependency. EDITOR-0009 owns shared selection/action routing, keyboard focus, tool state, generic command execution/undo/redo/dirty checkpoints and user UI-state persistence.
+
+EDITOR-0007 owns real authoring object identity, viewport picking, concrete commands and mutation rules, validation and bounded compilation. EDITOR-0010 consumes EDITOR-0007 and transitively consumes the interaction-owned persistence machinery; it does not block SERVER-0012 or CLIENT-0016.
+
+The editor design language is durable at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/editor-design-language.
 
 ## Authoring compilation boundary
 

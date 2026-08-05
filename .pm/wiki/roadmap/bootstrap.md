@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T06:50:36.1300490Z
+modifiedAt: 2026-08-05T07:42:31.6873980Z
 ---
 
 ## Execution standard
@@ -169,10 +169,17 @@ Combat separates facts, serialization and World exchange because the action life
 
 ### Proper Editor-authored map
 
+The proper editor path now has an explicit UI and interaction foundation without making auxiliary polish block runtime adoption:
+
 ~~~text
-EDITOR-0003 + CONTENT-0006 + CONTENT-0014 + CONTENT-0012
+parent SHARED-0024
+  -> EDITOR-0008  native Starfall UI foundation and synthetic showcase
+  -> EDITOR-0009  interaction state and generic command history
+
+EDITOR-0003 + EDITOR-0009
+  + CONTENT-0006 + CONTENT-0014 + CONTENT-0012
   + parent SHARED-0018/0019 + ASSET-0007
-  -> EDITOR-0007
+  -> EDITOR-0007  real Draft 0 document, commands and compilation
 
 EDITOR-0007 + SERVER-0004
   -> SERVER-0012  authoritative compiled map
@@ -180,9 +187,20 @@ EDITOR-0007 + SERVER-0004
 CLIENT-0020 + EDITOR-0007
   + parent SHARED-0018/0019 + ASSET-0007
   -> CLIENT-0016  rendered compiled scene
+
+EDITOR-0007
+  -> EDITOR-0010  auxiliary Assets / Validation / Log / status polish
 ~~~
 
-EDITOR-0007 owns one focused Draft 0 authoring document and separate authoritative/client compilation outputs. It does not create a general scene, terrain, streaming, biome or reflective runtime component framework.
+EDITOR-0008 depends only on the canonical coordinator SHARED-0024 task. Completed Starfall/Royale editor and presentation work is architectural evidence, not dependency wiring. The foundation owns the Starfall executable, proposed tokens/fonts/primitives and deterministic synthetic showcase; it does not consume CONTENT-0014.
+
+EDITOR-0009 owns the shared selection/action-routing state, keyboard focus, transform-tool state, UI preference persistence and generic command history. Generic history executes, undoes, redoes and tracks dirty checkpoints; EDITOR-0007 owns concrete Draft 0 commands and mutation rules.
+
+EDITOR-0007 remains the first real Draft 0 authoring document. It owns actual hierarchy concepts, synchronized hierarchy/viewport/inspector selection, picking, transforms, bounded inspectors, inline validation and separate authoritative/client outputs from one fully validated revision with stable cross-output identities. Synthetic showcase objects never establish content identity.
+
+EDITOR-0010 depends only on EDITOR-0007, consumes the interaction-owned persistence machinery transitively and polishes the real Assets, Validation, Log and status adapters. It does not block SERVER-0012, CLIENT-0016 or first scene authoring.
+
+Durable design language: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/editor-design-language
 
 ### Numerical policy
 
