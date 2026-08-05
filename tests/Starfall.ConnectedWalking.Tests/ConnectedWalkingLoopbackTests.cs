@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using Starfall.Client.Networking;
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.World.Lifecycle;
@@ -20,7 +21,9 @@ public sealed class ConnectedWalkingLoopbackTests
             new WorldId("world_1"),
             new ChannelId("channel_1"),
             new WorldInstanceId(Guid.NewGuid()),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
         runtime.Start();
         using var host = new WorldConnectedWalkingNetworkHost(
             WorldNetworkTransportFactory.Create(),

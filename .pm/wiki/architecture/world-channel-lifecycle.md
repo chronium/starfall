@@ -1,12 +1,12 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-04T17:50:35.7057230Z
+modifiedAt: 2026-08-05T12:04:18.5115340Z
 ---
 
 ## Purpose
 
-This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding added by `SERVER-0004`, the lifecycle-local admission/session boundary added by `SERVER-0003`, the generic technical player state added by `SERVER-0006`, authoritative movement added by `SIM-0008`, and the admitted-session walking exchange added by `SERVER-0005`. It remains the timing and content-ownership foundation for later gameplay.
+This page records the bounded executable contract established by `SERVER-0002` for one authoritative Starfall world/channel, the provisional immutable layout binding from `SERVER-0004`, admission/session ownership from `SERVER-0003`, generic player state from `SERVER-0006`, authoritative movement from `SIM-0008`, connected walking from `SERVER-0005`, and World-owned Draft 0 monster occupancy from `SIM-0006`. It remains the timing and content-ownership foundation for later gameplay.
 
 ## Identity
 
@@ -17,9 +17,9 @@ Every invocation requires both:
 
 Both values use the existing Protocol identity contract: 1-64 lowercase ASCII letters, digits or underscores, beginning with a letter. The host creates a fresh non-empty `WorldInstanceId` for every invocation. The instance identity distinguishes lifecycle incarnations of the same semantic world/channel and is not owner-configurable.
 
-Each runtime owns its identity, tick, lifecycle state, selected immutable layout and entity identity sequence without static mutable world state. Independent invocations therefore do not share gameplay authority merely because their semantic identities match.
+Each runtime owns its identity, tick, lifecycle state, selected immutable layout, camp population and one entity identity sequence without static mutable world state. Independent invocations therefore do not share gameplay authority merely because their semantic identities match.
 
-`WorldEntityId` is a positive unsigned 64-bit identity meaningful only together with the owning `WorldInstanceId`. A new runtime begins at 1. Allocation uses checked monotonic arithmetic: identities never wrap, reset or re-enter the available pool during that runtime, and exhaustion fails explicitly.
+`WorldEntityId` is a positive unsigned 64-bit identity meaningful only together with the owning `WorldInstanceId`. Players and monsters allocate from the same checked monotonic sequence. Identities never wrap, reset or re-enter the available pool during that runtime, and exhaustion fails explicitly. Allocation is repeatable for an identical creation sequence, but exact numeric IDs for particular monsters or the first player are opaque implementation results rather than simulation or protocol promises.
 
 ## Lifecycle
 
@@ -29,7 +29,11 @@ The legal state sequence is:
 Created -> Running -> Draining -> Stopped
 ```
 
-Only `Running` is eligible to accept admission or create technical players. Entering `Draining` closes those seams immediately while retaining existing world-owned sessions and players, allowing fixed ticks and explicit player removal to continue. `Stopped` terminates and clears remaining in-memory sessions, consumed-ticket records and players without resetting the runtime's entity identity sequence. Offline command-line mode configures no keys or admission transport, so a standalone run has no sessions; it creates one technical player after entering `Running`. Connected mode instead configures verification keys and a listener, creates no technical player, and admits session-bound players while `Running`. Repeated drain while already draining and repeated stop while already stopped are harmless. Other invalid transitions fail explicitly.
+Entering `Running` atomically creates the ten approved Draft 0 monsters before admissions or standalone technical-player creation can occur. Only `Running` accepts new admission or creates technical players.
+
+Entering `Draining` closes those creation seams immediately while retaining existing sessions, players, monsters, camp occupancy and pending replenishments. Fixed ticks, player movement, explicit player/monster removal and due camp replenishment continue under the same gameplay rules. Draining does not introduce different combat or simulation semantics; the later drain-deadline policy owns disconnect or migration of remaining sessions.
+
+`Stopped` terminates and clears sessions, consumed-ticket records, players, monsters, placement occupancy and pending replenishments without resetting the entity identity sequence. Offline mode creates one technical player after entering `Running`; connected mode creates no technical player and admits session-bound players while `Running`. Repeated drain while already draining and repeated stop while already stopped are harmless. Other invalid transitions fail explicitly.
 
 Ctrl+C requests graceful shutdown. It does not add an operations service, remote supervisor or hot-path dependency.
 
@@ -45,13 +49,25 @@ All current world/channel invocations use this one provisional layout. A zone-se
 
 After entering `Running`, the standalone host creates one generic authoritative player at `town_safe`'s configured respawn anchor `(100,0,25)`, with zero planar velocity and normalized `+Z` facing. This command-line fixture is separate from admitted gameplay sessions and remains useful for deterministic lifecycle checks.
 
-Successful admission now atomically creates a distinct generic player at the same configured anchor and binds its immutable `WorldEntityId` to the new gameplay session. Rejected and replayed admissions create no player. The binding is host-owned context: connected movement commands carry no entity identity, so a session cannot nominate another player.
+Successful admission atomically creates a distinct generic player at the same configured anchor and binds its immutable `WorldEntityId` to the new gameplay session. Rejected and replayed admissions create no player. The binding is host-owned context: connected movement commands carry no entity identity, so a session cannot nominate another player.
 
 `WorldPlayerState` is an immutable World-owned bucket containing its world-local entity identity, finite ground position, finite planar velocity in metres/second, normalized planar facing, 0.35 m radius by 1.8 m tall collision capsule, and latest movement outcome. Lookup never exposes mutable runtime-owned state. Movement replaces whole states under the runtime lock; ordered defensive snapshots therefore remain stable after later movement, creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary or native query enumeration.
 
-Standalone technical-player creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`, but the technical removal seam rejects any session-bound player. Draining retains admitted players. Stopping clears them. Distinct runtime instances each own an independent identity sequence beginning at 1.
+Standalone technical-player creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`, but the technical removal seam rejects any session-bound player. Draining retains admitted players. Stopping clears them. Distinct runtime instances own independent opaque identity sequences; tests verify repeatability for identical creation order without promising a literal player ID.
 
 `Draft0PlayerMovementSimulation` owns a zero-gravity Box3D collision world and accepts entity-targeted finite ground destinations. Movement uses a provisional 4.0 m/s speed at 60 Hz. A destination outside capsule-adjusted walkable bounds or overlapping a proxy is rejected without replacing the current destination. Unobstructed motion advances directly; arrival clamps exactly; a sweep hit moves to Box3D's safe fraction, reports blocked, clears the destination and does not slide or retry. Players do not collide with one another in this task. The town remains traversable by players; `SIM-0011` later owns hostile-action rejection, monster exclusion/disengagement, defeat and respawn.
+
+## Monster population state
+
+`SIM-0006` binds the validated `Draft0StarterMonsterCatalog.FirstPlayable` and `Draft0CampPolicyCatalog.FirstPlayable` inputs to the same loaded graybox. World validates their camp geometry, ordered placement identities, archetypes and exact positions before startup; it does not invent a second monster catalog.
+
+`WorldMonsterState` is an immutable World-owned record containing opaque world-local entity identity, camp identity, placement-slot identity, archetype identity, exact ground point, current integer health and spawn tick. Initial health is 700 units for `starter_flyer_light` and 2,000 units for `starter_flyer_heavy`. Ordered defensive snapshots and lookup never expose mutable runtime occupancy.
+
+Startup fills every approved fixed slot in canonical camp then slot order at tick zero. A successful authoritative removal makes only that slot vacant at the current tick. The complete vacancy set is validated through the checked Simulation schedule before occupancy changes, so eligibility overflow preserves the existing monster. Unknown or already-removed identities are harmless false results.
+
+After each fixed World tick advances, every due vacancy is applied in eligibility, canonical camp and canonical slot order. A replacement uses the same camp, slot, archetype, exact position and full initial health, but receives a fresh entity identity and the current spawn tick. Capacity is exactly 3/4/3 and no placement slot can hold more than one entity. The current fixed-slot rule consumes no seed or randomness.
+
+This is occupancy and lifecycle state only. `SIM-0004` later owns integer damage and death; `SIM-0010` owns collision radius, movement, target selection, awareness, pursuit, attacks and return. No monster protocol or presentation is emitted here.
 
 ## Fixed-step scheduling
 
@@ -61,13 +77,15 @@ Persistent execution uses a monotonic clock and an accumulator. One outer-loop c
 
 The optional `--run-ticks <positive>` mode advances exactly the requested number of ticks without wall-clock pacing. It exists for deterministic validation and automation, not as a second simulation model.
 
+World first applies the existing authoritative player-movement step, then increments the checked World tick, then applies camp replacements whose eligibility is less than or equal to that new tick. A monster removed at tick `T` is therefore absent through `T + 599` and recreated exactly at `T + 600`. This ordering is identical in Running and Draining.
+
 ## Process diagnostics
 
 A successful run prints exactly one line for each lifecycle checkpoint:
 
-- `STARFALL_WORLD_READY` with world, channel, fresh instance, exact zone/town identities, branch/route/proxy/spawn counts, technical-player identity, player count, 60 Hz rate and running state;
-- `STARFALL_WORLD_DRAINING` with the same identity, final tick and retained player count;
-- `STARFALL_WORLD_STOPPED` with final tick, cleared player count, catch-up clamp count, stop reason and stopped state.
+- `STARFALL_WORLD_READY` with world, channel, fresh instance, exact zone/town identities, branch/route/proxy/spawn counts, opaque technical-player identity, player count, monster count, 60 Hz rate and running state;
+- `STARFALL_WORLD_DRAINING` with the same identity, final tick, retained player count and retained monster count;
+- `STARFALL_WORLD_STOPPED` with final tick, cleared player and monster counts, catch-up clamp count, stop reason and stopped state.
 
 Missing or invalid arguments write a deterministic error to standard error and exit with code 2. Fatal lifecycle failures exit with code 1. Finite completion and Ctrl+C shutdown exit with code 0.
 
@@ -87,15 +105,15 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 ## Ownership and next seams
 
-`Starfall.World` remains the headless composition root over Content, Protocol, Simulation and the one approved coordinator transport adapter. Its output remains free of SDL, GPU, editor and presentation dependencies.
+`Starfall.World` remains the headless composition root over Content, Protocol, Simulation and the one approved coordinator transport adapter. It owns runtime camp occupancy and concrete monster entities while remaining free of SDL, GPU, editor and presentation dependencies.
 
-Offline mode still creates one standalone technical player and supports finite or persistent execution. Connected mode requires `--listen-port` plus one or more repeatable `--verification-key <key-id>=<public-pem-path>` values, creates no player before admission, and cannot combine with `--run-ticks`.
+Offline mode creates one standalone technical player and supports finite or persistent execution. Connected mode requires `--listen-port` plus one or more repeatable `--verification-key <key-id>=<public-pem-path>` values, creates no player before admission, and cannot combine with `--run-ticks`.
 
 `WorldConnectedWalkingNetworkHost` owns one caller-polled peer/session registry. It rejects non-loopback endpoints before parsing, enforces the exact admission and walking channel/delivery contract, binds accepted peers to gameplay sessions, routes movement commands through `WorldWalkingExchange`, publishes latest snapshots, and sends immediate corrections. Network errors and one-peer send failures are diagnostic and isolate cleanup to that peer/session; they do not stop the world.
 
-Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions but rejects new admission. There is no reconnect grace or resumable session in this slice.
+Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions and ordinary deterministic camp simulation but rejects new admission. There is no reconnect grace or resumable session in this slice.
 
-Combat, monsters, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
+Monster combat/behavior, monster protocol and presentation, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
 
 ## Non-goals
 

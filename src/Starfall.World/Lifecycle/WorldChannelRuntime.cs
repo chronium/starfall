@@ -1,10 +1,12 @@
 using System.Numerics;
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
 using Starfall.Simulation.Movement;
 using Starfall.World.Admission;
 using Starfall.World.Entities;
+using Starfall.World.Monsters;
 using Starfall.World.Movement;
 using ProtocolCollisionCapsule = Starfall.Protocol.Movement.PlayerCollisionCapsule;
 using ProtocolEntityId = Starfall.Protocol.Movement.WorldEntityId;
@@ -29,6 +31,7 @@ internal sealed class WorldChannelRuntime
     private readonly Dictionary<SimulationEntityId, WorldPlayerState> players = [];
     private readonly WorldEntityIdSequence entityIds = new();
     private readonly Draft0PlayerMovementSimulation movement;
+    private readonly WorldMonsterPopulation monsterPopulation;
     private WorldChannelLifecycleState state;
     private ulong currentTick;
 
@@ -36,15 +39,20 @@ internal sealed class WorldChannelRuntime
         WorldId worldId,
         ChannelId channelId,
         WorldInstanceId instanceId,
-        Draft0GrayboxLayout layout)
+        Draft0GrayboxLayout layout,
+        Draft0StarterMonsterCatalogDefinition monsterCatalog,
+        Draft0CampPolicyCatalogDefinition campPolicies)
     {
         ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(monsterCatalog);
+        ArgumentNullException.ThrowIfNull(campPolicies);
 
         WorldId = worldId;
         ChannelId = channelId;
         InstanceId = instanceId;
         Layout = layout;
         movement = new Draft0PlayerMovementSimulation(layout);
+        monsterPopulation = new WorldMonsterPopulation(layout, monsterCatalog, campPolicies);
     }
 
     internal WorldId WorldId
@@ -123,6 +131,15 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal int MonsterCount
+    {
+        get
+        {
+            lock (synchronization)
+                return monsterPopulation.Count;
+        }
+    }
+
     internal IReadOnlyList<WorldPlayerState> Players
     {
         get
@@ -137,11 +154,21 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal IReadOnlyList<WorldMonsterState> Monsters
+    {
+        get
+        {
+            lock (synchronization)
+                return monsterPopulation.Snapshot();
+        }
+    }
+
     internal void Start()
     {
         lock (synchronization)
         {
             RequireState(WorldChannelLifecycleState.Created, "start");
+            monsterPopulation.Initialize(currentTick, entityIds.Allocate);
             state = WorldChannelLifecycleState.Running;
         }
     }
@@ -170,6 +197,7 @@ internal sealed class WorldChannelRuntime
             }
 
             currentTick = checked(currentTick + 1);
+            monsterPopulation.ApplyEligible(currentTick, entityIds.Allocate);
         }
     }
 
@@ -203,6 +231,7 @@ internal sealed class WorldChannelRuntime
             walkingSessions.Clear();
             consumedTickets.Clear();
             players.Clear();
+            monsterPopulation.Clear();
             movement.Dispose();
         }
     }
@@ -249,6 +278,27 @@ internal sealed class WorldChannelRuntime
     {
         lock (synchronization)
             return players.TryGetValue(entityId, out player);
+    }
+
+    internal bool TryGetMonster(SimulationEntityId entityId, out WorldMonsterState? monster)
+    {
+        lock (synchronization)
+            return monsterPopulation.TryGet(entityId, out monster);
+    }
+
+    internal bool RemoveMonster(SimulationEntityId entityId)
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot remove a monster from a world in the {state} state.");
+            }
+
+            return monsterPopulation.Remove(entityId, currentTick);
+        }
     }
 
     internal bool RemovePlayer(SimulationEntityId entityId)

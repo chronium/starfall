@@ -1,6 +1,7 @@
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using ChronoFall.Network.Transport;
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
@@ -122,7 +123,9 @@ public sealed class WorldConnectedWalkingNetworkHostTests
             new WorldId("world_1"),
             new ChannelId("channel_1"),
             new WorldInstanceId(Guid.Parse("44444444-4444-4444-4444-444444444444")),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
         runtime.Start();
         return runtime;
     }

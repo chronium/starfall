@@ -70,4 +70,60 @@ public sealed class WorldEntityStateTests
             new PlayerCollisionCapsule(0.35f, 1.8f),
             GroundMovementTickOutcome.Idle));
     }
+
+    [Fact]
+    public void Monster_state_requires_stable_identity_and_positive_health()
+    {
+        WorldEntityId entityId = new(1);
+        GroundPoint position = new(55.0f, 65.0f);
+
+        Assert.Throws<ArgumentException>(() => new WorldMonsterState(
+            entityId,
+            "",
+            "spawn_easy_01",
+            "starter_flyer_light",
+            position,
+            700,
+            0));
+        Assert.Throws<ArgumentException>(() => new WorldMonsterState(
+            entityId,
+            "camp_easy",
+            "",
+            "starter_flyer_light",
+            position,
+            700,
+            0));
+        Assert.Throws<ArgumentException>(() => new WorldMonsterState(
+            entityId,
+            "camp_easy",
+            "spawn_easy_01",
+            "",
+            position,
+            700,
+            0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WorldMonsterState(
+            entityId,
+            "camp_easy",
+            "spawn_easy_01",
+            "starter_flyer_light",
+            position,
+            0,
+            0));
+
+        var monster = new WorldMonsterState(
+            entityId,
+            "camp_easy",
+            "spawn_easy_01",
+            "starter_flyer_light",
+            position,
+            700,
+            42);
+        Assert.Equal(entityId, monster.EntityId);
+        Assert.Equal("camp_easy", monster.CampId);
+        Assert.Equal("spawn_easy_01", monster.SpawnId);
+        Assert.Equal("starter_flyer_light", monster.ArchetypeId);
+        Assert.Equal(position, monster.Position);
+        Assert.Equal(700, monster.HealthUnits);
+        Assert.Equal(42UL, monster.SpawnedAtTick);
+    }
 }

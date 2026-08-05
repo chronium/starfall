@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Simulation.Entities;
@@ -32,7 +33,7 @@ public sealed class WorldJoinAdmissionExchangeTests
         Assert.Equal(claims.AccountId, session.AccountId);
         Assert.Equal(claims.CharacterId, session.CharacterId);
         Assert.Equal(runtime.InstanceId, session.WorldInstanceId);
-        Assert.Equal(new WorldEntityId(1), session.PlayerEntityId);
+        Assert.True(session.PlayerEntityId.Value > runtime.Monsters.Max(static monster => monster.EntityId.Value));
         Assert.True(runtime.TryGetPlayer(session.PlayerEntityId, out var player));
         Assert.NotNull(player);
         Assert.Equal(runtime.Layout.Town.RespawnAnchor, player.Position);
@@ -184,7 +185,9 @@ public sealed class WorldJoinAdmissionExchangeTests
             new WorldId("world_1"),
             new ChannelId("channel_1"),
             new WorldInstanceId(Guid.Parse("40000000-0000-0000-0000-000000000001")),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
         if (start)
             runtime.Start();
         return runtime;

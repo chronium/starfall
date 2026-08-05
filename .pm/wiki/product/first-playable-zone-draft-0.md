@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T11:40:07.4241820Z
+modifiedAt: 2026-08-05T12:04:56.0552350Z
 ---
 
 ## Status and purpose
@@ -123,11 +123,13 @@ CONTENT-0007 freezes the immutable starter-monster catalog in this authoritative
 
 The exact initial camp composition is three light assignments in `camp_easy`; two light followed by two heavy assignments in `camp_mixed`; and three heavy assignments in `camp_hard`. These ten assignments copy the graybox's stable spawn identities and exact ground points in branch/local order.
 
-`SIM-0003` binds those inputs into fixed-slot policies. Easy, mixed and hard have capacity and full initial population 3/4/3, opaque authoritative seeds 1/2/3 and the same 600-tick (10-second) replenishment delay. Each assignment is one fixed placement slot. Authoritative removal at tick `T` makes that slot eligible at checked `T + 600`; simultaneous eligibility uses canonical camp then slot order. No randomness is consumed because the policy currently has no random choice.
+`SIM-0003` binds those inputs into fixed-slot policies. Easy, mixed and hard have capacity/full initial population 3/4/3, opaque seeds 1/2/3 and a 600-tick delay. `SIM-0006` now turns them into concrete World-owned entities: entering Running fills all slots at tick zero, immutable monster records carry full catalog health, and players/monsters share one opaque checked monotonic world-local identity sequence. Exact numeric IDs are not gameplay promises.
 
-The policy inputs live in Content for authoring and Balance Lab inspection. The pure eligibility schedule lives in Simulation. Neither creates or owns runtime entities: `SIM-0006` owns occupancy, identity allocation, removals and spawn application. `SIM-0010` owns evidence-backed radius, speed, target selection/tie-breaking, awareness, pursuit/leash, attack range/damage/cadence and return behavior.
+Authoritative removal at tick `T` validates checked eligibility before vacating a slot. The occupant remains if `T + 600` overflows. After World advances to tick `T + 600`, the same slot receives a fresh entity with the same camp, archetype, exact point and full initial health. Simultaneous decisions apply by eligibility, canonical camp and canonical slot order. No randomness is consumed.
 
-“Flyer” is a provisional technical identity. Both archetypes remain ordinary authoritative ground-plane occupants. Hovering, bobbing or lunging is presentation only and grants no altitude, airborne navigation, vertical targeting or special collision semantics. The town rejects hostile actions, excludes monsters and owns the configured defeat/respawn anchor.
+Draining blocks new admission and technical creation but continues retained gameplay, monster removal and due replenishment under ordinary rules. Stopping clears entities, occupancy and pending replenishments. `SIM-0004` later owns integer damage/death; `SIM-0010` owns radius, movement, targeting, awareness, pursuit/leash, attacks and return.
+
+“Flyer” remains a provisional technical identity. Both archetypes are ordinary authoritative ground-plane occupants. Hovering, bobbing or lunging is presentation only and grants no altitude, airborne navigation, vertical targeting or special collision semantics. The town's hostile-action rejection, monster exclusion and defeat/respawn behavior remain `SIM-0011` work.
 
 The local placeholder-monster task uses generated shapes or separately approved temporary assets and deterministic fixtures. A focused protocol/server/client extension later connects real monster snapshots. Exact selected monster assets remain a separate CONTENT-0013 and coordinator ASSET-0008 path.
 

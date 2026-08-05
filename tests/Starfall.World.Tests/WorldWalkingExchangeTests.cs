@@ -1,3 +1,4 @@
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
@@ -209,7 +210,9 @@ public sealed class WorldWalkingExchangeTests
             new WorldId("world_1"),
             new ChannelId("channel_1"),
             new WorldInstanceId(Guid.Parse("40000000-0000-0000-0000-000000000001")),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
         runtime.Start();
         return runtime;
     }

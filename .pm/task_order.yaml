@@ -40,7 +40,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - SIM-0006
   - SIM-0004
   - SIM-0010
   - SIM-0011

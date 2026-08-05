@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using ChronoFall.Network.Transport;
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.World.Entities;
@@ -38,7 +39,9 @@ internal static class WorldProgram
             options.WorldId,
             options.ChannelId,
             new(Guid.NewGuid()),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
         WorldConnectedWalkingNetworkHost? connectedHost = null;
 
         try
@@ -62,6 +65,7 @@ internal static class WorldProgram
                 $"mode={(options.IsConnected ? "connected" : "offline")} " +
                 $"listenPort={options.ListenPort?.ToString() ?? "none"} " +
                 $"technicalPlayer={technicalPlayer?.EntityId.ToString() ?? "none"} players={runtime.PlayerCount} " +
+                $"monsters={runtime.MonsterCount} " +
                 $"tickRate={WorldFixedStepLoop.TickRateHz} state=running");
 
             WorldRunResult result;
@@ -91,7 +95,7 @@ internal static class WorldProgram
             Console.WriteLine(
                 $"STARFALL_WORLD_DRAINING world={runtime.WorldId} channel={runtime.ChannelId} " +
                 $"instance={runtime.InstanceId} ticks={runtime.CurrentTick} " +
-                $"players={runtime.PlayerCount} state=draining");
+                $"players={runtime.PlayerCount} monsters={runtime.MonsterCount} state=draining");
 
             connectedHost?.Dispose();
             connectedHost = null;
@@ -99,7 +103,8 @@ internal static class WorldProgram
             Console.WriteLine(
                 $"STARFALL_WORLD_STOPPED world={runtime.WorldId} channel={runtime.ChannelId} " +
                 $"instance={runtime.InstanceId} ticks={runtime.CurrentTick} " +
-                $"players={runtime.PlayerCount} catchUpClamps={result.CatchUpClampCount} " +
+                $"players={runtime.PlayerCount} monsters={runtime.MonsterCount} " +
+                $"catchUpClamps={result.CatchUpClampCount} " +
                 $"reason={stopReason} state=stopped");
             return 0;
         }

@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T11:39:47.3187740Z
+modifiedAt: 2026-08-05T12:04:36.8751680Z
 ---
 
 ## Purpose and ownership
@@ -56,15 +56,22 @@ When multiple vacancies become eligible together, the reusable Simulation schedu
 
 Seeds are explicit provisional Balance Lab inputs but are not consumed in Draft 0 because fixed slots contain no random choice. Adding randomized placement or selection requires separate evidence and an approved deterministic algorithm.
 
+`SIM-0006` now applies this policy inside each World runtime. Entering Running fills all ten slots at tick zero in canonical camp/slot order. World-owned immutable monster state records the slot's camp, spawn, archetype, exact ground point, full catalog health, opaque entity identity and spawn tick. Removing an occupant validates checked eligibility before making the slot vacant; overflow preserves occupancy. After fixed-tick advancement, due replacements use the same slot/archetype/point and full health with a fresh identity.
+
+Players and monsters share one checked monotonic world-local identity sequence. Exact numeric IDs are deliberately not content or simulation contracts. Snapshot ordering and simultaneous replenishment remain deterministic, while actual numeric values remain opaque.
+
 ## Downstream ownership
 
-- Completed `SIM-0003` owns the immutable camp-policy inputs and pure replenishment schedule described above.
-- `SIM-0006` owns authoritative runtime occupancy, monster entities, identity allocation, removal handling and spawn application.
+- Completed `SIM-0003` owns the immutable camp-policy inputs and pure replenishment schedule.
+- Completed `SIM-0006` owns authoritative World runtime occupancy, immutable monster records, shared identity allocation, validated removal handling and fixed-tick spawn application.
+- `SIM-0004` owns integer damage and death; the current removal seam consumes an already-authoritative outcome and does not decide either.
 - `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
 - `SIM-0011` owns protected-town exclusion, disengagement at its boundary and player defeat/respawn behavior.
 - `CONTENT-0013` owns exact monster presentation selection.
 - Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state.
 
-The starter-monster composition catalog itself still contains no runtime capacity state, spawn templates, replenishment schedule, authoritative entity identity, asset choice or presentation contract. The separate camp-policy catalog adds only immutable inputs; neither catalog owns World outcomes.
+Running and Draining use the same deterministic camp rules; draining blocks new admission/technical creation but continues retained gameplay until its separately owned deadline policy. Stopping clears entities, occupancy and pending replenishments without reusing identities.
+
+The starter-monster composition catalog itself still contains no runtime capacity state, spawn templates, replenishment schedule, authoritative entity identity, asset choice or presentation contract. The separate camp-policy catalog adds only immutable inputs; World owns application and outcomes.
 
 Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps.

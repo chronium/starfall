@@ -1,4 +1,5 @@
 using System.Numerics;
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Simulation.Entities;
@@ -80,12 +81,69 @@ public sealed class WorldChannelRuntimeTests
     }
 
     [Fact]
+    public void Start_creates_the_exact_initial_monster_population_in_canonical_order()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+
+        Assert.Empty(runtime.Monsters);
+        Assert.Equal(0, runtime.MonsterCount);
+
+        runtime.Start();
+
+        WorldMonsterState[] monsters = runtime.Monsters.ToArray();
+        Draft0CampSpawnAssignment[] expectedAssignments = Draft0CampPolicyCatalog.FirstPlayable.Camps
+            .SelectMany(static camp => camp.PlacementSlots)
+            .ToArray();
+        string[] expectedCampIds = Draft0CampPolicyCatalog.FirstPlayable.Camps
+            .SelectMany(static camp => camp.PlacementSlots.Select(_ => camp.Camp.Id))
+            .ToArray();
+        IReadOnlyDictionary<string, int> expectedHealth = Draft0StarterMonsterCatalog.FirstPlayable.Archetypes
+            .ToDictionary(static archetype => archetype.Id, static archetype => archetype.AuthoritativeHealthUnits);
+
+        Assert.Equal(10, runtime.MonsterCount);
+        Assert.Equal(expectedAssignments.Length, monsters.Length);
+        for (var index = 0; index < monsters.Length; index++)
+        {
+            WorldMonsterState monster = monsters[index];
+            Draft0CampSpawnAssignment assignment = expectedAssignments[index];
+            Assert.Equal(expectedCampIds[index], monster.CampId);
+            Assert.Equal(assignment.SpawnId, monster.SpawnId);
+            Assert.Equal(assignment.ArchetypeId, monster.ArchetypeId);
+            Assert.Equal(assignment.Point, monster.Position);
+            Assert.Equal(expectedHealth[assignment.ArchetypeId], monster.HealthUnits);
+            Assert.Equal(0UL, monster.SpawnedAtTick);
+            if (index > 0)
+                Assert.True(monster.EntityId.Value > monsters[index - 1].EntityId.Value);
+            Assert.True(runtime.TryGetMonster(monster.EntityId, out WorldMonsterState? found));
+            Assert.Same(monster, found);
+        }
+    }
+
+    [Fact]
     public void Rejects_a_missing_world_layout()
     {
         Assert.Throws<ArgumentNullException>(() => new WorldChannelRuntime(
             new("world_1"),
             new("channel_1"),
             new(Guid.NewGuid()),
+            null!,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable));
+
+        Assert.Throws<ArgumentNullException>(() => new WorldChannelRuntime(
+            new("world_1"),
+            new("channel_1"),
+            new(Guid.NewGuid()),
+            Draft0GrayboxCatalog.FirstPlayable,
+            null!,
+            Draft0CampPolicyCatalog.FirstPlayable));
+
+        Assert.Throws<ArgumentNullException>(() => new WorldChannelRuntime(
+            new("world_1"),
+            new("channel_1"),
+            new(Guid.NewGuid()),
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
             null!));
     }
 
@@ -139,7 +197,7 @@ public sealed class WorldChannelRuntimeTests
 
         WorldPlayerState player = runtime.CreateTechnicalPlayer();
 
-        Assert.Equal(new WorldEntityId(1), player.EntityId);
+        Assert.True(player.EntityId.Value > runtime.Monsters.Max(static monster => monster.EntityId.Value));
         Assert.Equal(runtime.Layout.Town.RespawnAnchor, player.Position);
         Assert.Equal(new GroundPoint(100.0f, 25.0f), player.Position);
         Assert.Equal(Vector2.Zero, player.VelocityMetresPerSecond);
@@ -168,7 +226,8 @@ public sealed class WorldChannelRuntimeTests
         Assert.Equal(
             [first.EntityId, third.EntityId, fourth.EntityId],
             runtime.Players.Select(static player => player.EntityId));
-        Assert.Equal(4UL, fourth.EntityId.Value);
+        Assert.True(first.EntityId.Value < third.EntityId.Value);
+        Assert.True(third.EntityId.Value < fourth.EntityId.Value);
         Assert.False(runtime.TryGetPlayer(removed.EntityId, out _));
     }
 
@@ -195,7 +254,7 @@ public sealed class WorldChannelRuntimeTests
         WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
 
         Assert.Throws<InvalidOperationException>(runtime.CreateTechnicalPlayer);
-        Assert.Throws<InvalidOperationException>(() => runtime.RemovePlayer(new WorldEntityId(1)));
+        Assert.Throws<InvalidOperationException>(() => runtime.RemovePlayer(new WorldEntityId(ulong.MaxValue)));
 
         runtime.Start();
         WorldPlayerState removed = runtime.CreateTechnicalPlayer();
@@ -222,8 +281,99 @@ public sealed class WorldChannelRuntimeTests
         first.Start();
         second.Start();
 
-        Assert.Equal(new WorldEntityId(1), first.CreateTechnicalPlayer().EntityId);
-        Assert.Equal(new WorldEntityId(1), second.CreateTechnicalPlayer().EntityId);
+        Assert.Equal(
+            first.Monsters.Select(static monster => monster.EntityId),
+            second.Monsters.Select(static monster => monster.EntityId));
+        Assert.Equal(first.CreateTechnicalPlayer().EntityId, second.CreateTechnicalPlayer().EntityId);
+    }
+
+    [Fact]
+    public void Removal_replenishes_the_same_slot_at_the_exact_eligible_tick_with_a_fresh_identity()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldPlayerState player = runtime.CreateTechnicalPlayer();
+        WorldMonsterState original = Assert.Single(
+            runtime.Monsters,
+            static monster => monster.SpawnId == "spawn_easy_02");
+        IReadOnlyList<WorldMonsterState> snapshot = runtime.Monsters;
+
+        Assert.True(runtime.RemoveMonster(original.EntityId));
+        Assert.False(runtime.RemoveMonster(original.EntityId));
+        Assert.False(runtime.TryGetMonster(original.EntityId, out _));
+        Assert.Equal(9, runtime.MonsterCount);
+
+        for (var tick = 0; tick < 599; tick++)
+            runtime.Step();
+
+        Assert.DoesNotContain(runtime.Monsters, static monster => monster.SpawnId == "spawn_easy_02");
+        runtime.Step();
+
+        WorldMonsterState replacement = Assert.Single(
+            runtime.Monsters,
+            static monster => monster.SpawnId == "spawn_easy_02");
+        Assert.NotEqual(original.EntityId, replacement.EntityId);
+        Assert.True(replacement.EntityId.Value > original.EntityId.Value);
+        Assert.True(replacement.EntityId.Value > player.EntityId.Value);
+        Assert.Equal(original.CampId, replacement.CampId);
+        Assert.Equal(original.ArchetypeId, replacement.ArchetypeId);
+        Assert.Equal(original.Position, replacement.Position);
+        Assert.Equal(original.HealthUnits, replacement.HealthUnits);
+        Assert.Equal(600UL, replacement.SpawnedAtTick);
+        Assert.Equal(10, runtime.MonsterCount);
+
+        Assert.Equal(10, snapshot.Count);
+        Assert.Same(original, Assert.Single(snapshot, monster => monster.EntityId == original.EntityId));
+    }
+
+    [Fact]
+    public void Simultaneous_replenishment_applies_canonical_camp_and_slot_order()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        string[] reverseRemovalOrder = ["spawn_hard_02", "spawn_mixed_03", "spawn_easy_03"];
+
+        foreach (string spawnId in reverseRemovalOrder)
+        {
+            WorldMonsterState monster = Assert.Single(runtime.Monsters, candidate => candidate.SpawnId == spawnId);
+            Assert.True(runtime.RemoveMonster(monster.EntityId));
+        }
+
+        for (var tick = 0; tick < 600; tick++)
+            runtime.Step();
+
+        WorldMonsterState[] replacements = runtime.Monsters
+            .Where(static monster => monster.SpawnedAtTick == 600)
+            .ToArray();
+        Assert.Equal(
+            ["spawn_easy_03", "spawn_mixed_03", "spawn_hard_02"],
+            replacements.Select(static monster => monster.SpawnId));
+        Assert.True(replacements[0].EntityId.Value < replacements[1].EntityId.Value);
+        Assert.True(replacements[1].EntityId.Value < replacements[2].EntityId.Value);
+    }
+
+    [Fact]
+    public void Draining_continues_existing_monster_simulation_and_stop_clears_it()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(Guid.NewGuid());
+        runtime.Start();
+        WorldMonsterState removed = runtime.Monsters[0];
+        runtime.BeginDrain();
+
+        Assert.True(runtime.RemoveMonster(removed.EntityId));
+        for (var tick = 0; tick < 600; tick++)
+            runtime.Step();
+
+        Assert.Equal(WorldChannelLifecycleState.Draining, runtime.State);
+        Assert.Equal(10, runtime.MonsterCount);
+        Assert.Contains(runtime.Monsters, monster =>
+            monster.SpawnId == removed.SpawnId && monster.EntityId != removed.EntityId);
+
+        runtime.Stop();
+        Assert.Equal(0, runtime.MonsterCount);
+        Assert.Empty(runtime.Monsters);
+        Assert.False(runtime.TryGetMonster(removed.EntityId, out _));
+        Assert.Throws<InvalidOperationException>(() => runtime.RemoveMonster(removed.EntityId));
     }
 
     [Fact]
@@ -298,5 +448,7 @@ public sealed class WorldChannelRuntimeTests
             new("world_1"),
             new("channel_1"),
             new(instanceId),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
 }

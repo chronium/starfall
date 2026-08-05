@@ -1,3 +1,4 @@
+using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.World.Lifecycle;
@@ -86,7 +87,9 @@ public sealed class WorldFixedStepLoopTests
             new("world_1"),
             new("channel_1"),
             new(Guid.NewGuid()),
-            Draft0GrayboxCatalog.FirstPlayable);
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
         runtime.Start();
         return runtime;
     }

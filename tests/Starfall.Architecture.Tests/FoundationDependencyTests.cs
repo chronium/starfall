@@ -141,18 +141,28 @@ public sealed class FoundationDependencyTests
         Assert.True(Guid.TryParseExact(instance, "D", out Guid parsedInstance));
         Assert.NotEqual(Guid.Empty, parsedInstance);
 
+        string technicalPlayer = Assert.IsType<System.Text.RegularExpressions.Match>(
+            System.Text.RegularExpressions.Regex.Match(
+                lines[0],
+                "technicalPlayer=(?<player>[1-9][0-9]*)"))
+            .Groups["player"]
+            .Value;
+        Assert.True(ulong.TryParse(technicalPlayer, out ulong parsedTechnicalPlayer));
+        Assert.True(parsedTechnicalPlayer > 0);
+
         Assert.Equal(
             $"STARFALL_WORLD_READY world=world_1 channel=channel_1 instance={instance} " +
             "zone=draft_0_first_playable_zone town=town_safe branches=3 routes=4 proxies=7 spawns=10 " +
-            "mode=offline listenPort=none technicalPlayer=1 players=1 tickRate=60 state=running",
+            $"mode=offline listenPort=none technicalPlayer={technicalPlayer} players=1 monsters=10 " +
+            "tickRate=60 state=running",
             lines[0]);
         Assert.Equal(
             $"STARFALL_WORLD_DRAINING world=world_1 channel=channel_1 instance={instance} ticks=1 " +
-            "players=1 state=draining",
+            "players=1 monsters=10 state=draining",
             lines[1]);
         Assert.Equal(
             $"STARFALL_WORLD_STOPPED world=world_1 channel=channel_1 instance={instance} ticks=1 " +
-            "players=0 catchUpClamps=0 reason=finite state=stopped",
+            "players=0 monsters=0 catchUpClamps=0 reason=finite state=stopped",
             lines[2]);
     }
 
