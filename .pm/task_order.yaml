@@ -45,7 +45,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - PROTOCOL-0005
   - PROTOCOL-0006
   - PROTOCOL-0007
   - PROTOCOL-0008
