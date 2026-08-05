@@ -4,6 +4,7 @@ using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
 using Starfall.Simulation.Combat;
+using Starfall.Simulation.Monsters;
 using Starfall.Simulation.Movement;
 using Starfall.World.Admission;
 using Starfall.World.Combat;
@@ -32,10 +33,12 @@ internal sealed class WorldChannelRuntime
     private readonly Dictionary<GameplaySessionId, WorldWalkingSessionState> walkingSessions = [];
     private readonly Dictionary<SimulationEntityId, WorldPlayerState> players = [];
     private readonly WorldEntityIdSequence entityIds = new();
+    private readonly Draft0GroundCollisionWorld collisionWorld;
     private readonly Draft0PlayerMovementSimulation movement;
     private readonly WorldMonsterPopulation monsterPopulation;
     private readonly WorldBasicArrowCombat basicArrowCombat = new();
     private IReadOnlyList<BasicArrowResolution> lastBasicArrowResolutions = [];
+    private IReadOnlyList<Draft0MonsterAttackResolution> lastMonsterAttackResolutions = [];
     private WorldChannelLifecycleState state;
     private ulong currentTick;
 
@@ -55,8 +58,25 @@ internal sealed class WorldChannelRuntime
         ChannelId = channelId;
         InstanceId = instanceId;
         Layout = layout;
-        movement = new Draft0PlayerMovementSimulation(layout);
-        monsterPopulation = new WorldMonsterPopulation(layout, monsterCatalog, campPolicies);
+        collisionWorld = new Draft0GroundCollisionWorld(layout);
+        try
+        {
+            movement = new Draft0PlayerMovementSimulation(
+                layout,
+                collisionWorld,
+                advancesCollisionWorld: false,
+                ownsCollisionWorld: false);
+            monsterPopulation = new WorldMonsterPopulation(
+                layout,
+                monsterCatalog,
+                campPolicies,
+                collisionWorld);
+        }
+        catch
+        {
+            collisionWorld.Dispose();
+            throw;
+        }
     }
 
     internal WorldId WorldId
@@ -162,6 +182,15 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal IReadOnlyList<Draft0MonsterAttackResolution> LastMonsterAttackResolutions
+    {
+        get
+        {
+            lock (synchronization)
+                return lastMonsterAttackResolutions;
+        }
+    }
+
     internal IReadOnlyList<WorldPlayerState> Players
     {
         get
@@ -206,6 +235,7 @@ internal sealed class WorldChannelRuntime
                     $"Cannot advance a world in the {state} state.");
             }
 
+            collisionWorld.Step();
             IReadOnlyList<AuthoritativePlayerMovementState> movementStates = movement.Step();
             foreach (AuthoritativePlayerMovementState movementState in movementStates)
             {
@@ -220,6 +250,13 @@ internal sealed class WorldChannelRuntime
 
             currentTick = checked(currentTick + 1);
             lastBasicArrowResolutions = ResolveBasicArrows();
+            lastMonsterAttackResolutions = monsterPopulation.StepBehavior(
+                players.Values
+                    .OrderBy(static player => player.EntityId.Value)
+                    .Select(static player => new Draft0MonsterPlayerTarget(
+                        player.EntityId,
+                        player.Position)),
+                currentTick);
             monsterPopulation.ApplyEligible(currentTick, entityIds.Allocate);
         }
     }
@@ -256,8 +293,10 @@ internal sealed class WorldChannelRuntime
             players.Clear();
             basicArrowCombat.Clear();
             lastBasicArrowResolutions = [];
-            monsterPopulation.Clear();
+            lastMonsterAttackResolutions = [];
+            monsterPopulation.Dispose();
             movement.Dispose();
+            collisionWorld.Dispose();
         }
     }
 

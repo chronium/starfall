@@ -4,6 +4,7 @@ using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Simulation.Combat;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Monsters;
 using Starfall.Simulation.Movement;
 using Starfall.World.Entities;
 using Starfall.World.Lifecycle;
@@ -113,6 +114,15 @@ public sealed class WorldChannelRuntimeTests
             Assert.Equal(assignment.Point, monster.Position);
             Assert.Equal(expectedHealth[assignment.ArchetypeId], monster.HealthUnits);
             Assert.Equal(0UL, monster.SpawnedAtTick);
+            Assert.Equal(assignment.Point, monster.Behavior.Home);
+            Assert.Equal(Draft0MonsterBehaviorMode.Idle, monster.Behavior.Mode);
+            Assert.Null(monster.Behavior.TargetEntityId);
+            Assert.Equal(Vector2.Zero, monster.Behavior.VelocityMetresPerSecond);
+            Assert.Equal(
+                Draft0MonsterBehaviorTunings.FirstPlayable
+                    .GetRequired(assignment.ArchetypeId)
+                    .CollisionRadiusMetres,
+                monster.Behavior.CollisionRadiusMetres);
             if (index > 0)
                 Assert.True(monster.EntityId.Value > monsters[index - 1].EntityId.Value);
             Assert.True(runtime.TryGetMonster(monster.EntityId, out WorldMonsterState? found));
@@ -461,6 +471,14 @@ public sealed class WorldChannelRuntimeTests
 
         for (var shot = 0; shot < 3; shot++)
         {
+            Assert.True(runtime.TryGetMonster(original.EntityId, out WorldMonsterState? targetBeforeStart));
+            Assert.NotNull(targetBeforeStart);
+            Assert.True(runtime.TryGetPlayer(player.EntityId, out WorldPlayerState? actorBeforeStart));
+            Assert.NotNull(actorBeforeStart);
+            Vector2 expectedFacing = Vector2.Normalize(
+                new Vector2(
+                    targetBeforeStart.Position.XMetres - actorBeforeStart.Position.XMetres,
+                    targetBeforeStart.Position.ZMetres - actorBeforeStart.Position.ZMetres));
             BasicArrowStartEvaluation started = runtime.SubmitBasicArrow(
                 new BasicArrowIntent("basic_arrow", player.EntityId, original.EntityId));
             Assert.Equal(BasicArrowStartDisposition.Accepted, started.Disposition);
@@ -475,7 +493,8 @@ public sealed class WorldChannelRuntimeTests
             Assert.True(runtime.TryGetPlayer(player.EntityId, out WorldPlayerState? stopped));
             Assert.NotNull(stopped);
             Assert.Equal(Vector2.Zero, stopped.VelocityMetresPerSecond);
-            Assert.Equal(-Vector2.UnitX, stopped.Facing);
+            Assert.Equal(expectedFacing.X, stopped.Facing.X, 4);
+            Assert.Equal(expectedFacing.Y, stopped.Facing.Y, 4);
             Assert.Equal(1, runtime.PendingBasicArrowCount);
             if (shot == 0)
             {
@@ -529,6 +548,10 @@ public sealed class WorldChannelRuntimeTests
         Assert.Equal(700, replacement.HealthUnits);
         Assert.Equal(defeatedAtTick + 600, replacement.SpawnedAtTick);
         Assert.Equal(10, runtime.MonsterCount);
+        Assert.Equal(Draft0MonsterBehaviorMode.Idle, replacement.Behavior.Mode);
+        Assert.DoesNotContain(
+            runtime.LastMonsterAttackResolutions,
+            attack => attack.AttackerEntityId == replacement.EntityId);
     }
 
     [Fact]

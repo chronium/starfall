@@ -3,23 +3,60 @@ using Starfall.Content.Zones;
 using Starfall.Simulation.Camps;
 using Starfall.Simulation.Combat;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Monsters;
+using Starfall.Simulation.Movement;
 using Starfall.World.Entities;
 
 namespace Starfall.World.Monsters;
 
-internal sealed class WorldMonsterPopulation
+internal sealed class WorldMonsterPopulation : IDisposable
 {
     private readonly Draft0CampPolicyCatalogDefinition policies;
     private readonly IReadOnlyDictionary<string, Draft0MonsterArchetypeDefinition> archetypes;
     private readonly Dictionary<WorldEntityId, WorldMonsterState> monsters = [];
     private readonly Dictionary<string, WorldEntityId> occupantsBySpawnId = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Draft0CampVacancy> vacanciesBySpawnId = new(StringComparer.Ordinal);
+    private readonly Draft0MonsterBehaviorSimulation behavior;
     private bool initialized;
+    private bool disposed;
 
     internal WorldMonsterPopulation(
         Draft0GrayboxLayout layout,
         Draft0StarterMonsterCatalogDefinition monsterCatalog,
         Draft0CampPolicyCatalogDefinition policies)
+        : this(
+            layout,
+            monsterCatalog,
+            policies,
+            new Draft0MonsterBehaviorSimulation(
+                layout,
+                Draft0MonsterBehaviorTunings.FirstPlayable))
+    {
+    }
+
+    internal WorldMonsterPopulation(
+        Draft0GrayboxLayout layout,
+        Draft0StarterMonsterCatalogDefinition monsterCatalog,
+        Draft0CampPolicyCatalogDefinition policies,
+        Draft0GroundCollisionWorld collisionWorld)
+        : this(
+            layout,
+            monsterCatalog,
+            policies,
+            new Draft0MonsterBehaviorSimulation(
+                layout,
+                Draft0MonsterBehaviorTunings.FirstPlayable,
+                collisionWorld,
+                advancesCollisionWorld: false,
+                ownsCollisionWorld: false))
+    {
+    }
+
+    private WorldMonsterPopulation(
+        Draft0GrayboxLayout layout,
+        Draft0StarterMonsterCatalogDefinition monsterCatalog,
+        Draft0CampPolicyCatalogDefinition policies,
+        Draft0MonsterBehaviorSimulation behavior)
     {
         ArgumentNullException.ThrowIfNull(layout);
         ArgumentNullException.ThrowIfNull(monsterCatalog);
@@ -27,6 +64,7 @@ internal sealed class WorldMonsterPopulation
 
         ValidateCompatibleInputs(layout, monsterCatalog, policies);
         this.policies = policies;
+        this.behavior = behavior;
         archetypes = monsterCatalog.Archetypes.ToDictionary(
             static archetype => archetype.Id,
             StringComparer.Ordinal);
@@ -40,6 +78,22 @@ internal sealed class WorldMonsterPopulation
             .OrderBy(static monster => monster.EntityId.Value)
             .ToArray();
         return Array.AsReadOnly(snapshot);
+    }
+
+    internal IReadOnlyList<Draft0MonsterAttackResolution> StepBehavior(
+        IEnumerable<Draft0MonsterPlayerTarget> players,
+        ulong currentTick)
+    {
+        RequireInitialized();
+        Draft0MonsterBehaviorStep step = behavior.Step(players, currentTick);
+        foreach (Draft0MonsterBehaviorState state in step.Monsters)
+        {
+            if (!monsters.TryGetValue(state.EntityId, out WorldMonsterState? monster))
+                throw new InvalidOperationException($"Behavior produced unknown monster {state.EntityId}.");
+            monsters[state.EntityId] = monster.WithBehavior(state);
+        }
+
+        return step.Attacks;
     }
 
     internal void Initialize(ulong currentTick, Func<WorldEntityId> allocateEntityId)
@@ -89,8 +143,13 @@ internal sealed class WorldMonsterPopulation
         // before changing authoritative occupancy.
         _ = Draft0CampReplenishmentSchedule.Create(policies, candidateVacancies);
 
-        if (!monsters.Remove(entityId) || !occupantsBySpawnId.Remove(monster.SpawnId))
+        bool removedMonster = monsters.Remove(entityId);
+        bool removedOccupant = occupantsBySpawnId.Remove(monster.SpawnId);
+        bool removedBehavior = behavior.RemoveMonster(entityId);
+        if (!removedMonster || !removedOccupant || !removedBehavior)
+        {
             throw new InvalidOperationException("Monster entity and placement-slot ownership diverged.");
+        }
         vacanciesBySpawnId.Add(monster.SpawnId, vacancy);
         return true;
     }
@@ -151,9 +210,23 @@ internal sealed class WorldMonsterPopulation
 
     internal void Clear()
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
         monsters.Clear();
         occupantsBySpawnId.Clear();
         vacanciesBySpawnId.Clear();
+        behavior.Clear();
+    }
+
+    public void Dispose()
+    {
+        if (disposed)
+            return;
+
+        monsters.Clear();
+        occupantsBySpawnId.Clear();
+        vacanciesBySpawnId.Clear();
+        behavior.Dispose();
+        disposed = true;
     }
 
     private WorldMonsterState CreateMonster(
@@ -168,18 +241,21 @@ internal sealed class WorldMonsterPopulation
                 $"Placement slot '{assignment.SpawnId}' references unknown archetype '{assignment.ArchetypeId}'.");
         }
 
-        return new WorldMonsterState(
+        Draft0MonsterBehaviorState behaviorState = behavior.RegisterMonster(
             entityId,
             campId,
             assignment.SpawnId,
             assignment.ArchetypeId,
-            assignment.Point,
+            assignment.Point);
+        return new WorldMonsterState(
+            behaviorState,
             archetype.AuthoritativeHealthUnits,
             spawnedAtTick);
     }
 
     private void RequireInitialized()
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
         if (!initialized)
             throw new InvalidOperationException("The world monster population is not initialized.");
     }

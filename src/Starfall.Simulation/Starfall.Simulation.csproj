@@ -8,4 +8,8 @@
     <ProjectReference Include="$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj"
                       AdditionalProperties="ShouldUnsetParentConfigurationAndPlatform=false" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Starfall.World" />
+  </ItemGroup>
 </Project>

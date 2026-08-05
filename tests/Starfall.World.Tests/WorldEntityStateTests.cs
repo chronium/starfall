@@ -1,6 +1,7 @@
 using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Monsters;
 using Starfall.Simulation.Movement;
 using Starfall.World.Entities;
 
@@ -76,46 +77,19 @@ public sealed class WorldEntityStateTests
     {
         WorldEntityId entityId = new(1);
         GroundPoint position = new(55.0f, 65.0f);
+        Draft0MonsterBehaviorState behavior = CreateBehavior(entityId, position);
 
         Assert.Throws<ArgumentException>(() => new WorldMonsterState(
-            entityId,
-            "",
-            "spawn_easy_01",
-            "starter_flyer_light",
-            position,
-            700,
-            0));
-        Assert.Throws<ArgumentException>(() => new WorldMonsterState(
-            entityId,
-            "camp_easy",
-            "",
-            "starter_flyer_light",
-            position,
-            700,
-            0));
-        Assert.Throws<ArgumentException>(() => new WorldMonsterState(
-            entityId,
-            "camp_easy",
-            "spawn_easy_01",
-            "",
-            position,
+            default,
             700,
             0));
         Assert.Throws<ArgumentOutOfRangeException>(() => new WorldMonsterState(
-            entityId,
-            "camp_easy",
-            "spawn_easy_01",
-            "starter_flyer_light",
-            position,
+            behavior,
             0,
             0));
 
         var monster = new WorldMonsterState(
-            entityId,
-            "camp_easy",
-            "spawn_easy_01",
-            "starter_flyer_light",
-            position,
+            behavior,
             700,
             42);
         Assert.Equal(entityId, monster.EntityId);
@@ -126,4 +100,21 @@ public sealed class WorldEntityStateTests
         Assert.Equal(700, monster.HealthUnits);
         Assert.Equal(42UL, monster.SpawnedAtTick);
     }
+
+    private static Draft0MonsterBehaviorState CreateBehavior(
+        WorldEntityId entityId,
+        GroundPoint position) =>
+        new(
+            entityId,
+            "camp_easy",
+            "spawn_easy_01",
+            "starter_flyer_light",
+            position,
+            position,
+            Vector2.Zero,
+            Vector2.UnitX,
+            0.45f,
+            Draft0MonsterBehaviorMode.Idle,
+            null,
+            0);
 }

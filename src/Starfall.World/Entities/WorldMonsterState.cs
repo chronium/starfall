@@ -1,58 +1,40 @@
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
+using Starfall.Simulation.Monsters;
 
 namespace Starfall.World.Entities;
 
 internal sealed class WorldMonsterState
 {
     internal WorldMonsterState(
-        WorldEntityId entityId,
-        string campId,
-        string spawnId,
-        string archetypeId,
-        GroundPoint position,
+        Draft0MonsterBehaviorState behavior,
         int healthUnits,
         ulong spawnedAtTick)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(campId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(spawnId);
-        ArgumentException.ThrowIfNullOrWhiteSpace(archetypeId);
+        if (behavior.EntityId.Value == 0)
+            throw new ArgumentException("Monster behavior state must be valid.", nameof(behavior));
         if (healthUnits <= 0)
             throw new ArgumentOutOfRangeException(nameof(healthUnits));
 
-        EntityId = entityId;
-        CampId = campId;
-        SpawnId = spawnId;
-        ArchetypeId = archetypeId;
-        Position = position;
+        Behavior = behavior;
         HealthUnits = healthUnits;
         SpawnedAtTick = spawnedAtTick;
     }
 
-    internal WorldEntityId EntityId
+    internal Draft0MonsterBehaviorState Behavior
     {
         get;
     }
 
-    internal string CampId
-    {
-        get;
-    }
+    internal WorldEntityId EntityId => Behavior.EntityId;
 
-    internal string SpawnId
-    {
-        get;
-    }
+    internal string CampId => Behavior.CampId;
 
-    internal string ArchetypeId
-    {
-        get;
-    }
+    internal string SpawnId => Behavior.SpawnId;
 
-    internal GroundPoint Position
-    {
-        get;
-    }
+    internal string ArchetypeId => Behavior.ArchetypeId;
+
+    internal GroundPoint Position => Behavior.Position;
 
     internal int HealthUnits
     {
@@ -66,11 +48,24 @@ internal sealed class WorldMonsterState
 
     internal WorldMonsterState WithHealth(int healthUnits) =>
         new(
-            EntityId,
-            CampId,
-            SpawnId,
-            ArchetypeId,
-            Position,
+            Behavior,
             healthUnits,
             SpawnedAtTick);
+
+    internal WorldMonsterState WithBehavior(Draft0MonsterBehaviorState behavior)
+    {
+        if (behavior.EntityId != EntityId ||
+            !string.Equals(behavior.CampId, CampId, StringComparison.Ordinal) ||
+            !string.Equals(behavior.SpawnId, SpawnId, StringComparison.Ordinal) ||
+            !string.Equals(behavior.ArchetypeId, ArchetypeId, StringComparison.Ordinal) ||
+            behavior.Home != Behavior.Home ||
+            behavior.CollisionRadiusMetres != Behavior.CollisionRadiusMetres)
+        {
+            throw new ArgumentException(
+                "Behavior replacement must preserve monster identity, ownership, home and collision radius.",
+                nameof(behavior));
+        }
+
+        return new WorldMonsterState(behavior, HealthUnits, SpawnedAtTick);
+    }
 }

@@ -1,8 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Numerics;
-using ChronoFall.Box3D.Bodies;
-using ChronoFall.Box3D.Geometry;
-using ChronoFall.Box3D.Worlds;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
 
@@ -124,38 +121,34 @@ public sealed class Draft0PlayerMovementSimulation : IDisposable
     public const float PlayerRadiusMetres = 0.35f;
     public const float PlayerHeightMetres = 1.8f;
 
-    private const ulong EnvironmentCategory = 1UL << 0;
-    private const ulong PlayerMoverCategory = 1UL << 1;
     private static readonly PlayerCollisionCapsule TechnicalPlayerCollision =
         new(PlayerRadiusMetres, PlayerHeightMetres);
-    private static readonly Box3DFilter EnvironmentFilter =
-        new(EnvironmentCategory, PlayerMoverCategory);
-    private static readonly Box3DQueryFilter PlayerQueryFilter =
-        new(PlayerMoverCategory, EnvironmentCategory);
-    private static readonly Vector3 CapsuleCenter1 =
-        new(0.0f, PlayerRadiusMetres, 0.0f);
-    private static readonly Vector3 CapsuleCenter2 =
-        new(0.0f, PlayerHeightMetres - PlayerRadiusMetres, 0.0f);
 
-    private readonly Draft0GrayboxLayout layout;
-    private readonly Box3DWorld physicsWorld;
+    private readonly Draft0GroundCollisionWorld collisionWorld;
+    private readonly bool advancesCollisionWorld;
+    private readonly bool ownsCollisionWorld;
     private readonly Dictionary<WorldEntityId, PlayerMover> players = [];
     private bool disposed;
 
     public Draft0PlayerMovementSimulation(Draft0GrayboxLayout layout)
+        : this(
+            layout,
+            new Draft0GroundCollisionWorld(layout ?? throw new ArgumentNullException(nameof(layout))),
+            advancesCollisionWorld: true,
+            ownsCollisionWorld: true)
     {
-        this.layout = layout ?? throw new ArgumentNullException(nameof(layout));
-        physicsWorld = Box3DWorld.Create(Vector3.Zero);
-        try
-        {
-            CreateStaticCollision();
-            physicsWorld.Step(1.0f / TickRateHz, 1);
-        }
-        catch
-        {
-            physicsWorld.Dispose();
-            throw;
-        }
+    }
+
+    internal Draft0PlayerMovementSimulation(
+        Draft0GrayboxLayout layout,
+        Draft0GroundCollisionWorld collisionWorld,
+        bool advancesCollisionWorld,
+        bool ownsCollisionWorld)
+    {
+        ArgumentNullException.ThrowIfNull(layout);
+        this.collisionWorld = collisionWorld ?? throw new ArgumentNullException(nameof(collisionWorld));
+        this.advancesCollisionWorld = advancesCollisionWorld;
+        this.ownsCollisionWorld = ownsCollisionWorld;
     }
 
     public int PlayerCount
@@ -250,7 +243,8 @@ public sealed class Draft0PlayerMovementSimulation : IDisposable
     public IReadOnlyList<AuthoritativePlayerMovementState> Step()
     {
         ThrowIfDisposed();
-        physicsWorld.Step(1.0f / TickRateHz, 1);
+        if (advancesCollisionWorld)
+            collisionWorld.Step();
 
         AuthoritativePlayerMovementState[] states = players
             .OrderBy(static pair => pair.Key.Value)
@@ -265,7 +259,8 @@ public sealed class Draft0PlayerMovementSimulation : IDisposable
             return;
 
         players.Clear();
-        physicsWorld.Dispose();
+        if (ownsCollisionWorld)
+            collisionWorld.Dispose();
         disposed = true;
     }
 
@@ -303,17 +298,11 @@ public sealed class Draft0PlayerMovementSimulation : IDisposable
         float maximumStep = SpeedMetresPerSecond / TickRateHz;
         float stepLength = MathF.Min(distance, maximumStep);
         Vector2 planarTranslation = direction * stepLength;
-        Vector3 translation = new(planarTranslation.X, 0.0f, planarTranslation.Y);
-        float fraction = Math.Clamp(
-            physicsWorld.CastMover(
-                previous.Position.Metres,
-                CapsuleCenter1,
-                CapsuleCenter2,
-                PlayerRadiusMetres,
-                translation,
-                PlayerQueryFilter),
-            0.0f,
-            1.0f);
+        float fraction = collisionWorld.CastCapsuleMover(
+            previous.Position,
+            PlayerRadiusMetres,
+            PlayerHeightMetres,
+            planarTranslation);
 
         if (fraction < 1.0f)
         {
@@ -351,88 +340,19 @@ public sealed class Draft0PlayerMovementSimulation : IDisposable
         return player.State;
     }
 
-    private void CreateStaticCollision()
-    {
-        GroundBounds zone = layout.Specification.Bounds;
-        GroundBounds walkable = layout.WalkableBounds;
-
-        CreateBox(
-            new GroundBounds(
-                zone.Minimum,
-                new GroundPoint(zone.Maximum.XMetres, walkable.Minimum.ZMetres)),
-            PlayerHeightMetres);
-        CreateBox(
-            new GroundBounds(
-                new GroundPoint(zone.Minimum.XMetres, walkable.Maximum.ZMetres),
-                zone.Maximum),
-            PlayerHeightMetres);
-        CreateBox(
-            new GroundBounds(
-                new GroundPoint(zone.Minimum.XMetres, walkable.Minimum.ZMetres),
-                new GroundPoint(walkable.Minimum.XMetres, walkable.Maximum.ZMetres)),
-            PlayerHeightMetres);
-        CreateBox(
-            new GroundBounds(
-                new GroundPoint(walkable.Maximum.XMetres, walkable.Minimum.ZMetres),
-                new GroundPoint(zone.Maximum.XMetres, walkable.Maximum.ZMetres)),
-            PlayerHeightMetres);
-
-        foreach (Draft0ProxyBlock proxy in layout.Proxies)
-            CreateBox(proxy.Footprint, proxy.HeightMetres);
-    }
-
-    private void CreateBox(GroundBounds footprint, float heightMetres)
-    {
-        GroundDimensions dimensions = footprint.Dimensions;
-        Vector3 position = new(
-            (footprint.Minimum.XMetres + footprint.Maximum.XMetres) * 0.5f,
-            heightMetres * 0.5f,
-            (footprint.Minimum.ZMetres + footprint.Maximum.ZMetres) * 0.5f);
-        Vector3 halfExtents = new(
-            dimensions.WidthMetres * 0.5f,
-            heightMetres * 0.5f,
-            dimensions.DepthMetres * 0.5f);
-        Box3DBody body = physicsWorld.CreateBody(Box3DBodyKind.Static, position, Quaternion.Identity);
-        body.CreateBoxShape(halfExtents, EnvironmentFilter);
-    }
-
     private void RequireClearPosition(GroundPoint point, string parameterName)
     {
-        if (!ContainsPlayerCenter(point))
+        if (!collisionWorld.ContainsWalkableCenter(point, PlayerRadiusMetres))
             throw new ArgumentOutOfRangeException(parameterName, point, "Player position lies outside the walkable bounds.");
-        if (OverlapsProxy(point))
+        if (collisionWorld.OverlapsProxy(point, PlayerRadiusMetres))
             throw new ArgumentException("Player position overlaps collidable proxy geometry.", parameterName);
     }
 
-    private bool ContainsPlayerCenter(GroundPoint point)
-    {
-        GroundBounds bounds = layout.WalkableBounds;
-        return point.XMetres >= bounds.Minimum.XMetres + PlayerRadiusMetres &&
-            point.XMetres <= bounds.Maximum.XMetres - PlayerRadiusMetres &&
-            point.ZMetres >= bounds.Minimum.ZMetres + PlayerRadiusMetres &&
-            point.ZMetres <= bounds.Maximum.ZMetres - PlayerRadiusMetres;
-    }
+    private bool ContainsPlayerCenter(GroundPoint point) =>
+        collisionWorld.ContainsWalkableCenter(point, PlayerRadiusMetres);
 
-    private bool OverlapsProxy(GroundPoint point)
-    {
-        foreach (Draft0ProxyBlock proxy in layout.Proxies)
-        {
-            float nearestX = Math.Clamp(
-                point.XMetres,
-                proxy.Footprint.Minimum.XMetres,
-                proxy.Footprint.Maximum.XMetres);
-            float nearestZ = Math.Clamp(
-                point.ZMetres,
-                proxy.Footprint.Minimum.ZMetres,
-                proxy.Footprint.Maximum.ZMetres);
-            float deltaX = point.XMetres - nearestX;
-            float deltaZ = point.ZMetres - nearestZ;
-            if ((deltaX * deltaX) + (deltaZ * deltaZ) <= PlayerRadiusMetres * PlayerRadiusMetres)
-                return true;
-        }
-
-        return false;
-    }
+    private bool OverlapsProxy(GroundPoint point) =>
+        collisionWorld.OverlapsProxy(point, PlayerRadiusMetres);
 
     private static AuthoritativePlayerMovementState WithMotion(
         AuthoritativePlayerMovementState previous,

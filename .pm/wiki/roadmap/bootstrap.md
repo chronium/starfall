@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T13:18:39.9616770Z
+modifiedAt: 2026-08-05T15:04:46.8769870Z
 ---
 
 ## Execution standard
@@ -109,11 +109,15 @@ CLIENT-0023 + CONTENT-0013 + parent ASSET-0008
   -> CLIENT-0017  exact selected monster presentation
 ~~~
 
-CLIENT-0022 deliberately precedes SIM-0010: it uses generated forward-readable shapes at CONTENT-0007's exact ten ordered spawn assignments to prove visible presence, identity, archetype distinction and client-only hover in the local graybox. It owns no behavior, combat, death or return state. CLIENT-0023 later replaces those local fixtures with real bounded world snapshots and adds presentation of approved behavior/health/death facts without creating a second adapter. Exact source-asset presentation remains evidence-gated to CONTENT-0013, parent ASSET-0008 and CLIENT-0017.
+CLIENT-0022 deliberately preceded SIM-0010: it uses generated forward-readable shapes at CONTENT-0007's exact ten ordered spawn assignments to prove visible presence, identity, archetype distinction and client-only hover in the local graybox. It owns no behavior, combat, death or return state. CLIENT-0023 later replaces those local fixtures with real bounded World snapshots and adds presentation of approved behavior, health and death facts without creating a second adapter.
 
-CONTENT-0007 is the immutable domain input: light then heavy archetype order, 700/2,000 health units and the exact 3-light / 2-light-plus-2-heavy / 3-heavy assignment split across the ten graybox spawns. It does not own capacity, runtime entities or numeric behavior.
+CONTENT-0007 remains the immutable domain input: light then heavy archetype order, 700/2,000 health units and the exact 3-light / 2-light-plus-2-heavy / 3-heavy assignment split. SIM-0003 owns fixed-slot capacity and replenishment policy; SIM-0006 owns World entities and occupancy; SIM-0004 owns Basic Arrow damage to monsters.
 
-`SIM-0003` owns camp capacity, deterministic seed inputs and replenishment policy. `SIM-0006` owns runtime entities. `SIM-0010` owns the evidence-backed body/collision radius, movement speed, deterministic target selection/tie-break, awareness, pursuit/leash, attack range/damage/cadence and return behavior. `EDITOR-0005` may later author or visualize placement but does not own those authoritative values.
+Completed SIM-0010 now owns immutable behavior tuning/state and the bounded authoritative behavior proof: 0.45/0.65 m radii, 2.5/1.8 m/s speeds, 10/12 m awareness, 1.25/1.5 m attack ranges, 100/200 requested damage and 60/90-tick cadence. It uses deterministic distance/entity-ID targeting, strict camp ownership, static graybox collision, no-reacquire return and ordered requested-damage attack facts.
+
+SIM-0010 deliberately does not mutate player health. SIM-0011 remains the next authoritative seam for player health application, protected-town exclusion, defeat and respawn. PROTOCOL-0005 remains blocked on that complete bounded domain behavior rather than speculating about incomplete facts.
+
+EDITOR-0005 may later author or visualize placement but does not own authoritative behavior values. Exact source-asset presentation remains evidence-gated to CONTENT-0013, parent ASSET-0008 and CLIENT-0017.
 
 ### Combat contract and exchange
 

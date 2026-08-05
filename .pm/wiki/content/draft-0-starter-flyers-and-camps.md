@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T13:18:40.0637880Z
+modifiedAt: 2026-08-05T15:03:37.1635540Z
 ---
 
 ## Purpose and ownership
@@ -59,6 +59,21 @@ Seeds are explicit provisional Balance Lab inputs but are not consumed in Draft 
 `SIM-0006` now applies this policy inside each World runtime. Entering Running fills all ten slots at tick zero in canonical camp/slot order. World-owned immutable monster state records the slot's camp, spawn, archetype, exact ground point, full catalog health, opaque entity identity and spawn tick. Removing an occupant validates checked eligibility before making the slot vacant; overflow preserves occupancy. After fixed-tick advancement, due replacements use the same slot/archetype/point and full health with a fresh identity.
 
 Players and monsters share one checked monotonic world-local identity sequence. Exact numeric IDs are deliberately not content or simulation contracts. Snapshot ordering and simultaneous replenishment remain deterministic, while actual numeric values remain opaque.
+
+## Bounded authoritative behavior
+
+`SIM-0010` binds these content identities to immutable behavior tunings without adding behavior values to Content:
+
+| Archetype | Ground radius | Speed | Awareness | Attack range | Requested damage | Cadence |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `starter_flyer_light` | 0.45 m | 2.5 m/s | 10 m | 1.25 m | 100 units | 60 ticks |
+| `starter_flyer_heavy` | 0.65 m | 1.8 m/s | 12 m | 1.5 m | 200 units | 90 ticks |
+
+At 60 Hz, movement advances by the configured speed divided by 60. A monster acquires the nearest eligible player inside its own camp and awareness radius, breaking equal-distance ties by ascending world entity identity. Awareness gates acquisition only: a retained target remains valid beyond awareness while it still exists inside the camp.
+
+The monster pursues on the ground plane, stops in inclusive attack range and resolves its first attack immediately when a tick begins in range. Later attacks resolve on the exact checked cadence tick. Attack results are immutable, ordered by monster identity and carry requested integer damage only; `SIM-0011` owns applying that request to player health, defeat, protected-town behavior and respawn.
+
+Leaving the camp or losing the target starts a deterministic return. Returning monsters cannot reacquire until they reach their exact home point and become idle on a completed tick. Monster centres remain inside their radius-inset camp footprint and use the same World-owned static boundary/proxy collision environment as player movement. There is no pathfinding, dynamic-body avoidance, sliding, altitude or airborne authority.
 
 ## Downstream ownership
 

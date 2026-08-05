@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-05T12:32:02.5004750Z
+modifiedAt: 2026-08-05T15:04:31.6185840Z
 ---
 
 ## Purpose
@@ -69,6 +69,18 @@ After each fixed World tick advances, every due vacancy is applied in eligibilit
 
 `SIM-0004` now extends this occupancy with Basic Arrow integer damage and first-defeat removal; `SIM-0010` owns collision radius, movement, target selection, awareness, pursuit, outgoing attacks and return. No monster protocol or presentation is emitted here.
 
+## Bounded monster behavior scheduling
+
+`SIM-0010` adds an immutable behavior state to every World-owned monster without changing its content or entity identity. World owns one static Draft 0 Box3D collision environment per runtime and shares it between authoritative player movement and monster movement. Simulation owns the deterministic behavior transition and collision queries; Content remains Box3D-free.
+
+Each fixed tick supplies an immutable player-target snapshot to the monster lane. Idle monsters acquire only players inside their own camp and awareness radius, ordered by squared distance then world entity identity. Pursuing monsters retain that target outside awareness while it remains inside the camp. Missing or out-of-camp targets cause return; returning monsters cannot reacquire before reaching their exact home point and becoming idle.
+
+Pursuit and return advance at configured speed divided by 60, remain ground-plane and radius-inset inside the owning camp, and respect static boundaries and proxy footprints. The bounded rule deliberately has no pathfinding, sliding, dynamic-body avoidance, altitude or navigation graph.
+
+A monster beginning a tick inside inclusive range emits an immediate ordered attack resolution, then waits until its checked cadence tick. The result records attacker, target, resolve tick and requested integer damage. It does not mutate player health. `SIM-0011` owns damage application, protected-town handling, defeat and respawn.
+
+World replaces each immutable monster record with the new behavior state while preserving health and spawn tick. Defeat removes both occupancy and behavior atomically. Replenishment registers fresh idle behavior after the behavior phase, so a new monster cannot acquire or attack on its creation tick. Draining continues behavior; Stopping clears it.
+
 ## Basic Arrow combat scheduling
 
 `SIM-0004` adds one bounded authoritative combat lane without changing the world lifecycle or project graph. Simulation owns immutable Basic Arrow intent, tuning, pending-action, cancellation/resolution and integer-damage facts. World owns per-actor pending/cadence state, immutable player/monster replacement and application to the fixed-slot monster population.
@@ -85,7 +97,16 @@ Persistent execution uses a monotonic clock and an accumulator. One outer-loop c
 
 The optional `--run-ticks <positive>` mode advances exactly the requested number of ticks without wall-clock pacing. It exists for deterministic validation and automation, not as a second simulation model.
 
-World first applies authoritative player movement, then increments the checked World tick, resolves due Basic Arrows in actor-identity order, and finally applies camp replacements whose eligibility is less than or equal to that new tick. A monster removed at tick `T` is therefore absent through `T + 599` and recreated exactly at `T + 600`. This ordering is identical in Running and Draining.
+One World tick has this frozen bounded order:
+
+1. advance the shared static collision environment once;
+2. apply authoritative player movement;
+3. increment the checked World tick;
+4. resolve due Basic Arrows in actor-identity order;
+5. advance surviving monster behavior and emit monster attacks in monster-identity order;
+6. apply camp replacements whose eligibility is less than or equal to the new tick.
+
+Basic Arrow defeat therefore removes behavior before the behavior phase. A replacement created after behavior cannot acquire or attack until the next tick. A monster removed at tick `T` remains absent through `T + 599` and is recreated exactly at `T + 600`. Running and Draining use the same order.
 
 ## Process diagnostics
 
@@ -113,7 +134,7 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 ## Ownership and next seams
 
-`Starfall.World` remains the headless composition root over Content, Protocol, Simulation and the one approved coordinator transport adapter. It owns runtime camp occupancy and concrete monster entities while remaining free of SDL, GPU, editor and presentation dependencies.
+`Starfall.World` remains the headless composition root over Content, Protocol, Simulation and the one approved coordinator transport adapter. It owns runtime camp occupancy, concrete monster entities, shared static collision-world lifetime and fixed-tick orchestration while remaining free of SDL, GPU, editor and presentation dependencies.
 
 Offline mode creates one standalone technical player and supports finite or persistent execution. Connected mode requires `--listen-port` plus one or more repeatable `--verification-key <key-id>=<public-pem-path>` values, creates no player before admission, and cannot combine with `--run-ticks`.
 
@@ -121,7 +142,7 @@ Offline mode creates one standalone technical player and supports finite or pers
 
 Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions and ordinary deterministic camp simulation but rejects new admission. There is no reconnect grace or resumable session in this slice.
 
-Monster behavior and outgoing combat, combat/monster protocol and presentation, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
+Bounded monster behavior and requested-damage attack facts now exist only inside World/Simulation. `SIM-0011` owns player damage/defeat/protected-town/respawn application. Monster/combat protocol and connected presentation, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
 
 ## Non-goals
 
