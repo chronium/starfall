@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T15:55:45.7245250Z
+modifiedAt: 2026-08-05T19:25:35.9734020Z
 ---
 
 ## Status and purpose
@@ -46,6 +46,18 @@ The native 1920 x 1080 preview retains seven bounded views without creating a fr
 CLIENT-0024 remains deterministic historical graybox evidence. Its seven-view capture recipe explicitly supplies the idle `(100,0,100)` CLIENT-0005 fixture, frozen 22.5-metre F1 distance and `Idle_Loop` sample at 0.500 seconds through the same adapter/render path. The capture contract remains at `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/draft-0-graybox-capture-suite`.
 
 Durable adapter contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/architecture/client-world-presentation-adapter`.
+
+#### Pointer-intent and issued-command feedback
+
+Pointer feedback remains a separate client-presentation concern rather than part of Basic Arrow authority or its first end-to-end exchange. Hover affordance describes what the next world click would mean; issued-command feedback describes the movement request the player actually sent.
+
+Future CLIENT-0025 reuses the established picking and Basic Arrow target-selection seam to classify hostile monsters, blocking geometry, walkable ground and invalid/no world target. Its movement, prohibited and hostile-target cursors are advisory only: they do not promise range, success or authoritative acceptance. World validation and correction remain final.
+
+Future CLIENT-0026 presents an issued movement target from the existing command sequence and acknowledgement/correction facts. The first approved rendering path is a small alpha-blended textured ground quad with presentation-only depth separation. It is not a decal, path preview, navigation result or authoritative destination.
+
+CONTENT-0015 first selects or rejects the smallest exact CC0 inputs from the external Kenney All-in-One v3.6.0 Cursor Pack and Crosshair Pack. It records bundle-relative provenance without copying or cooking files. Only after exact selection may a focused coordinator acquisition task be allocated and canonically wired to the Client tasks. The complete purchased compilation remains external, and missing optional presentation content must not break a clean Client launch.
+
+All three tasks currently have no milestone and explicit priority none. They preserve the direction without blocking the Basic Arrow end-to-end proof or silently becoming M2 completion gates.
 
 ### Connected walking world
 

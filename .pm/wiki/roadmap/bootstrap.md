@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T18:52:36.0337340Z
+modifiedAt: 2026-08-05T19:25:46.5647640Z
 ---
 
 ## Execution standard
@@ -47,6 +47,22 @@ CLIENT-0005 + CLIENT-0006 + CONTENT-0014
 ~~~
 
 CLIENT-0021 is the first visible walking milestone: generated graybox, isometric camera, ground picking, technical humanoid, click intent and deterministic authoritative-style movement fixture. It has no connection, selected-final-asset gate or client gameplay authority.
+
+### Deferred pointer and movement-intent feedback
+
+These tasks are deliberately separate from the Basic Arrow end-to-end proof and currently have no milestone with explicit priority none:
+
+```text
+CONTENT-0015  exact Kenney Cursor/Crosshair selection only
+  ├── CLIENT-0025  semantic movement / prohibited / hostile-target cursors
+  └── CLIENT-0026  issued movement-target ground marker
+```
+
+CLIENT-0025 also waits on the established ground/graybox picking and connected Basic Arrow target-selection path. CLIENT-0026 consumes the completed connected movement command/acknowledgement path. Neither task changes World authority.
+
+CONTENT-0015 may inspect the external Kenney All-in-One v3.6.0 compilation but cannot copy or cook it. If exact inputs are approved, a later focused coordinator acquisition task stages only those files with provenance. Its canonical dependency must be attached to the Client tasks before either activates. No coordinator ID is invented during this Starfall cycle.
+
+The initial marker path is one alpha-blended textured ground quad with presentation-only depth separation. Decals, path previews, navigation, generic interactions and a general effects system remain outside these tasks.
 
 ### Authoritative walking lane
 
