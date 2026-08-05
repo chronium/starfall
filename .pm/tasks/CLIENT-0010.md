@@ -5,11 +5,10 @@ track: CLIENT
 milestone: M2
 dependsOn:
 - CLIENT-0007
-- CLIENT-0012
-- SIM-0007
-- PROTOCOL-0007
+- PROTOCOL-0012
+- CLIENT-0028
 createdAt: 2026-08-02T07:33:29.1280240Z
-modifiedAt: 2026-08-03T07:30:50.7356240Z
+modifiedAt: 2026-08-05T19:47:22.1487460Z
 ---
 
 Present the authoritative Draft 0 Arrow Rain action.

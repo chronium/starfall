@@ -5,12 +5,16 @@ track: CLIENT
 milestone: M2
 dependsOn:
 - CLIENT-0012
+- CLIENT-0027
+- CLIENT-0028
 - CONTENT-0003
 - PROTOCOL-0007
+- PROTOCOL-0011
+- PROTOCOL-0012
 - SERVER-0008
 - SIM-0011
 createdAt: 2026-08-02T15:49:18.8424300Z
-modifiedAt: 2026-08-03T07:30:50.7581050Z
+modifiedAt: 2026-08-05T19:47:22.3470000Z
 ---
 
 Present authoritative integer player health/mana, selected-target state, skill readiness, Arrow Rain targeting/cancellation, action rejection, damage, defeat, protected-town respawn, and correction feedback for the connected Draft 0 client.

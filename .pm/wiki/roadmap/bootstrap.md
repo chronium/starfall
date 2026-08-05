@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T19:25:46.5647640Z
+modifiedAt: 2026-08-05T19:48:00.7057560Z
 ---
 
 ## Execution standard
@@ -133,35 +133,56 @@ EDITOR-0005 remains the later owner for comparing monster, sustain and respawn i
 
 ### Combat contract and exchange
 
+The first connected combat proof follows the already-completed Basic Arrow, player-life and connected-monster behavior instead of waiting for every Draft 0 skill:
+
 ~~~text
 CONTENT-0003 + SIM-0006 + SIM-0008
-  -> SIM-0004  Basic Arrow + integer damage/death
+  -> SIM-0004  Basic Arrow + integer monster damage/death
+SIM-0010 + SIM-0008 + CONTENT-0014
+  -> SIM-0011  player damage/defeat/protected-town respawn
 
+SIM-0004 + SIM-0011
+  -> PROTOCOL-0006  first connected-combat facts
+PROTOCOL-0004 + PROTOCOL-0006
+  -> PROTOCOL-0007  deterministic serialization
+
+SERVER-0005 + SERVER-0007 + PROTOCOL-0007
+  + SIM-0004 + SIM-0011
+  -> SERVER-0008  first connected-combat exchange
+
+CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
+  -> CLIENT-0012  right-click Basic Arrow intent
+~~~
+
+PROTOCOL-0006/0007, SERVER-0008 and CLIENT-0012 have explicit medium priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
+
+Fire Arrow and Arrow Rain extend that proven path independently:
+
+~~~text
 SIM-0004 + CONTENT-0003
   -> SIM-0009  Fire Arrow
   -> SIM-0007  Arrow Rain
 
-SIM-0004 + SIM-0009 + SIM-0007 + SIM-0011
-  -> PROTOCOL-0006  combat facts
-PROTOCOL-0004 + PROTOCOL-0006
-  -> PROTOCOL-0007  combat serialization
+PROTOCOL-0007 + SIM-0009
+  -> PROTOCOL-0011  Fire facts + serialization
+SERVER-0008 + PROTOCOL-0011 + SIM-0009
+  -> SERVER-0013  Fire exchange
+CLIENT-0012 + PROTOCOL-0011 + SERVER-0013
+  -> CLIENT-0027  key-1 Fire intent
 
-SERVER-0005 + SERVER-0007 + PROTOCOL-0007
-  + SIM-0004 + SIM-0009 + SIM-0007 + SIM-0011
-  -> SERVER-0008
-
-CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
-  + SIM-0004 + SIM-0009 + SIM-0007
-  -> CLIENT-0012
+PROTOCOL-0007 + SIM-0007
+  -> PROTOCOL-0012  Arrow Rain facts + serialization
+SERVER-0008 + PROTOCOL-0012 + SIM-0007
+  -> SERVER-0014  Arrow Rain exchange
+CLIENT-0012 + PROTOCOL-0012 + SERVER-0014
+  -> CLIENT-0028  key-2 ground-target intent
 ~~~
 
-CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. SIM-0004 owns Basic Arrow's exact range/facing/cadence/interruption/tick inputs; SIM-0009 owns mana state/regeneration and Fire inputs; SIM-0007 owns Arrow Rain cost/range/radius/cadence/interruption/timing/order. EDITOR-0005 compares candidate values without promoting defaults.
+CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. SIM-0004 owns Basic Arrow range/facing/cadence/interruption/ticks; SIM-0011 owns player damage, defeat and respawn; SIM-0009 owns mana and Fire inputs; SIM-0007 owns Arrow Rain cost/range/radius/cadence/interruption/timing/order. EDITOR-0005 remains later combined Balance Lab evidence rather than a prerequisite for the already-proven Basic slice.
 
-No current task promotes Balance Lab evidence into one selected connected-M2 combat preset. Groom that focused ownership before SERVER-0008 activates. Primary-attribute taxonomy and starting values also remain an explicit nonblocking gap.
+CLIENT-0007 retains focused Basic action presentation. CLIENT-0018 consumes the Fire extension for Basic/Fire projectile presentation; CLIENT-0010 consumes the Arrow Rain extension; CLIENT-0019 waits for both extensions before presenting the complete three-action resource and targeting state. CLIENT-0011 owns equipped bow/aim/IK, while CLIENT-0025/0026 remain separately deferred cursor and movement-marker work.
 
-SERVER-0008 depends on the exact monster server exchange, never a Client task. Basic/Fire/Rain arrows remain presentation and all outcomes resolve at authoritative fixed ticks.
-
-CLIENT-0007/0010/0011/0018/0019 retain focused locomotion, action, weapon, projectile, targeting and feedback presentation after these gates.
+No authoritative spatial projectile exists. Basic/Fire arrows and Arrow Rain effects remain presentation; World decides action validity, timing, resource expenditure, victims, damage and defeat.
 
 Durable catalog: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 

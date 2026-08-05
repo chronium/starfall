@@ -23,6 +23,8 @@ Use `project: starfall` for one-project reads and every Starfall mutation from t
 - Complete only after implementation, tests, durable notes/wiki, and required owner validation.
 - Commit the task in Starfall and stop. Do not begin the next recommendation.
 
+When the owner explicitly approves a direct backlog-grooming plan, do not create a meta-task whose only result is more tasks. Apply only the enumerated task, dependency, priority, ordering, milestone, and matching wiki mutations; activate no feature task; change no implementation source or assets; inspect every receipt; validate the complete graph; commit with `[PM]`; perform the taskless pointer handoff; and stop.
+
 ## Continue A Reviewed Task
 
 Prefer a focused follow-up on the most recently completed task over a new review task when the owner requests it, no unrelated task has superseded it, and every finding is directly attributable to that task's implementation, documentation, or tests. Re-read the completed task and dependencies, reopen only that task, record the review findings, correct and validate them, return the task to `done`, and commit with the same task ID.
@@ -44,3 +46,5 @@ Plain dependency IDs are Starfall-local. Persist parent dependencies and wiki re
 ## Keep Durable Context
 
 Record decisions, exact validation commands/results, known limitations, owner validation, and commit implications in task notes. Update the Starfall wiki with architecture, protocol, format, content, setup, and workflow contracts in the same task that changes them.
+
+For a direct backlog-grooming cycle, the approved plan and resulting task/wiki text provide the durable context; no synthetic task note is required.

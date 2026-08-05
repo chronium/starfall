@@ -66,6 +66,8 @@ Never edit `.pm/` manually. Use an explicit `project: starfall` selector when mu
 
 The PM wiki is the durable source of truth for architecture, protocols, formats, content contracts, setup, validation, and workflows. Update it with the task that changes a contract.
 
+An explicitly owner-approved Plan-mode backlog-grooming session may create or revise tasks, dependencies, priorities, ordering, milestones, and matching roadmap/wiki text directly without manufacturing a task whose only output is more PM work. Apply only the enumerated mutations through PM MCP, activate no feature task, change no implementation source or assets, inspect every receipt, validate the complete graph, and commit the administrative result with a `[PM]` subject. This exception is for backlog representation only; it does not authorize feature implementation, unplanned architecture or dependency changes, or unrelated review work.
+
 ## Git And Coordinator Handoff
 
 Inspect both Starfall and coordinator status before implementation. Preserve all existing work and stop on mixed or surprising changes.
@@ -77,6 +79,8 @@ Inspect both Starfall and coordinator status before implementation. Preserve all
 - If every check passes, stage only the Starfall gitlink and create a pointer-only coordinator commit whose subject begins with the Starfall task ID and whose body records the canonical task URI, stable Starfall project ID, and pinned commit.
 - If a check fails, stop and report it; resume the same mechanical handoff after resolution without creating a ceremonial `SUBMODULE` task. Pushing remains owner-directed and ordered Starfall first, coordinator second.
 - Never reset, discard, absorb, or hide unrelated child or coordinator work.
+
+For an explicitly approved taskless Starfall backlog-grooming commit, the pointer-only coordinator commit also uses a `[PM]` subject. Its body records the stable Starfall project ID, pinned child commit, and concise grooming purpose; no canonical task URI is fabricated. All other identity, ancestry, cleanliness, pointer-only staging, validation, and publish-order requirements remain unchanged.
 
 ## Validation
 

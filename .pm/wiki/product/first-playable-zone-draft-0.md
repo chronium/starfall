@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T19:25:35.9734020Z
+modifiedAt: 2026-08-05T19:48:27.2096590Z
 ---
 
 ## Status and purpose
@@ -90,7 +90,7 @@ EDITOR-0007 later authors the proper scene from the durable requirements, graybo
 
 ## Provisional class and combat kit
 
-The connected walking slice uses a generic technical player and does not depend on class or combat content. The later class/combat lane now consumes CONTENT-0003's immutable Draft 0 catalog.
+The connected walking slice uses a generic technical player and does not depend on class or combat content. Connected combat now proceeds as independently executable action slices rather than waiting for the entire three-action kit.
 
 The provisional class identity is `dark_elf_archer`. It begins with 2,500 authoritative health units, unlimited authoritative ammunition, and the exact ordered actions `basic_arrow`, `fire_arrow`, `arrow_rain`. Unlimited ammunition means no ammunition resource, inventory or purchasing; it does not prohibit visual arrows.
 
@@ -100,9 +100,13 @@ The provisional class identity is `dark_elf_archer`. It begins with 2,500 author
 | Fire Arrow | One selected enemy | 7 | 700 | yes |
 | Arrow Rain | Ground circle, each valid victim | 5 | 500 | yes |
 
-The intended presentation still begins in a non-equipment underlayer with a basic wooden bow and visually presented arrows. The first armour family remains a visibly meaningful Ranger/leather set.
+The first connected combat milestone is Basic Arrow only. PROTOCOL-0006/0007 define and serialize its lifecycle plus the already-proven player-life facts; SERVER-0008 exchanges it; CLIENT-0012 right-clicks a live connected monster and sends intent. Existing connected monster snapshots visibly present authoritative health loss, hit flash and defeat.
 
-Right-click enemy requests Basic Arrow, 1 requests Fire Arrow on the selected target, and 2 enters Arrow Rain ground targeting. Input is intent only. Simulation decides validity, range, facing, victims, damage, mana, cadence, death and success.
+Fire Arrow extends that path through PROTOCOL-0011, SERVER-0013 and CLIENT-0027. Arrow Rain extends it separately through PROTOCOL-0012, SERVER-0014 and CLIENT-0028. Key 1 and key 2 remain reserved for those later controls.
+
+The intended presentation still begins in a non-equipment underlayer with a basic wooden bow and visually presented arrows. The first armour family remains a visibly meaningful Ranger/leather set. Bow animation, attachments, projectile/effect presentation, cursor affordances and movement markers retain separate task ownership.
+
+Input is intent only. Simulation decides validity, range, facing, victims, damage, mana, cadence, death and success.
 
 Exact downstream ownership, tuning gaps and authority details: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
@@ -122,11 +126,15 @@ Accepted level 2-20 requirements:
 
 ## Authority and arrow presentation
 
-Basic Arrow now resolves through the authoritative `SIM-0004` rule. It uses an inclusive 12-metre ground-plane range, stops and faces the selected monster on acceptance, resolves 12 ticks later, and permits the next start after 48 ticks. Accepted movement during windup cancels the shot while retaining the cadence; rejected movement does not. At resolution the actor must remain stationary and the target must remain alive, in range and within an inclusive 45-degree facing cone.
+Basic Arrow resolves through the authoritative `SIM-0004` rule. It uses an inclusive 12-metre ground-plane range, stops and faces the selected monster on acceptance, resolves 12 ticks later, and permits the next start after 48 ticks. Accepted movement during windup cancels the shot while retaining the cadence; rejected movement does not. At resolution the actor must remain stationary and the target must remain alive, in range and within an inclusive 45-degree facing cone.
 
 The rule requests 300 integer damage units. A light monster reaches zero on the third hit and a heavy monster on the seventh; effective overkill is clamped while defeat occurs only once. World applies nonlethal immutable health replacement, then routes first defeat into the existing camp vacancy/replenishment lifecycle at the exact resolve tick.
 
-Basic Arrow and Fire Arrow create no authoritative spatial projectile, server-side travel, projectile collision or line-of-sight query. Arrow Rain likewise resolves an explicitly ordered victim set and damage at an authoritative tick. Protocol facts later carry action, target, timing, cancellation, resource and outcome information; Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
+The first connected proof is intentionally end to end rather than presentation-complete. CLIENT-0012 selects the nearest ray-hit live monster from the latest authoritative snapshot, with entity identity breaking equal-distance ties, and sends only a sequenced target command. The admitted World session supplies the actor. PROTOCOL-0006/0007 and SERVER-0008 carry authoritative start, resolve, rejection, cancellation, damage, defeat and player-life facts. CLIENT-0023 already presents authoritative monster health changes, hit flash and defeat tombstones.
+
+Basic Arrow and Fire Arrow create no authoritative spatial projectile, server-side travel, projectile collision or line-of-sight query. Arrow Rain likewise resolves an explicitly ordered victim set and damage at an authoritative tick. PROTOCOL-0011/SERVER-0013/CLIENT-0027 later add Fire Arrow; PROTOCOL-0012/SERVER-0014/CLIENT-0028 separately add Arrow Rain. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
+
+Cursor styling and movement-target feedback remain deferred to CLIENT-0025/0026 and do not enter the Basic Arrow proof.
 
 ## Monsters, camps, town and respawn
 

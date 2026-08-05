@@ -6,10 +6,10 @@ milestone: M2
 dependsOn:
 - CLIENT-0007
 - CLIENT-0011
-- SIM-0009
-- PROTOCOL-0007
+- PROTOCOL-0011
+- CLIENT-0027
 createdAt: 2026-08-02T15:49:18.5915080Z
-modifiedAt: 2026-08-03T07:30:50.7456280Z
+modifiedAt: 2026-08-05T19:47:22.2472590Z
 ---
 
 Present Basic Arrow and Fire Arrow notch/release, client-only arrow travel, impact, and readable Fire distinction from authoritative protocol facts. Use the approved bow, arrow, socket, grip, reference-point, aim, IK, and selected-animation inputs.

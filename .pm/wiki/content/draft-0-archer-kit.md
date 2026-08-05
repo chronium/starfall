@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Archer Kit
 createdAt: 2026-08-05T06:16:02.6168200Z
-modifiedAt: 2026-08-05T12:31:01.7374890Z
+modifiedAt: 2026-08-05T19:48:52.8114060Z
 ---
 
 ## Status
@@ -43,18 +43,27 @@ World resolves same-tick actions in ascending actor identity order. Nonlethal hi
 ## Downstream ownership
 
 - SIM-0004 owns Basic Arrow range, facing requirement, cadence, movement interruption, windup/start tick and resolve tick.
+- SIM-0011 owns authoritative player health, defeat, protected-town lockout and respawn.
+- PROTOCOL-0006/0007 own the first connected Basic Arrow and player-life facts plus deterministic serialization.
+- SERVER-0008 binds Basic Arrow commands to admitted actors and publishes authoritative first-slice outcomes.
+- CLIENT-0012 owns deterministic right-click live-monster selection and Basic Arrow intent only; CLIENT-0023 already presents authoritative monster health/death snapshots.
 - SIM-0009 owns authoritative mana capacity/current state, fixed-tick regeneration, Fire Arrow cost, range, cadence, interruption and timing.
+- PROTOCOL-0011, SERVER-0013 and CLIENT-0027 extend the proven path with Fire facts/serialization, World exchange and key-1 intent respectively.
 - SIM-0007 owns Arrow Rain cost, cast range, radius, cadence, interruption, resolve timing and deterministic victim ordering.
+- PROTOCOL-0012, SERVER-0014 and CLIENT-0028 separately extend the path with Arrow Rain facts/serialization, World exchange and key-2 ground targeting.
 - EDITOR-0005 supplies and compares exact candidate values in deterministic Balance Lab scenarios without silently promoting them to defaults.
-- CLIENT-0018 owns Basic/Fire notch, release, client-only travel, impact timing and reconciliation.
-- CLIENT-0010 owns Arrow Rain targeting and presentational falling-arrow/effect timing.
+- CLIENT-0018 owns Basic/Fire notch, release, client-only travel, impact timing and reconciliation after the Fire extension.
+- CLIENT-0010 owns Arrow Rain targeting visuals and presentational falling-arrow/effect timing after the Arrow Rain extension.
+- CLIENT-0019 waits for both action extensions before presenting the complete three-action resource and targeting state.
 - CLIENT-0011 owns the later equipped bow, nocked arrow, socket, aim and IK presentation.
-- SERVER-0008 later exchanges commands and authoritative outcomes after the domain and protocol prerequisites exist.
+- CLIENT-0025/0026 retain separately deferred semantic cursor and movement-target marker ownership.
 
 ## Explicit gaps
 
-No current task owns promotion of Balance Lab evidence into one selected connected-M2 combat preset. That focused grooming must exist before SERVER-0008 activates; this catalog does not invent the preset.
+The completed SIM-0004 and SIM-0011 values are sufficient to execute the first connected Basic Arrow/player-life slice; combined three-action Balance Lab convergence does not block PROTOCOL-0006 or SERVER-0008.
 
-Primary-attribute taxonomy and starting values are also unresolved. They are nonblocking for the current three-action kit and require later task-owned design before progression rules consume them.
+Fire Arrow and Arrow Rain remain independently evidence-gated through SIM-0009 and SIM-0007. EDITOR-0005 later compares the combined kit, sustain and respawn experience before any tuning is promoted beyond those task-owned provisional inputs.
+
+Primary-attribute taxonomy and starting values remain unresolved. They are nonblocking for the current Basic Arrow proof and require later task-owned design before progression rules consume them.
 
 Durable slice context: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0
