@@ -10,6 +10,8 @@ public enum BasicArrowStartDisposition
     Accepted,
     UnknownActor,
     UnknownTarget,
+    ActorDefeated,
+    ActorInProtectedTown,
     WrongAction,
     ActorIsTarget,
     ActionAlreadyPending,
@@ -22,6 +24,7 @@ public enum BasicArrowResolutionDisposition
 {
     Resolved,
     CanceledByMovement,
+    ActorDefeated,
     ActorUnavailable,
     TargetUnavailable,
     ActorMoving,

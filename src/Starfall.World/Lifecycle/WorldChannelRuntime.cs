@@ -6,6 +6,7 @@ using Starfall.Protocol.Movement;
 using Starfall.Simulation.Combat;
 using Starfall.Simulation.Monsters;
 using Starfall.Simulation.Movement;
+using Starfall.Simulation.Players;
 using Starfall.World.Admission;
 using Starfall.World.Combat;
 using Starfall.World.Entities;
@@ -37,8 +38,11 @@ internal sealed class WorldChannelRuntime
     private readonly Draft0PlayerMovementSimulation movement;
     private readonly WorldMonsterPopulation monsterPopulation;
     private readonly WorldBasicArrowCombat basicArrowCombat = new();
+    private readonly Draft0PlayerLifeTuning playerLifeTuning;
     private IReadOnlyList<BasicArrowResolution> lastBasicArrowResolutions = [];
     private IReadOnlyList<Draft0MonsterAttackResolution> lastMonsterAttackResolutions = [];
+    private IReadOnlyList<Draft0AppliedMonsterDamage> lastAppliedMonsterDamage = [];
+    private IReadOnlyList<Draft0PlayerRespawnOutcome> lastPlayerRespawns = [];
     private WorldChannelLifecycleState state;
     private ulong currentTick;
 
@@ -48,7 +52,8 @@ internal sealed class WorldChannelRuntime
         WorldInstanceId instanceId,
         Draft0GrayboxLayout layout,
         Draft0StarterMonsterCatalogDefinition monsterCatalog,
-        Draft0CampPolicyCatalogDefinition campPolicies)
+        Draft0CampPolicyCatalogDefinition campPolicies,
+        Draft0PlayerLifeTuning? playerLifeTuning = null)
     {
         ArgumentNullException.ThrowIfNull(layout);
         ArgumentNullException.ThrowIfNull(monsterCatalog);
@@ -58,6 +63,7 @@ internal sealed class WorldChannelRuntime
         ChannelId = channelId;
         InstanceId = instanceId;
         Layout = layout;
+        this.playerLifeTuning = playerLifeTuning ?? Draft0PlayerLifeTuning.FirstPlayable;
         collisionWorld = new Draft0GroundCollisionWorld(layout);
         try
         {
@@ -191,6 +197,24 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal IReadOnlyList<Draft0AppliedMonsterDamage> LastAppliedMonsterDamage
+    {
+        get
+        {
+            lock (synchronization)
+                return lastAppliedMonsterDamage;
+        }
+    }
+
+    internal IReadOnlyList<Draft0PlayerRespawnOutcome> LastPlayerRespawns
+    {
+        get
+        {
+            lock (synchronization)
+                return lastPlayerRespawns;
+        }
+    }
+
     internal IReadOnlyList<WorldPlayerState> Players
     {
         get
@@ -245,18 +269,23 @@ internal sealed class WorldChannelRuntime
                         $"Movement produced unknown player {movementState.EntityId}.");
                 }
 
-                players[movementState.EntityId] = CreateWorldPlayerState(movementState);
+                players[movementState.EntityId] = CreateWorldPlayerState(
+                    movementState,
+                    players[movementState.EntityId]);
             }
 
             currentTick = checked(currentTick + 1);
+            lastPlayerRespawns = RespawnDuePlayers();
             lastBasicArrowResolutions = ResolveBasicArrows();
             lastMonsterAttackResolutions = monsterPopulation.StepBehavior(
                 players.Values
+                    .Where(static player => player.IsActive)
                     .OrderBy(static player => player.EntityId.Value)
                     .Select(static player => new Draft0MonsterPlayerTarget(
                         player.EntityId,
                         player.Position)),
                 currentTick);
+            lastAppliedMonsterDamage = ApplyMonsterAttacks(lastMonsterAttackResolutions);
             monsterPopulation.ApplyEligible(currentTick, entityIds.Allocate);
         }
     }
@@ -294,6 +323,8 @@ internal sealed class WorldChannelRuntime
             basicArrowCombat.Clear();
             lastBasicArrowResolutions = [];
             lastMonsterAttackResolutions = [];
+            lastAppliedMonsterDamage = [];
+            lastPlayerRespawns = [];
             monsterPopulation.Dispose();
             movement.Dispose();
             collisionWorld.Dispose();
@@ -315,7 +346,7 @@ internal sealed class WorldChannelRuntime
                 entityId,
                 Layout.Town.RespawnAnchor,
                 Vector2.UnitY);
-            WorldPlayerState player = CreateWorldPlayerState(movementState);
+            WorldPlayerState player = CreateNewWorldPlayerState(movementState);
             players.Add(entityId, player);
             return player;
         }
@@ -333,6 +364,9 @@ internal sealed class WorldChannelRuntime
                 throw new InvalidOperationException(
                     $"Cannot submit movement in a world in the {state} state.");
             }
+
+            if (players.TryGetValue(entityId, out WorldPlayerState? player) && !player.IsActive)
+                return GroundMovementIntentDisposition.UnknownPlayer;
 
             GroundMovementIntentDisposition disposition = movement.Submit(
                 new GroundMovementIntent(entityId, destination));
@@ -355,6 +389,10 @@ internal sealed class WorldChannelRuntime
 
             if (!players.TryGetValue(intent.ActorId, out WorldPlayerState? player))
                 return BasicArrowStartEvaluation.Reject(BasicArrowStartDisposition.UnknownActor);
+            if (!player.IsActive)
+                return BasicArrowStartEvaluation.Reject(BasicArrowStartDisposition.ActorDefeated);
+            if (Draft0PlayerLifeRules.IsHostileActionBlocked(Layout.Town, player.Position))
+                return BasicArrowStartEvaluation.Reject(BasicArrowStartDisposition.ActorInProtectedTown);
             if (!monsterPopulation.TryGet(intent.TargetId, out WorldMonsterState? monster) || monster is null)
                 return BasicArrowStartEvaluation.Reject(BasicArrowStartDisposition.UnknownTarget);
 
@@ -369,7 +407,7 @@ internal sealed class WorldChannelRuntime
             AuthoritativePlayerMovementState stopped = movement.StopAndFace(
                 player.EntityId,
                 pending.AcceptedFacing);
-            players[player.EntityId] = CreateWorldPlayerState(stopped);
+            players[player.EntityId] = CreateWorldPlayerState(stopped, player);
             return evaluation;
         }
     }
@@ -432,9 +470,10 @@ internal sealed class WorldChannelRuntime
                     $"Cannot remove session-bound player {entityId} through the technical player seam.");
             }
 
-            bool removedPlayer = players.Remove(entityId);
+            bool removedPlayer = players.Remove(entityId, out WorldPlayerState? player);
             bool removedMovement = movement.RemovePlayer(entityId);
-            if (removedPlayer != removedMovement)
+            bool expectedMovement = removedPlayer && player!.IsActive;
+            if (removedMovement != expectedMovement)
                 throw new InvalidOperationException("World player and movement ownership diverged.");
             if (removedPlayer)
                 basicArrowCombat.RemoveActor(entityId);
@@ -465,9 +504,10 @@ internal sealed class WorldChannelRuntime
                 return false;
             if (!walkingSessions.Remove(sessionId))
                 throw new InvalidOperationException("Gameplay and walking session ownership diverged.");
-            bool playerRemoved = players.Remove(session.PlayerEntityId);
+            bool playerRemoved = players.Remove(session.PlayerEntityId, out WorldPlayerState? player);
             bool movementRemoved = movement.RemovePlayer(session.PlayerEntityId);
-            if (!playerRemoved || !movementRemoved)
+            bool expectedMovement = playerRemoved && player!.IsActive;
+            if (!playerRemoved || movementRemoved != expectedMovement)
                 throw new InvalidOperationException("Session player and movement ownership diverged.");
             basicArrowCombat.RemoveActor(session.PlayerEntityId);
             return true;
@@ -489,6 +529,22 @@ internal sealed class WorldChannelRuntime
                 command.Sequence.Value <= lastProcessed.Value)
             {
                 return new(WorldWalkingCommandDisposition.StaleOrDuplicate);
+            }
+
+            if (!players.TryGetValue(
+                    walkingSession.Session.PlayerEntityId,
+                    out WorldPlayerState? player))
+            {
+                throw new InvalidOperationException(
+                    $"Session {sessionId} is bound to missing player {walkingSession.Session.PlayerEntityId}.");
+            }
+
+            if (!player.IsActive)
+            {
+                walkingSession.LastProcessedIntentSequence = command.Sequence;
+                return new(
+                    WorldWalkingCommandDisposition.Corrected,
+                    new PlayerMovementCorrection(command.Sequence, CreateMovementSnapshot(walkingSession)));
             }
 
             GroundMovementIntentDisposition movementDisposition = movement.Submit(
@@ -607,7 +663,7 @@ internal sealed class WorldChannelRuntime
             entityId,
             Layout.Town.RespawnAnchor,
             Vector2.UnitY);
-        WorldPlayerState player = CreateWorldPlayerState(movementState);
+        WorldPlayerState player = CreateNewWorldPlayerState(movementState);
         players.Add(entityId, player);
         return player;
     }
@@ -643,7 +699,7 @@ internal sealed class WorldChannelRuntime
     private static float CanonicalizeZero(float value) =>
         value == 0.0f ? 0.0f : value;
 
-    private static WorldPlayerState CreateWorldPlayerState(
+    private WorldPlayerState CreateNewWorldPlayerState(
         AuthoritativePlayerMovementState movementState) =>
         new(
             movementState.EntityId,
@@ -651,7 +707,24 @@ internal sealed class WorldChannelRuntime
             movementState.VelocityMetresPerSecond,
             movementState.Facing,
             movementState.Collision,
-            movementState.Outcome);
+            movementState.Outcome,
+            playerLifeTuning.MaximumHealthUnits,
+            Draft0PlayerLifeStatus.Active,
+            null);
+
+    private static WorldPlayerState CreateWorldPlayerState(
+        AuthoritativePlayerMovementState movementState,
+        WorldPlayerState previous) =>
+        new(
+            movementState.EntityId,
+            movementState.Position,
+            movementState.VelocityMetresPerSecond,
+            movementState.Facing,
+            movementState.Collision,
+            movementState.Outcome,
+            previous.HealthUnits,
+            previous.LifeStatus,
+            previous.RespawnAtTick);
 
     private void RecordAcceptedMovement(SimulationEntityId entityId)
     {
@@ -674,6 +747,15 @@ internal sealed class WorldChannelRuntime
                     action,
                     currentTick,
                     BasicArrowResolutionDisposition.ActorUnavailable));
+                continue;
+            }
+
+            if (!player.IsActive)
+            {
+                resolutions.Add(BasicArrowResolution.Cancel(
+                    action,
+                    currentTick,
+                    BasicArrowResolutionDisposition.ActorDefeated));
                 continue;
             }
 
@@ -707,6 +789,118 @@ internal sealed class WorldChannelRuntime
         }
 
         return Array.AsReadOnly(resolutions.ToArray());
+    }
+
+    private IReadOnlyList<Draft0PlayerRespawnOutcome> RespawnDuePlayers()
+    {
+        WorldPlayerState[] due = players.Values
+            .Where(static player => !player.IsActive)
+            .OrderBy(static player => player.EntityId.Value)
+            .Where(player => player.RespawnAtTick <= currentTick)
+            .ToArray();
+        if (due.Length == 0)
+            return [];
+
+        var outcomes = new List<Draft0PlayerRespawnOutcome>(due.Length);
+        foreach (WorldPlayerState defeated in due)
+        {
+            if (defeated.RespawnAtTick != currentTick)
+                throw new InvalidOperationException($"Player {defeated.EntityId} passed its exact respawn tick.");
+
+            AuthoritativePlayerMovementState movementState = movement.RegisterPlayer(
+                defeated.EntityId,
+                Layout.Town.RespawnAnchor,
+                Vector2.UnitY);
+            players[defeated.EntityId] = new WorldPlayerState(
+                movementState.EntityId,
+                movementState.Position,
+                movementState.VelocityMetresPerSecond,
+                movementState.Facing,
+                movementState.Collision,
+                movementState.Outcome,
+                playerLifeTuning.RestoredHealthUnits,
+                Draft0PlayerLifeStatus.Active,
+                null);
+            outcomes.Add(new Draft0PlayerRespawnOutcome(
+                defeated.EntityId,
+                currentTick,
+                Layout.Town.RespawnAnchor,
+                playerLifeTuning.RestoredHealthUnits));
+        }
+
+        return Array.AsReadOnly(outcomes.ToArray());
+    }
+
+    private IReadOnlyList<Draft0AppliedMonsterDamage> ApplyMonsterAttacks(
+        IReadOnlyList<Draft0MonsterAttackResolution> attacks)
+    {
+        if (attacks.Count == 0)
+            return [];
+
+        var outcomes = new List<Draft0AppliedMonsterDamage>(attacks.Count);
+        foreach (Draft0MonsterAttackResolution attack in attacks)
+        {
+            if (!players.TryGetValue(attack.TargetEntityId, out WorldPlayerState? player))
+            {
+                throw new InvalidOperationException(
+                    $"Monster {attack.AttackerEntityId} attacked missing player {attack.TargetEntityId}.");
+            }
+            if (!player.IsActive)
+                continue;
+
+            AuthoritativeDamageResult damage = AuthoritativeIntegerDamage.Apply(
+                player.HealthUnits,
+                attack.RequestedDamageUnits);
+            outcomes.Add(new Draft0AppliedMonsterDamage(attack, damage));
+            if (!damage.Defeated)
+            {
+                players[player.EntityId] = new WorldPlayerState(
+                    player.EntityId,
+                    player.Position,
+                    player.VelocityMetresPerSecond,
+                    player.Facing,
+                    player.Collision,
+                    player.MovementOutcome,
+                    damage.RemainingHealthUnits,
+                    Draft0PlayerLifeStatus.Active,
+                    null);
+                continue;
+            }
+
+            DefeatPlayer(player, damage.RemainingHealthUnits);
+        }
+
+        return Array.AsReadOnly(outcomes.ToArray());
+    }
+
+    private void DefeatPlayer(WorldPlayerState player, int remainingHealthUnits)
+    {
+        ulong respawnAtTick = Draft0PlayerLifeRules.ScheduleRespawn(playerLifeTuning, currentTick);
+        if (!movement.RemovePlayer(player.EntityId))
+            throw new InvalidOperationException($"Active player {player.EntityId} was absent from movement during defeat.");
+
+        players[player.EntityId] = new WorldPlayerState(
+            player.EntityId,
+            player.Position,
+            Vector2.Zero,
+            player.Facing,
+            player.Collision,
+            GroundMovementTickOutcome.Idle,
+            remainingHealthUnits,
+            Draft0PlayerLifeStatus.Defeated,
+            respawnAtTick);
+
+        if (basicArrowCombat.CancelForDefeat(player.EntityId, currentTick) is { } cancellation)
+            AppendBasicArrowResolution(cancellation);
+    }
+
+    private void AppendBasicArrowResolution(BasicArrowResolution resolution)
+    {
+        BasicArrowResolution[] combined = lastBasicArrowResolutions
+            .Append(resolution)
+            .OrderBy(static candidate => candidate.Action.ActorId.Value)
+            .ToArray();
+        lastBasicArrowResolutions = Array.AsReadOnly(combined);
     }
 
     private static BasicArrowActorState CreateBasicArrowActorState(WorldPlayerState player) =>

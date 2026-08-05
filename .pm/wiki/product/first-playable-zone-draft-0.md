@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T15:03:57.5229490Z
+modifiedAt: 2026-08-05T15:55:45.7245250Z
 ---
 
 ## Status and purpose
@@ -127,17 +127,19 @@ The exact initial camp composition is three light assignments in `camp_easy`; tw
 
 `SIM-0003` binds those inputs into fixed-slot policies. Easy, mixed and hard have capacity/full initial population 3/4/3, opaque seeds 1/2/3 and a 600-tick delay. `SIM-0006` turns them into concrete World-owned entities with immutable health and placement state.
 
-`SIM-0010` now supplies the bounded behavior proof. Light flyers use a 0.45 m radius, 2.5 m/s movement, 10 m awareness, 1.25 m attack range, 100 requested damage and a 60-tick cadence. Heavy flyers use 0.65 m, 1.8 m/s, 12 m, 1.5 m, 200 requested damage and 90 ticks.
+`SIM-0010` supplies the bounded behavior proof. Light flyers use a 0.45 m radius, 2.5 m/s movement, 10 m awareness, 1.25 m attack range, 100 requested damage and a 60-tick cadence. Heavy flyers use 0.65 m, 1.8 m/s, 12 m, 1.5 m, 200 requested damage and 90 ticks.
 
-Monsters acquire the nearest player inside their own camp and awareness radius, with world entity identity breaking equal-distance ties. Retained targets may move beyond awareness but remain valid only while inside the camp. Monsters pursue without pathfinding, stop in inclusive attack range, attack immediately on the first in-range tick, then obey exact cadence. They disengage when the player leaves the camp or disappears, return to their exact home point without reacquiring, and become eligible to acquire again on a later tick.
+Monsters acquire the nearest active, unprotected player inside their own camp and awareness radius, with world entity identity breaking equal-distance ties. Retained targets may move beyond awareness but remain valid only while active, outside `town_safe` and inside the camp. They disengage and return when the target becomes unavailable, defeated, protected or leaves the camp. Camp footprints and monster homes must remain outside the protected town; radius-inset camp movement fails before entering it.
 
-Ground radii constrain collision and camp containment. Monsters share World's static graybox boundaries and proxies with player movement, remain radius-inset inside their camp footprint and never gain altitude or airborne simulation. “Flyer” remains a provisional technical identity; hovering, bobbing, lunging, hit flash and death visuals remain presentation only.
+`SIM-0011` now applies ordered requested attacks to immutable player health. The Draft 0 player has 2,500 maximum health units. Requests are applied in ascending attacker identity order only while the target remains active; overkill clamps at zero and the first lethal result creates exactly one defeat transition. The complete SIM-0010 request stream remains available even when later same-tick requests cannot apply after defeat.
 
-Attack resolutions carry requested integer damage and authoritative tick facts. `SIM-0011` still owns applying those requests to the player's 2,500 health, protected-town rejection/exclusion, player defeat, configurable delay/restoration and town-anchor respawn. The current work creates no generic AI, navigation, dynamic-body avoidance, drops, rewards or protocol.
+Defeat preserves world entity and gameplay-session identity, clears movement authority and pending Basic Arrow, and locks movement and hostile actions. New connected movement sequences are consumed and corrected rather than breaking the session. At exact tick `T + 180`, World restores 2,500 health, re-registers the same entity stationary at `(100,0,25)` facing `+Z`, and emits an immutable respawn outcome. The 180-tick / 3-second delay and full-health restoration are provisional configurable inputs for EDITOR-0005 rather than final balance.
 
-Authoritative removal at tick `T` still vacates one slot only after checked scheduling. Replenishment at `T + 600` uses a fresh identity with the same camp, archetype, exact point and full health. Running and Draining use the same deterministic behavior and replenishment rules; Stopping clears entities, behavior and pending replacements.
+The inclusive `town_safe` boundary rejects Basic Arrow and remains traversable by active players. Mana is deliberately absent from this lifecycle contract; SIM-0009 owns mana capacity/current state and any later mana-restoration extension.
 
-The local placeholder-monster task remains generated client presentation. A focused protocol/server/client extension later connects real monster state and approved behavior facts. Exact selected monster assets remain a separate CONTENT-0013 and coordinator ASSET-0008 path.
+Authoritative monster removal at tick `T` still vacates one slot only after checked scheduling. Replenishment at `T + 600` uses a fresh identity with the same camp, archetype, exact point and full health. Running and Draining use the same deterministic behavior, player-life and replenishment rules; Stopping clears their state and last-tick outputs.
+
+The local placeholder-monster task remains generated client presentation. A focused protocol/server/client extension later connects real monster and player-life state. Exact selected monster assets remain a separate CONTENT-0013 and coordinator ASSET-0008 path.
 
 Durable camp and behavior contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
 

@@ -44,6 +44,17 @@ internal sealed class WorldBasicArrowCombat
             BasicArrowResolutionDisposition.CanceledByMovement);
     }
 
+    internal BasicArrowResolution? CancelForDefeat(WorldEntityId actorId, ulong currentTick)
+    {
+        if (!pendingByActor.Remove(actorId, out PendingBasicArrow pending))
+            return null;
+
+        return BasicArrowResolution.Cancel(
+            pending,
+            currentTick,
+            BasicArrowResolutionDisposition.ActorDefeated);
+    }
+
     internal IReadOnlyList<PendingBasicArrow> TakeDue(ulong currentTick)
     {
         PendingBasicArrow[] overdue = pendingByActor.Values

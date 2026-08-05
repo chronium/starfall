@@ -3,6 +3,7 @@ using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
 using Starfall.Simulation.Monsters;
 using Starfall.Simulation.Movement;
+using Starfall.Simulation.Players;
 using Starfall.World.Entities;
 
 namespace Starfall.World.Tests;
@@ -55,21 +56,48 @@ public sealed class WorldEntityStateTests
             new Vector2(float.NaN, 0.0f),
             Vector2.UnitY,
             new PlayerCollisionCapsule(0.35f, 1.8f),
-            GroundMovementTickOutcome.Idle));
+            GroundMovementTickOutcome.Idle,
+            2_500,
+            Draft0PlayerLifeStatus.Active,
+            null));
         Assert.Throws<ArgumentException>(() => new WorldPlayerState(
             entityId,
             position,
             Vector2.Zero,
             Vector2.Zero,
             new PlayerCollisionCapsule(0.35f, 1.8f),
-            GroundMovementTickOutcome.Idle));
+            GroundMovementTickOutcome.Idle,
+            2_500,
+            Draft0PlayerLifeStatus.Active,
+            null));
         Assert.Throws<ArgumentException>(() => new WorldPlayerState(
             entityId,
             position,
             Vector2.Zero,
             new Vector2(2.0f, 0.0f),
             new PlayerCollisionCapsule(0.35f, 1.8f),
-            GroundMovementTickOutcome.Idle));
+            GroundMovementTickOutcome.Idle,
+            2_500,
+            Draft0PlayerLifeStatus.Active,
+            null));
+    }
+
+    [Fact]
+    public void Player_life_state_requires_consistent_health_and_respawn_state()
+    {
+        WorldEntityId entityId = new(1);
+        GroundPoint position = new(100.0f, 25.0f);
+        PlayerCollisionCapsule collision = new(0.35f, 1.8f);
+
+        Assert.Throws<ArgumentException>(() => new WorldPlayerState(
+            entityId, position, Vector2.Zero, Vector2.UnitY, collision,
+            GroundMovementTickOutcome.Idle, 0, Draft0PlayerLifeStatus.Active, null));
+        Assert.Throws<ArgumentException>(() => new WorldPlayerState(
+            entityId, position, Vector2.Zero, Vector2.UnitY, collision,
+            GroundMovementTickOutcome.Idle, 1, Draft0PlayerLifeStatus.Defeated, 10));
+        Assert.Throws<ArgumentException>(() => new WorldPlayerState(
+            entityId, position, Vector2.Zero, Vector2.UnitY, collision,
+            GroundMovementTickOutcome.Idle, 0, Draft0PlayerLifeStatus.Defeated, null));
     }
 
     [Fact]

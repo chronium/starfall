@@ -2,6 +2,7 @@ using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
 using Starfall.Simulation.Movement;
+using Starfall.Simulation.Players;
 
 namespace Starfall.World.Entities;
 
@@ -15,7 +16,10 @@ internal sealed class WorldPlayerState
         Vector2 velocityMetresPerSecond,
         Vector2 facing,
         PlayerCollisionCapsule collision,
-        GroundMovementTickOutcome movementOutcome)
+        GroundMovementTickOutcome movementOutcome,
+        int healthUnits,
+        Draft0PlayerLifeStatus lifeStatus,
+        ulong? respawnAtTick)
     {
         if (entityId.Value == 0)
             throw new ArgumentException("Player entity identity must be valid.", nameof(entityId));
@@ -29,6 +33,12 @@ internal sealed class WorldPlayerState
             throw new ArgumentException("Player collision capsule must be valid.", nameof(collision));
         if (!Enum.IsDefined(movementOutcome))
             throw new ArgumentOutOfRangeException(nameof(movementOutcome));
+        if (!Enum.IsDefined(lifeStatus))
+            throw new ArgumentOutOfRangeException(nameof(lifeStatus));
+        if (lifeStatus == Draft0PlayerLifeStatus.Active && (healthUnits <= 0 || respawnAtTick is not null))
+            throw new ArgumentException("An active player requires positive health and no respawn tick.", nameof(healthUnits));
+        if (lifeStatus == Draft0PlayerLifeStatus.Defeated && (healthUnits != 0 || respawnAtTick is null))
+            throw new ArgumentException("A defeated player requires zero health and a respawn tick.", nameof(healthUnits));
 
         EntityId = entityId;
         Position = position;
@@ -36,6 +46,9 @@ internal sealed class WorldPlayerState
         Facing = facing;
         Collision = collision;
         MovementOutcome = movementOutcome;
+        HealthUnits = healthUnits;
+        LifeStatus = lifeStatus;
+        RespawnAtTick = respawnAtTick;
     }
 
     internal WorldEntityId EntityId
@@ -67,6 +80,23 @@ internal sealed class WorldPlayerState
     {
         get;
     }
+
+    internal int HealthUnits
+    {
+        get;
+    }
+
+    internal Draft0PlayerLifeStatus LifeStatus
+    {
+        get;
+    }
+
+    internal ulong? RespawnAtTick
+    {
+        get;
+    }
+
+    internal bool IsActive => LifeStatus == Draft0PlayerLifeStatus.Active;
 
     private static bool IsFinite(Vector2 value) =>
         float.IsFinite(value.X) && float.IsFinite(value.Y);

@@ -3,6 +3,7 @@ using System.Numerics;
 using Starfall.Content.Zones;
 using Starfall.Simulation.Entities;
 using Starfall.Simulation.Movement;
+using Starfall.Simulation.Players;
 
 namespace Starfall.Simulation.Monsters;
 
@@ -350,6 +351,7 @@ public sealed class Draft0MonsterBehaviorStep
 public sealed class Draft0MonsterBehaviorSimulation : IDisposable
 {
     private readonly IReadOnlyDictionary<string, Draft0CampLayout> camps;
+    private readonly Draft0TownLayout protectedTown;
     private readonly Draft0MonsterBehaviorTuningCatalog tunings;
     private readonly Draft0GroundCollisionWorld collisionWorld;
     private readonly bool advancesCollisionWorld;
@@ -377,9 +379,17 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
         bool ownsCollisionWorld)
     {
         ArgumentNullException.ThrowIfNull(layout);
+        ArgumentNullException.ThrowIfNull(collisionWorld);
         this.tunings = tunings ?? throw new ArgumentNullException(nameof(tunings));
         camps = layout.Branches.ToDictionary(static branch => branch.Camp.Id, static branch => branch.Camp, StringComparer.Ordinal);
-        this.collisionWorld = collisionWorld ?? throw new ArgumentNullException(nameof(collisionWorld));
+        protectedTown = layout.Town;
+        if (camps.Values.Any(camp => CampIntersectsTown(camp, protectedTown.Bounds)))
+        {
+            if (ownsCollisionWorld)
+                collisionWorld.Dispose();
+            throw new ArgumentException("Monster camp footprints must not intersect the protected town.", nameof(layout));
+        }
+        this.collisionWorld = collisionWorld;
         this.advancesCollisionWorld = advancesCollisionWorld;
         this.ownsCollisionWorld = ownsCollisionWorld;
     }
@@ -416,6 +426,8 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
             throw new ArgumentOutOfRangeException(nameof(home), home, "Monster home must lie inside its radius-inset camp footprint.");
         if (collisionWorld.OverlapsProxy(home, tuning.CollisionRadiusMetres))
             throw new ArgumentException("Monster home overlaps collidable proxy geometry.", nameof(home));
+        if (Draft0PlayerLifeRules.IsHostileActionBlocked(protectedTown, home))
+            throw new ArgumentException("Monster home lies inside the protected town.", nameof(home));
 
         Vector2 facing = DirectionOrFallback(home, camp.EntryAnchor, Vector2.UnitY);
         var state = new Draft0MonsterBehaviorState(
@@ -526,7 +538,8 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
         Draft0MonsterPlayerTarget? target = null;
         if (state.TargetEntityId is { } retainedId &&
             playersById.TryGetValue(retainedId, out Draft0MonsterPlayerTarget retained) &&
-            camp.Contains(retained.Position))
+            camp.Contains(retained.Position) &&
+            !Draft0PlayerLifeRules.IsHostileActionBlocked(protectedTown, retained.Position))
         {
             target = retained;
         }
@@ -678,6 +691,8 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
             campTranslation);
         Vector2 actualTranslation = campTranslation * fraction;
         GroundPoint position = new(current.X + actualTranslation.X, current.Y + actualTranslation.Y);
+        if (Draft0PlayerLifeRules.IsHostileActionBlocked(protectedTown, position))
+            throw new InvalidOperationException("Monster movement attempted to enter the protected town.");
         if (Vector2.DistanceSquared(ToPlane(position), ToPlane(target)) <=
             Draft0GrayboxLayout.ValidationToleranceMetres * Draft0GrayboxLayout.ValidationToleranceMetres)
         {
@@ -694,7 +709,7 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
             state.NextAllowedAttackTick);
     }
 
-    private static Draft0MonsterPlayerTarget? SelectTarget(
+    private Draft0MonsterPlayerTarget? SelectTarget(
         Draft0MonsterBehaviorState monster,
         Draft0CampLayout camp,
         Draft0MonsterBehaviorTuning tuning,
@@ -702,7 +717,9 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
     {
         float maximumDistanceSquared = tuning.AwarenessRadiusMetres * tuning.AwarenessRadiusMetres;
         return players
-            .Where(player => camp.Contains(player.Position))
+            .Where(player =>
+                camp.Contains(player.Position) &&
+                !Draft0PlayerLifeRules.IsHostileActionBlocked(protectedTown, player.Position))
             .Select(player => new
             {
                 Player = player,
@@ -733,6 +750,31 @@ public sealed class Draft0MonsterBehaviorSimulation : IDisposable
             point.XMetres <= camp.Bounds.Maximum.XMetres - radiusMetres &&
             point.ZMetres >= camp.Bounds.Minimum.ZMetres + radiusMetres &&
             point.ZMetres <= camp.Bounds.Maximum.ZMetres - radiusMetres;
+    }
+
+    private static bool CampIntersectsTown(
+        Draft0CampLayout camp,
+        GroundBounds town)
+    {
+        if (camp.Geometry != Draft0CampGeometry.BroadOpenCircle)
+        {
+            return camp.Bounds.Minimum.XMetres <= town.Maximum.XMetres &&
+                camp.Bounds.Maximum.XMetres >= town.Minimum.XMetres &&
+                camp.Bounds.Minimum.ZMetres <= town.Maximum.ZMetres &&
+                camp.Bounds.Maximum.ZMetres >= town.Minimum.ZMetres;
+        }
+
+        float nearestX = Math.Clamp(
+            camp.Center.XMetres,
+            town.Minimum.XMetres,
+            town.Maximum.XMetres);
+        float nearestZ = Math.Clamp(
+            camp.Center.ZMetres,
+            town.Minimum.ZMetres,
+            town.Maximum.ZMetres);
+        float deltaX = camp.Center.XMetres - nearestX;
+        float deltaZ = camp.Center.ZMetres - nearestZ;
+        return (deltaX * deltaX) + (deltaZ * deltaZ) <= camp.RadiusMetres * camp.RadiusMetres;
     }
 
     private static GroundPoint ClampToCampInset(

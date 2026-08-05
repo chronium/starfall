@@ -566,6 +566,10 @@ public sealed class WorldChannelRuntimeTests
 
         WorldPlayerState player = runtime.CreateTechnicalPlayer();
         Assert.Equal(
+            BasicArrowStartDisposition.ActorInProtectedTown,
+            runtime.SubmitBasicArrow(new BasicArrowIntent("basic_arrow", player.EntityId, new WorldEntityId(101))).Disposition);
+        MovePlayerTo(runtime, player.EntityId, new GroundPoint(100.0f, 70.0f));
+        Assert.Equal(
             BasicArrowStartDisposition.UnknownTarget,
             runtime.SubmitBasicArrow(new BasicArrowIntent("basic_arrow", player.EntityId, new WorldEntityId(101))).Disposition);
         WorldMonsterState distant = runtime.Monsters[0];

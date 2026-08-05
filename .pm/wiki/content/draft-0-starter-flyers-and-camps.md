@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T15:03:37.1635540Z
+modifiedAt: 2026-08-05T16:01:32.8567880Z
 ---
 
 ## Purpose and ownership
@@ -69,28 +69,32 @@ Players and monsters share one checked monotonic world-local identity sequence. 
 | `starter_flyer_light` | 0.45 m | 2.5 m/s | 10 m | 1.25 m | 100 units | 60 ticks |
 | `starter_flyer_heavy` | 0.65 m | 1.8 m/s | 12 m | 1.5 m | 200 units | 90 ticks |
 
-At 60 Hz, movement advances by the configured speed divided by 60. A monster acquires the nearest eligible player inside its own camp and awareness radius, breaking equal-distance ties by ascending world entity identity. Awareness gates acquisition only: a retained target remains valid beyond awareness while it still exists inside the camp.
+At 60 Hz, movement advances by the configured speed divided by 60. A monster acquires the nearest active, unprotected player inside its own camp and awareness radius, breaking equal-distance ties by ascending world entity identity. Awareness gates acquisition only: a retained target remains valid beyond awareness while it stays active, outside the inclusive protected town and inside the camp.
 
-The monster pursues on the ground plane, stops in inclusive attack range and resolves its first attack immediately when a tick begins in range. Later attacks resolve on the exact checked cadence tick. Attack results are immutable, ordered by monster identity and carry requested integer damage only; `SIM-0011` owns applying that request to player health, defeat, protected-town behavior and respawn.
+The monster pursues on the ground plane, stops in inclusive attack range and resolves its first attack immediately when a tick begins in range. Later attacks resolve on the exact checked cadence tick. Attack requests are immutable and ordered by monster identity.
 
-Leaving the camp or losing the target starts a deterministic return. Returning monsters cannot reacquire until they reach their exact home point and become idle on a completed tick. Monster centres remain inside their radius-inset camp footprint and use the same World-owned static boundary/proxy collision environment as player movement. There is no pathfinding, dynamic-body avoidance, sliding, altitude or airborne authority.
+`SIM-0011` applies those requests to the player's immutable integer health in the same order. The Draft 0 maximum and restored health are 2,500 units. A first lethal application creates one defeat transition, removes movement eligibility and starts a checked 180-tick respawn schedule; later requests that tick remain visible as requests but cannot mutate a defeated target.
+
+Leaving the camp, entering `town_safe`, becoming defeated or disappearing starts deterministic return. Returning monsters cannot reacquire until they reach their exact home point and become idle on a completed tick. Camp footprints and homes must not intersect the protected town, and movement fails before entering it. Monster centres remain inside their radius-inset camp footprint and use the same World-owned static boundary/proxy collision environment as players.
+
+Defeated players retain entity/session identity, receive connected movement corrections during lockout and respawn at the exact town anchor tick with restored health, zero velocity and `+Z` facing. The full-health three-second values remain configurable EDITOR-0005 inputs. Mana remains SIM-0009 scope. There is no pathfinding, dynamic-body avoidance, sliding, altitude, airborne authority or general sanctuary framework.
 
 ## Downstream ownership
 
 - Completed `SIM-0003` owns the immutable camp-policy inputs and pure replenishment schedule.
 - Completed `SIM-0006` owns authoritative World runtime occupancy, immutable monster records, shared identity allocation, validated removal handling and fixed-tick spawn application.
-- Completed `SIM-0004` owns Basic Arrow integer damage/death and applies first defeat through the existing validated removal seam.
-- `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
-- `SIM-0011` owns protected-town exclusion, disengagement at its boundary and player defeat/respawn behavior.
-- `CLIENT-0022` owns the generated local placeholder proof at these exact ten ordered spawn assignments before authoritative behavior exists.
+- Completed `SIM-0004` owns Basic Arrow integer damage/death and applies first monster defeat through the existing validated removal seam.
+- Completed `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
+- Completed `SIM-0011` owns ordered player damage application, the inclusive protected-town boundary, deterministic disengagement, one defeat transition, movement/action lockout and exact 180-tick respawn of the same player/session identity.
+- `CLIENT-0022` owns the generated local placeholder proof at these exact ten ordered spawn assignments.
 - `CLIENT-0023` later replaces local fixtures with bounded world snapshots and presents approved behavior, health, disengage/return and death facts.
 - `CONTENT-0013` owns exact monster presentation selection.
 - Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state; only the gentle hover belongs to CLIENT-0022.
 
-Running and Draining use the same deterministic camp rules; draining blocks new admission/technical creation but continues retained gameplay until its separately owned deadline policy. Stopping clears entities, occupancy and pending replenishments without reusing identities.
+Running and Draining use the same deterministic camp and player-lifecycle rules; draining blocks new admission/technical creation but continues retained gameplay until its separately owned deadline policy. Stopping clears entities, occupancy, pending replenishments and pending respawns without reusing identities.
 
 The starter-monster composition catalog itself still contains no runtime capacity state, spawn templates, replenishment schedule, authoritative entity identity, asset choice or presentation contract. The separate camp-policy catalog adds only immutable inputs; World owns application and outcomes.
 
-`SIM-0004` now applies `basic_arrow` to these immutable health values. Nonlethal hits replace only current health while preserving monster identity and all placement facts. The 700-unit light archetype is defeated by its third 300-unit request; the 2,000-unit heavy archetype by its seventh. Effective overkill is clamped to remaining health, defeat occurs once, and first defeat enters the existing vacancy schedule at the action's exact resolve tick. This does not add monster behavior, presentation, drops, rewards or random replacement.
+`SIM-0004` applies `basic_arrow` to immutable monster health values. Nonlethal hits replace only current health while preserving monster identity and all placement facts. The 700-unit light archetype is defeated by its third 300-unit request; the 2,000-unit heavy archetype by its seventh. Effective overkill is clamped to remaining health, defeat occurs once, and first defeat enters the existing vacancy schedule at the action's exact resolve tick. This does not add presentation, drops, rewards or random replacement.
 
 Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps.

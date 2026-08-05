@@ -4,6 +4,7 @@ using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
 using Starfall.Simulation.Combat;
 using Starfall.Simulation.Movement;
+using Starfall.Simulation.Players;
 using Starfall.World.Admission;
 using Starfall.World.Entities;
 using Starfall.World.Lifecycle;
@@ -94,6 +95,49 @@ public sealed class WorldWalkingExchangeTests
         Assert.Equal(BasicArrowResolutionDisposition.CanceledByMovement, canceled.Disposition);
         Assert.Equal(runtime.CurrentTick, canceled.OutcomeTick);
         Assert.Equal(700, target.HealthUnits);
+    }
+
+    [Fact]
+    public void Defeated_connected_player_consumes_new_intent_and_receives_a_correction()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(new Draft0PlayerLifeTuning(100, 100, 180));
+        WorldGameplaySession session = Admit(runtime, 1);
+        var exchange = new WorldWalkingExchange(runtime);
+        _ = exchange.CaptureSnapshots();
+        MovePlayerTo(runtime, session.PlayerEntityId, new GroundPoint(100.0f, 70.0f));
+        Assert.Equal(
+            WorldWalkingCommandDisposition.Accepted,
+            exchange.HandleCommand(session.SessionId, EncodeCommand(1, 70.0f, 65.0f)).Disposition);
+
+        for (var tick = 0; tick < 600; tick++)
+        {
+            runtime.Step();
+            Assert.True(runtime.TryGetPlayer(session.PlayerEntityId, out WorldPlayerState? player));
+            Assert.NotNull(player);
+            if (!player.IsActive)
+                break;
+        }
+
+        Assert.True(runtime.TryGetPlayer(session.PlayerEntityId, out WorldPlayerState? defeated));
+        Assert.NotNull(defeated);
+        Assert.False(defeated.IsActive);
+        WorldWalkingCommandOutcome outcome = exchange.HandleCommand(
+            session.SessionId,
+            EncodeCommand(2, 100.0f, 25.0f));
+
+        Assert.Equal(WorldWalkingCommandDisposition.Corrected, outcome.Disposition);
+        Assert.NotNull(outcome.CorrectionPayload);
+        Assert.True(ConnectedWalkingCodec.TryDecodeCorrection(
+            outcome.CorrectionPayload,
+            out PlayerMovementCorrection? correction));
+        Assert.NotNull(correction);
+        Assert.Equal(2UL, correction.CorrectedIntentSequence.Value);
+        Assert.Equal(2UL, correction.AuthoritativeSnapshot.LastProcessedIntentSequence?.Value);
+        Assert.Equal(defeated.Position.XMetres, correction.AuthoritativeSnapshot.Position.XMetres);
+        Assert.Equal(defeated.Position.ZMetres, correction.AuthoritativeSnapshot.Position.ZMetres);
+        Assert.True(runtime.TerminateGameplaySession(session.SessionId));
+        Assert.False(runtime.TryGetPlayer(session.PlayerEntityId, out _));
+        runtime.Stop();
     }
 
     [Fact]
@@ -235,7 +279,7 @@ public sealed class WorldWalkingExchangeTests
         Assert.Equal("The movement snapshot sequence space is exhausted.", exception.Message);
     }
 
-    private static WorldChannelRuntime CreateRuntime()
+    private static WorldChannelRuntime CreateRuntime(Draft0PlayerLifeTuning? tuning = null)
     {
         var runtime = new WorldChannelRuntime(
             new WorldId("world_1"),
@@ -243,7 +287,8 @@ public sealed class WorldWalkingExchangeTests
             new WorldInstanceId(Guid.Parse("40000000-0000-0000-0000-000000000001")),
             Draft0GrayboxCatalog.FirstPlayable,
             Draft0StarterMonsterCatalog.FirstPlayable,
-            Draft0CampPolicyCatalog.FirstPlayable);
+            Draft0CampPolicyCatalog.FirstPlayable,
+            tuning);
         runtime.Start();
         return runtime;
     }

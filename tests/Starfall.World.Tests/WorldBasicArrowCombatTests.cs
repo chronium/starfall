@@ -43,6 +43,33 @@ public sealed class WorldBasicArrowCombatTests
     }
 
     [Fact]
+    public void Defeat_cancels_pending_action_but_preserves_cadence()
+    {
+        var combat = new WorldBasicArrowCombat();
+        WorldEntityId actorId = new(1);
+        WorldEntityId targetId = new(2);
+        var intent = new BasicArrowIntent("basic_arrow", actorId, targetId);
+        var actor = new BasicArrowActorState(
+            actorId,
+            new GroundPoint(0.0f, 0.0f),
+            Vector2.Zero,
+            Vector2.UnitX);
+        var target = new BasicArrowTargetState(
+            targetId,
+            new GroundPoint(10.0f, 0.0f),
+            700);
+        PendingBasicArrow pending = Assert.IsType<PendingBasicArrow>(
+            combat.TryStart(intent, actor, target, 10).PendingAction);
+
+        BasicArrowResolution canceled = Assert.IsType<BasicArrowResolution>(
+            combat.CancelForDefeat(actorId, 11));
+
+        Assert.Equal(BasicArrowResolutionDisposition.ActorDefeated, canceled.Disposition);
+        Assert.Equal(0, combat.PendingCount);
+        Assert.Equal(pending.NextAllowedStartTick, combat.GetNextAllowedStartTick(actorId));
+    }
+
+    [Fact]
     public void Due_actions_are_removed_in_actor_identity_order_and_cleanup_is_explicit()
     {
         var combat = new WorldBasicArrowCombat();

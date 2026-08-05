@@ -39,7 +39,6 @@ orders:
   state: todo
   milestone: M2
   taskIds:
-  - SIM-0011
   - SIM-0009
   - SIM-0007
 - track: PROTOCOL

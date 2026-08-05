@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-05T15:04:31.6185840Z
+modifiedAt: 2026-08-05T16:01:27.0589000Z
 ---
 
 ## Purpose
@@ -51,11 +51,15 @@ After entering `Running`, the standalone host creates one generic authoritative 
 
 Successful admission atomically creates a distinct generic player at the same configured anchor and binds its immutable `WorldEntityId` to the new gameplay session. Rejected and replayed admissions create no player. The binding is host-owned context: connected movement commands carry no entity identity, so a session cannot nominate another player.
 
-`WorldPlayerState` is an immutable World-owned bucket containing its world-local entity identity, finite ground position, finite planar velocity in metres/second, normalized planar facing, 0.35 m radius by 1.8 m tall collision capsule, and latest movement outcome. Lookup never exposes mutable runtime-owned state. Movement replaces whole states under the runtime lock; ordered defensive snapshots therefore remain stable after later movement, creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary or native query enumeration.
+`WorldPlayerState` is an immutable World-owned bucket containing its world-local entity identity, finite ground position, finite planar velocity in metres/second, normalized planar facing, 0.35 m radius by 1.8 m tall collision capsule, latest movement outcome, current integer health, life state and optional respawn tick. The shared life tuning supplies maximum and restored health. Lookup never exposes mutable runtime-owned state. World replaces whole states under the runtime lock; ordered defensive snapshots therefore remain stable after later movement, damage, defeat, respawn, creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary or native query enumeration.
+
+Draft 0 players begin active at 2,500 of 2,500 health. Ordered monster attack requests reduce only active targets. The first lethal application clamps health to zero, creates one defeat transition, clears movement eligibility and pending Basic Arrow state, and schedules respawn at the checked current tick plus 180. The defeated player and admitted session keep the same identity. Connected movement intents during lockout are consumed and receive authoritative corrections rather than moving the entity.
+
+At the exact respawn tick, World restores the same entity to `town_safe`'s configured respawn anchor with 2,500 health, zero velocity, `+Z` facing and active movement registration. Hostile player actions are rejected while the actor is inside the inclusive protected-town footprint. Mana capacity, restoration and regeneration remain `SIM-0009` scope; this lifecycle adds no placeholder mana state.
 
 Standalone technical-player creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`, but the technical removal seam rejects any session-bound player. Draining retains admitted players. Stopping clears them. Distinct runtime instances own independent opaque identity sequences; tests verify repeatability for identical creation order without promising a literal player ID.
 
-`Draft0PlayerMovementSimulation` owns a zero-gravity Box3D collision world and accepts entity-targeted finite ground destinations. Movement uses a provisional 4.0 m/s speed at 60 Hz. A destination outside capsule-adjusted walkable bounds or overlapping a proxy is rejected without replacing the current destination. Unobstructed motion advances directly; arrival clamps exactly; a sweep hit moves to Box3D's safe fraction, reports blocked, clears the destination and does not slide or retry. Players do not collide with one another in this task. The town remains traversable by players; `SIM-0011` later owns hostile-action rejection, monster exclusion/disengagement, defeat and respawn.
+`Draft0PlayerMovementSimulation` owns a zero-gravity Box3D collision world and accepts entity-targeted finite ground destinations. Movement uses a provisional 4.0 m/s speed at 60 Hz. A destination outside capsule-adjusted walkable bounds or overlapping a proxy is rejected without replacing the current destination. Unobstructed motion advances directly; arrival clamps exactly; a sweep hit moves to Box3D's safe fraction, reports blocked, clears the destination and does not slide or retry. Players do not collide with one another in this task. The town remains traversable by players while its protected-area rule rejects hostile player actions and excludes monsters.
 
 ## Monster population state
 
@@ -73,13 +77,13 @@ After each fixed World tick advances, every due vacancy is applied in eligibilit
 
 `SIM-0010` adds an immutable behavior state to every World-owned monster without changing its content or entity identity. World owns one static Draft 0 Box3D collision environment per runtime and shares it between authoritative player movement and monster movement. Simulation owns the deterministic behavior transition and collision queries; Content remains Box3D-free.
 
-Each fixed tick supplies an immutable player-target snapshot to the monster lane. Idle monsters acquire only players inside their own camp and awareness radius, ordered by squared distance then world entity identity. Pursuing monsters retain that target outside awareness while it remains inside the camp. Missing or out-of-camp targets cause return; returning monsters cannot reacquire before reaching their exact home point and becoming idle.
+Each fixed tick supplies an immutable active-player target snapshot to the monster lane. Idle monsters acquire only active players outside the inclusive protected town, inside their own camp and awareness radius, ordered by squared distance then world entity identity. Pursuing monsters retain that target outside awareness while it remains active, outside town and inside the camp. Missing, defeated, protected or out-of-camp targets cause return; returning monsters cannot reacquire before reaching their exact home point and becoming idle.
 
-Pursuit and return advance at configured speed divided by 60, remain ground-plane and radius-inset inside the owning camp, and respect static boundaries and proxy footprints. The bounded rule deliberately has no pathfinding, sliding, dynamic-body avoidance, altitude or navigation graph.
+Pursuit and return advance at configured speed divided by 60, remain ground-plane and radius-inset inside the owning camp, and respect static boundaries and proxy footprints. Camp footprints and monster homes are rejected if they intersect the protected town; movement fails before crossing into it. The bounded rule deliberately has no pathfinding, sliding, dynamic-body avoidance, altitude or navigation graph.
 
-A monster beginning a tick inside inclusive range emits an immediate ordered attack resolution, then waits until its checked cadence tick. The result records attacker, target, resolve tick and requested integer damage. It does not mutate player health. `SIM-0011` owns damage application, protected-town handling, defeat and respawn.
+A monster beginning a tick inside inclusive range emits an immediate ordered attack request, then waits until its checked cadence tick. The request records attacker, target, resolve tick and requested integer damage. `SIM-0011` applies requests in monster-identity order only while the target remains active. The first lethal application creates one defeat transition; later same-tick requests remain observable but cannot mutate the defeated player.
 
-World replaces each immutable monster record with the new behavior state while preserving health and spawn tick. Defeat removes both occupancy and behavior atomically. Replenishment registers fresh idle behavior after the behavior phase, so a new monster cannot acquire or attack on its creation tick. Draining continues behavior; Stopping clears it.
+World replaces each immutable monster record with the new behavior state while preserving health and spawn tick. Defeat removes both occupancy and behavior atomically. Replenishment registers fresh idle behavior after the behavior phase, so a new monster cannot acquire or attack on its creation tick. Draining continues behavior and player lifecycle; Stopping clears both.
 
 ## Basic Arrow combat scheduling
 
@@ -100,13 +104,15 @@ The optional `--run-ticks <positive>` mode advances exactly the requested number
 One World tick has this frozen bounded order:
 
 1. advance the shared static collision environment once;
-2. apply authoritative player movement;
+2. apply authoritative movement for active players;
 3. increment the checked World tick;
-4. resolve due Basic Arrows in actor-identity order;
-5. advance surviving monster behavior and emit monster attacks in monster-identity order;
-6. apply camp replacements whose eligibility is less than or equal to the new tick.
+4. restore every player whose checked respawn tick is now due;
+5. resolve due Basic Arrows in actor-identity order;
+6. advance surviving monster behavior and emit attack requests in monster-identity order;
+7. apply those requests to active players in the emitted order;
+8. apply camp replacements whose eligibility is less than or equal to the new tick.
 
-Basic Arrow defeat therefore removes behavior before the behavior phase. A replacement created after behavior cannot acquire or attack until the next tick. A monster removed at tick `T` remains absent through `T + 599` and is recreated exactly at `T + 600`. Running and Draining use the same order.
+Basic Arrow defeat therefore removes monster behavior before the monster phase. A player respawned at step 4 is active for later phases on that exact tick but remains inside protected town, so hostile player actions are rejected and monsters cannot target it there. A lethal monster request at step 7 begins the 180-tick lockout from that resolve tick. A replacement created after behavior cannot acquire or attack until the next tick. A monster removed at tick `T` remains absent through `T + 599` and is recreated exactly at `T + 600`. Running and Draining use the same order.
 
 ## Process diagnostics
 
