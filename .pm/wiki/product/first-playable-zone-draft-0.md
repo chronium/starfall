@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T06:16:38.0120290Z
+modifiedAt: 2026-08-05T06:50:08.4497300Z
 ---
 
 ## Status and purpose
@@ -116,14 +116,20 @@ Protocol facts later carry action, target, timing, resource and outcome informat
 
 ## Monsters, camps, town and respawn
 
-Prototype identities remain:
+CONTENT-0007 freezes the immutable starter-monster catalog in this authoritative order:
 
-- starter_flyer_light: 700 internal HP;
-- starter_flyer_heavy: 2,000 internal HP.
+- `starter_flyer_light`: 700 internal HP (7 displayed);
+- `starter_flyer_heavy`: 2,000 internal HP (20 displayed).
 
-They remain ground-plane authoritative entities. Hovering is presentation. The smallest authoritative behavior is camp-bounded awareness, pursuit, attack, disengage and return. The town rejects hostile actions, excludes monsters and owns the configured defeat/respawn anchor.
+The exact initial camp composition is three light assignments in `camp_easy`; two light followed by two heavy assignments in `camp_mixed`; and three heavy assignments in `camp_hard`. These ten assignments copy the graybox's stable spawn identities and exact ground points in branch/local order. They do not define camp capacity, spawning policy or runtime entities.
+
+“Flyer” is a provisional technical identity. Both archetypes remain ordinary authoritative ground-plane occupants. Hovering, bobbing or lunging is presentation only and grants no altitude, airborne navigation, vertical targeting or special collision semantics.
+
+`SIM-0003` later owns capacity, authoritative seeds and replenishment; `SIM-0006` owns runtime entities; and `SIM-0010` owns evidence-backed radius, speed, target selection/tie-breaking, awareness, pursuit/leash, attack range/damage/cadence and return behavior. The town rejects hostile actions, excludes monsters and owns the configured defeat/respawn anchor.
 
 The local placeholder-monster task uses generated shapes or separately approved temporary assets and deterministic fixtures. A focused protocol/server/client extension later connects real monster snapshots. Exact selected monster assets remain a separate CONTENT-0013 and coordinator ASSET-0008 path.
+
+Durable monster catalog: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
 
 ## Asset ownership and source direction
 

@@ -22,12 +22,12 @@ public sealed class Draft0ArcherKitDefinitionTests
     [Fact]
     public void CatalogUsesTheFrozenIntegerResourceAndProbabilityScales()
     {
-        Assert.Equal(100, Draft0ArcherCatalog.ResourceUnitsPerDisplayedPoint);
-        Assert.Equal(10_000, Draft0ArcherCatalog.FullProbabilityBasisPoints);
-        Assert.Equal(2_500, 25 * Draft0ArcherCatalog.ResourceUnitsPerDisplayedPoint);
-        Assert.Equal(300, 3 * Draft0ArcherCatalog.ResourceUnitsPerDisplayedPoint);
-        Assert.Equal(500, 5 * Draft0ArcherCatalog.ResourceUnitsPerDisplayedPoint);
-        Assert.Equal(700, 7 * Draft0ArcherCatalog.ResourceUnitsPerDisplayedPoint);
+        Assert.Equal(100, Draft0GameplayScales.ResourceUnitsPerDisplayedPoint);
+        Assert.Equal(10_000, Draft0GameplayScales.FullProbabilityBasisPoints);
+        Assert.Equal(2_500, 25 * Draft0GameplayScales.ResourceUnitsPerDisplayedPoint);
+        Assert.Equal(300, 3 * Draft0GameplayScales.ResourceUnitsPerDisplayedPoint);
+        Assert.Equal(500, 5 * Draft0GameplayScales.ResourceUnitsPerDisplayedPoint);
+        Assert.Equal(700, 7 * Draft0GameplayScales.ResourceUnitsPerDisplayedPoint);
     }
 
     [Fact]

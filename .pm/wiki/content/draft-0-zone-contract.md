@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Zone Contract
 createdAt: 2026-08-02T18:32:00.1104310Z
-modifiedAt: 2026-08-04T13:11:30.0592230Z
+modifiedAt: 2026-08-05T06:50:17.8882250Z
 ---
 
 ## Ownership
@@ -85,6 +85,14 @@ Construction validates ordinal global identity uniqueness; finite dimensions and
 `SERVER-0004` binds this exact immutable catalog to each current world/channel runtime before lifecycle start. World preserves the Content object and its ordering directly rather than copying it into a parallel map model. The deterministic `READY` diagnostic identifies `draft_0_first_playable_zone`, `town_safe`, three branches, four routes, seven proxies and ten sample spawns. `SIM-0008` converts the four outer strips and seven ordered proxies into bounded Box3D collision while leaving routes non-navigational, sample spawns non-entities, and protected-town hostile/monster/respawn enforcement to `SIM-0011`.
 
 These remain coarse Content inputs with no Box3D dependency. Starfall.Simulation alone owns their provisional Box3D conversion and movement policy; they still add no renderer, editor, serialization or monster contract and are expected to be replaced by the later editor-authored scene.
+
+### Starter-monster binding
+
+CONTENT-0007 consumes these neutral sample spawns through `Draft0StarterMonsterCatalog.FirstPlayable`. It copies each stable identity and exact `GroundPoint` value rather than retaining `Draft0SampleSpawn` objects.
+
+The exact stable binding is three light assignments in `camp_easy`; two light then two heavy assignments in `camp_mixed`; and three heavy assignments in `camp_hard`. All ten assignments preserve the branch/local spawn order above. Position validation uses exact value equality because it copies already-approved authoring values; it introduces no second spatial tolerance.
+
+The content catalog does not turn sample spawns into runtime entities or define capacity, templates, replenishment, timing or random selection. `SIM-0003` owns capacity/seeds/replenishment, `SIM-0006` owns runtime entities, and `SIM-0010` owns numeric behavior. Durable catalog: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
 
 ## Deferred decisions
 

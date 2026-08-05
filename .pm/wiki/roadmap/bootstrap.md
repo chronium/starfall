@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T06:19:31.3650200Z
+modifiedAt: 2026-08-05T06:50:36.1300490Z
 ---
 
 ## Execution standard
@@ -27,12 +27,13 @@ Draft 0 develops through native-presentation and authoritative-simulation lanes 
 ### Content ownership
 
 - CONTENT-0006: completed durable zone/layout requirements.
-- CONTENT-0014: provisional executable graybox coordinates, regions, proxies, coarse collision/navigation and sample spawns; depends explicitly on CONTENT-0006.
-- CONTENT-0003: later dark-elf archer and three-action content; it does not gate the generic technical walking player.
-- CONTENT-0007/0008: monster/camp and progression/item inputs.
+- CONTENT-0014: provisional executable graybox coordinates, regions, proxies, coarse collision/navigation and neutral sample spawns; depends explicitly on CONTENT-0006.
+- CONTENT-0003: completed dark-elf archer and ordered three-action catalog; it does not gate the generic technical walking player.
+- CONTENT-0007: exact provisional starter-flyer identities, integer health and ten ordered graybox spawn assignments. It consumes CONTENT-0014 but owns no runtime spawning or behavior values.
+- CONTENT-0008: progression/item inputs.
 - CONTENT-0011/0012/0013: exact archer, proper-scene and monster presentation selection.
 
-The generated graybox never depends on selected assets. Exact selection-to-coordinator-acquisition paths remain canonical and evidence-gated.
+The generated graybox never depends on selected assets. Exact selection-to-coordinator-acquisition paths remain canonical and evidence-gated. Durable monster catalog: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
 
 ### Local walking graybox
 
@@ -109,6 +110,10 @@ CLIENT-0023 + CONTENT-0013 + parent ASSET-0008
 ~~~
 
 Placeholder monsters use generated shapes or separately approved temporary assets. Exact presentation remains evidence-gated.
+
+CONTENT-0007 is the immutable domain input: light then heavy archetype order, 700/2,000 health units and the exact 3-light / 2-light-plus-2-heavy / 3-heavy assignment split across the ten graybox spawns. It does not own capacity, runtime entities or numeric behavior.
+
+`SIM-0003` owns camp capacity, deterministic seed inputs and replenishment policy. `SIM-0006` owns runtime entities. `SIM-0010` owns the evidence-backed body/collision radius, movement speed, deterministic target selection/tie-break, awareness, pursuit/leash, attack range/damage/cadence and return behavior. `EDITOR-0005` may later author or visualize placement but does not own those authoritative values.
 
 ### Combat contract and exchange
 

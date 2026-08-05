@@ -109,9 +109,6 @@ public sealed class Draft0ArcherKitDefinition
 
 public static class Draft0ArcherCatalog
 {
-    public const int ResourceUnitsPerDisplayedPoint = 100;
-    public const int FullProbabilityBasisPoints = 10_000;
-
     public static Draft0ArcherKitDefinition FirstPlayable
     {
         get;

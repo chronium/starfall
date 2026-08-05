@@ -1,0 +1,54 @@
+---
+title: Draft 0 Starter Flyers and Camp Compositions
+createdAt: 2026-08-05T06:49:56.3861690Z
+modifiedAt: 2026-08-05T06:49:56.3861690Z
+---
+
+## Purpose and ownership
+
+CONTENT-0007 freezes the bounded Draft 0 starter-monster identities and their exact ordered placement into the executable graybox. Starfall Content owns these immutable game-specific inputs.
+
+This catalog does not own authoritative entities, runtime spawning, behavior, presentation, assets, or balance tuning. The identities are provisional technical labels rather than final species names.
+
+## Shared numerical scale
+
+`Draft0GameplayScales` is neutral Starfall Content policy shared by character and monster catalogs:
+
+- one displayed health or mana point equals 100 authoritative resource units;
+- a full probability scale is 10,000 basis points.
+
+The starter-monster catalog therefore records:
+
+| Ordered archetype | Authoritative health | Displayed health |
+| --- | ---: | ---: |
+| `starter_flyer_light` | 700 | 7 |
+| `starter_flyer_heavy` | 2,000 | 20 |
+
+“Flyer” and hovering are presentation only. Both archetypes remain ordinary authoritative ground-plane occupants. The catalog grants no altitude, airborne movement, flight navigation, vertical targeting, or special collision semantics.
+
+## Exact camp compositions
+
+`Draft0StarterMonsterCatalog.FirstPlayable` consumes the completed `Draft0GrayboxCatalog.FirstPlayable` values. It copies spawn identities and exact `GroundPoint` values; it does not retain graybox spawn objects.
+
+| Camp | Ordered assignments |
+| --- | --- |
+| `camp_easy` | `spawn_easy_01 -> starter_flyer_light`; `spawn_easy_02 -> starter_flyer_light`; `spawn_easy_03 -> starter_flyer_light` |
+| `camp_mixed` | `spawn_mixed_01 -> starter_flyer_light`; `spawn_mixed_02 -> starter_flyer_light`; `spawn_mixed_03 -> starter_flyer_heavy`; `spawn_mixed_04 -> starter_flyer_heavy` |
+| `camp_hard` | `spawn_hard_01 -> starter_flyer_heavy`; `spawn_hard_02 -> starter_flyer_heavy`; `spawn_hard_03 -> starter_flyer_heavy` |
+
+The catalog describes exactly ten initial assignments in stable branch/local order. Array order is authoritative; there is no parallel ordinal field.
+
+The aggregate catalog validates the exact archetype and camp ordering, known archetype references, exact spawn coverage, and exact position equality against the executable graybox. Structural definitions independently validate lowercase ASCII identities, positive health, immutable nonempty collections, non-null entries, and ordinal identity uniqueness.
+
+## Downstream ownership
+
+- `SIM-0003` owns camp capacity, authoritative seeds and replenishment policy.
+- `SIM-0006` owns authoritative runtime monster entities and identity allocation.
+- `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
+- `SIM-0011` owns protected-town exclusion, disengagement at its boundary and player defeat/respawn behavior.
+- `CONTENT-0013` owns exact monster presentation selection.
+- Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state.
+
+This catalog intentionally contains no camp capacity, spawn templates, replenishment, respawn timing, random selection, authoritative entity identity, runtime ownership, asset choice, or presentation contract.
+
+Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps.
