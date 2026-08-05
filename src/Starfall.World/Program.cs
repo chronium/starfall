@@ -42,14 +42,14 @@ internal static class WorldProgram
             Draft0GrayboxCatalog.FirstPlayable,
             Draft0StarterMonsterCatalog.FirstPlayable,
             Draft0CampPolicyCatalog.FirstPlayable);
-        WorldConnectedWalkingNetworkHost? connectedHost = null;
+        WorldGameplayNetworkHost? connectedHost = null;
 
         try
         {
             runtime.Start();
             if (options.IsConnected)
             {
-                connectedHost = new WorldConnectedWalkingNetworkHost(
+                connectedHost = new WorldGameplayNetworkHost(
                     WorldNetworkTransportFactory.Create(),
                     runtime,
                     LoadVerificationKeys(options.VerificationKeyPaths));

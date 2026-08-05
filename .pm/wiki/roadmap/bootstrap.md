@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T17:42:11.2506210Z
+modifiedAt: 2026-08-05T18:27:11.2275940Z
 ---
 
 ## Execution standard
@@ -111,7 +111,7 @@ CLIENT-0023 + CONTENT-0013 + parent ASSET-0008
 
 CLIENT-0022 deliberately preceded authoritative behavior: generated shapes first proved visible presence, stable identity, archetype distinction and client-only hover at the exact ten placements. Completed SIM-0010 then added bounded movement/targeting/attack requests, and completed SIM-0011 applies those requests to player health, protected-town lockout, defeat and exact respawn while preserving entity/session identity.
 
-PROTOCOL-0005 defines the bounded full-state monster snapshot seam without inventing behavior: ordered live entries carry authoritative transform/behavior/target/health, while bounded defeat tombstones remain repeatable until the corresponding placement slot replenishes. SERVER-0007 remains responsible for producing and exchanging those facts; CLIENT-0023 later replaces local fixtures through the existing adapter. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/bounded-monster-snapshots
+PROTOCOL-0005 defines the bounded full-state monster snapshot seam without inventing behavior: ordered live entries carry authoritative transform/behavior/target/health, while bounded defeat tombstones repeat until the corresponding placement slot replenishes. SERVER-0007 now maps and exchanges those facts per admitted session on sequenced channel 4 from the same gameplay host. The existing client temporarily validates and ignores that stream so connected walking remains intact; CLIENT-0023 is the next owner and replaces local fixtures through the existing adapter. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/bounded-monster-snapshots
 
 EDITOR-0005 remains the later owner for comparing monster, sustain and respawn inputs. The selected 180-tick/full-health respawn is provisional evidence, and SIM-0009 still owns the first mana state. Exact source-asset presentation remains evidence-gated to CONTENT-0013, parent ASSET-0008 and CLIENT-0017.
 

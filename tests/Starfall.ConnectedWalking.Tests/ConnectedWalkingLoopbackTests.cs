@@ -25,7 +25,7 @@ public sealed class ConnectedWalkingLoopbackTests
             Draft0StarterMonsterCatalog.FirstPlayable,
             Draft0CampPolicyCatalog.FirstPlayable);
         runtime.Start();
-        using var host = new WorldConnectedWalkingNetworkHost(
+        using var host = new WorldGameplayNetworkHost(
             WorldNetworkTransportFactory.Create(),
             runtime,
             new WorldJoinTicketVerificationKeyRing(

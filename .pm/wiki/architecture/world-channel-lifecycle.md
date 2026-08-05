@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-05T16:01:27.0589000Z
+modifiedAt: 2026-08-05T18:27:03.2049530Z
 ---
 
 ## Purpose
@@ -65,7 +65,7 @@ Standalone technical-player creation is allowed only in `Running`; removal is al
 
 `SIM-0006` binds the validated `Draft0StarterMonsterCatalog.FirstPlayable` and `Draft0CampPolicyCatalog.FirstPlayable` inputs to the same loaded graybox. World validates their camp geometry, ordered placement identities, archetypes and exact positions before startup; it does not invent a second monster catalog.
 
-`WorldMonsterState` is an immutable World-owned record containing opaque world-local entity identity, camp identity, placement-slot identity, archetype identity, exact ground point, current integer health and spawn tick. Initial health is 700 units for `starter_flyer_light` and 2,000 units for `starter_flyer_heavy`. Ordered defensive snapshots and lookup never expose mutable runtime occupancy.
+`WorldMonsterState` is an immutable World-owned record containing opaque world-local entity identity, camp identity, placement-slot identity, archetype identity, exact ground point, current and maximum integer health and spawn tick. Initial health is 700 units for `starter_flyer_light` and 2,000 units for `starter_flyer_heavy`. Ordered defensive snapshots and lookup never expose mutable runtime occupancy.
 
 Startup fills every approved fixed slot in canonical camp then slot order at tick zero. A successful authoritative removal makes only that slot vacant at the current tick. The complete vacancy set is validated through the checked Simulation schedule before occupancy changes, so eligibility overflow preserves the existing monster. Unknown or already-removed identities are harmless false results.
 
@@ -144,11 +144,13 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 Offline mode creates one standalone technical player and supports finite or persistent execution. Connected mode requires `--listen-port` plus one or more repeatable `--verification-key <key-id>=<public-pem-path>` values, creates no player before admission, and cannot combine with `--run-ticks`.
 
-`WorldConnectedWalkingNetworkHost` owns one caller-polled peer/session registry. It rejects non-loopback endpoints before parsing, enforces the exact admission and walking channel/delivery contract, binds accepted peers to gameplay sessions, routes movement commands through `WorldWalkingExchange`, publishes latest snapshots, and sends immediate corrections. Network errors and one-peer send failures are diagnostic and isolate cleanup to that peer/session; they do not stop the world.
+`WorldGameplayNetworkHost` owns one caller-polled peer/session registry. It rejects non-loopback endpoints before parsing, binds accepted peers to gameplay sessions, routes commands through the focused `WorldWalkingExchange`, publishes walking snapshots/corrections and independently publishes bounded monster snapshots through `WorldMonsterExchange`. Network errors and one-peer send failures are diagnostic and isolate cleanup to that peer/session; they do not stop the world.
+
+Every active session has independent walking and monster publication state. Monster channel 4 uses sequenced full snapshots at most once per observed simulation tick. World captures live and defeated facts under its runtime lock; live and tombstone arrays remain ordered by entity identity and together remain bounded to the ten placement slots. A lethal removal retains the last authoritative state by slot until exact-slot replenishment, while technical removal and Stop do not fabricate death. Draining continues publication and deterministic simulation; disconnect or Stop clears the applicable session publication state.
 
 Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions and ordinary deterministic camp simulation but rejects new admission. There is no reconnect grace or resumable session in this slice.
 
-Bounded monster behavior and requested-damage attack facts now exist only inside World/Simulation. `SIM-0011` owns player damage/defeat/protected-town/respawn application. Monster/combat protocol and connected presentation, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
+Bounded monster behavior and requested-damage attack facts remain inside World/Simulation. `SIM-0011` owns player damage/defeat/protected-town/respawn application; PROTOCOL-0005 and SERVER-0007 expose only approved authoritative state and retained defeat facts. CLIENT-0023 still owns connected monster presentation. Combat exchange, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
 
 ## Non-goals
 

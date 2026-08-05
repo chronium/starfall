@@ -4,6 +4,7 @@ using ChronoFall.Network.Transport;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
 using Starfall.World.Lifecycle;
@@ -11,7 +12,7 @@ using Starfall.World.Networking;
 
 namespace Starfall.World.Tests;
 
-public sealed class WorldConnectedWalkingNetworkHostTests
+public sealed class WorldGameplayNetworkHostTests
 {
     private static readonly DateTimeOffset Now = DateTimeOffset.FromUnixTimeMilliseconds(1_800_000_000_000);
 
@@ -22,7 +23,7 @@ public sealed class WorldConnectedWalkingNetworkHostTests
         var transport = new RecordingTransport();
         WorldChannelRuntime runtime = CreateRuntime();
         using var runtimeScope = new RuntimeScope(runtime);
-        using var host = new WorldConnectedWalkingNetworkHost(
+        using var host = new WorldGameplayNetworkHost(
             transport,
             runtime,
             Ring(key),
@@ -42,6 +43,17 @@ public sealed class WorldConnectedWalkingNetworkHostTests
         Assert.Equal(1, runtime.ActiveSessionCount);
         Assert.Equal(1, runtime.PlayerCount);
         Assert.Contains(transport.Sent, static value => value.Channel == StarfallNetworkChannels.MovementSnapshots);
+        SentPacket monsterPacket = Assert.Single(
+            transport.Sent,
+            static value => value.Channel == StarfallNetworkChannels.MonsterSnapshots);
+        Assert.Equal(NetworkDelivery.Sequenced, monsterPacket.Delivery);
+        Assert.True(BoundedMonsterSnapshotCodec.TryDecode(
+            monsterPacket.Payload,
+            out BoundedMonsterSnapshot? initialMonsters));
+        Assert.NotNull(initialMonsters);
+        Assert.Equal(1UL, initialMonsters.Sequence.Value);
+        Assert.Equal(0UL, initialMonsters.SimulationTick);
+        Assert.Equal(10, initialMonsters.LiveMonsters.Length);
 
         transport.Sent.Clear();
         var command = new GroundMovementCommand(
@@ -56,6 +68,9 @@ public sealed class WorldConnectedWalkingNetworkHostTests
         host.Pump();
         Assert.Contains(transport.Sent, static value =>
             value.Channel == StarfallNetworkChannels.MovementSnapshots &&
+            value.Delivery == NetworkDelivery.Sequenced);
+        Assert.Contains(transport.Sent, static value =>
+            value.Channel == StarfallNetworkChannels.MonsterSnapshots &&
             value.Delivery == NetworkDelivery.Sequenced);
 
         transport.Sent.Clear();
@@ -84,7 +99,7 @@ public sealed class WorldConnectedWalkingNetworkHostTests
         var transport = new RecordingTransport();
         WorldChannelRuntime runtime = CreateRuntime();
         using var runtimeScope = new RuntimeScope(runtime);
-        using var host = new WorldConnectedWalkingNetworkHost(transport, runtime, Ring(key));
+        using var host = new WorldGameplayNetworkHost(transport, runtime, Ring(key));
         var remote = new NetworkPeerId(1);
         host.Connected(remote, new NetworkEndpoint("192.0.2.10", 40000));
         Assert.Contains(remote, transport.Disconnected);
@@ -105,11 +120,11 @@ public sealed class WorldConnectedWalkingNetworkHostTests
         WorldChannelRuntime runtime = CreateRuntime();
         using var runtimeScope = new RuntimeScope(runtime);
         var clock = new AdjustableTimeProvider(Now);
-        using var host = new WorldConnectedWalkingNetworkHost(transport, runtime, Ring(key), clock);
+        using var host = new WorldGameplayNetworkHost(transport, runtime, Ring(key), clock);
         var peer = new NetworkPeerId(3);
         host.Connected(peer, new NetworkEndpoint("127.0.0.1", 40000));
 
-        clock.Advance(WorldConnectedWalkingNetworkHost.AdmissionTimeout);
+        clock.Advance(WorldGameplayNetworkHost.AdmissionTimeout);
         host.Pump();
 
         Assert.Contains(peer, transport.Disconnected);

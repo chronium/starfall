@@ -2,6 +2,7 @@ using System.Numerics;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Simulation.Combat;
 using Starfall.Simulation.Monsters;
@@ -32,6 +33,7 @@ internal sealed class WorldChannelRuntime
     private readonly Dictionary<JoinTicketId, long> consumedTickets = [];
     private readonly Dictionary<GameplaySessionId, WorldGameplaySession> activeSessions = [];
     private readonly Dictionary<GameplaySessionId, WorldWalkingSessionState> walkingSessions = [];
+    private readonly Dictionary<GameplaySessionId, WorldMonsterSnapshotSessionState> monsterSnapshotSessions = [];
     private readonly Dictionary<SimulationEntityId, WorldPlayerState> players = [];
     private readonly WorldEntityIdSequence entityIds = new();
     private readonly Draft0GroundCollisionWorld collisionWorld;
@@ -238,6 +240,15 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal IReadOnlyList<WorldDefeatedMonsterState> DefeatedMonsters
+    {
+        get
+        {
+            lock (synchronization)
+                return monsterPopulation.DefeatedSnapshot();
+        }
+    }
+
     internal void Start()
     {
         lock (synchronization)
@@ -318,6 +329,7 @@ internal sealed class WorldChannelRuntime
             state = WorldChannelLifecycleState.Stopped;
             activeSessions.Clear();
             walkingSessions.Clear();
+            monsterSnapshotSessions.Clear();
             consumedTickets.Clear();
             players.Clear();
             basicArrowCombat.Clear();
@@ -504,6 +516,8 @@ internal sealed class WorldChannelRuntime
                 return false;
             if (!walkingSessions.Remove(sessionId))
                 throw new InvalidOperationException("Gameplay and walking session ownership diverged.");
+            if (!monsterSnapshotSessions.Remove(sessionId))
+                throw new InvalidOperationException("Gameplay and monster snapshot session ownership diverged.");
             bool playerRemoved = players.Remove(session.PlayerEntityId, out WorldPlayerState? player);
             bool movementRemoved = movement.RemovePlayer(session.PlayerEntityId);
             bool expectedMovement = playerRemoved && player!.IsActive;
@@ -594,6 +608,26 @@ internal sealed class WorldChannelRuntime
         }
     }
 
+    internal IReadOnlyList<WorldMonsterSnapshot> CaptureMonsterSnapshots()
+    {
+        lock (synchronization)
+        {
+            if (state is not WorldChannelLifecycleState.Running and
+                not WorldChannelLifecycleState.Draining)
+            {
+                return [];
+            }
+
+            return monsterSnapshotSessions.Values
+                .OrderBy(static session => session.Session.PlayerEntityId.Value)
+                .Where(session => session.LastPublishedTick != currentTick)
+                .Select(session => new WorldMonsterSnapshot(
+                    session.Session.SessionId,
+                    CreateMonsterSnapshot(session)))
+                .ToArray();
+        }
+    }
+
     internal WorldJoinAdmissionOutcome ConsumeTicketAndCreateSession(
         WorldJoinTicketClaims claims,
         long nowUnixMilliseconds)
@@ -632,6 +666,7 @@ internal sealed class WorldChannelRuntime
                 CreateSessionPlayer().EntityId);
             activeSessions.Add(sessionId, session);
             walkingSessions.Add(sessionId, new WorldWalkingSessionState(session));
+            monsterSnapshotSessions.Add(sessionId, new WorldMonsterSnapshotSessionState(session));
 
             return WorldJoinAdmissionOutcome.Accept(new WorldJoinAccepted(sessionId));
         }
@@ -692,6 +727,56 @@ internal sealed class WorldChannelRuntime
         walkingSession.LastPublishedTick = currentTick;
         return snapshot;
     }
+
+    private BoundedMonsterSnapshot CreateMonsterSnapshot(
+        WorldMonsterSnapshotSessionState snapshotSession)
+    {
+        LiveMonsterSnapshot[] live = monsterPopulation.Snapshot()
+            .Select(static monster => new LiveMonsterSnapshot(
+                new ProtocolEntityId(monster.EntityId.Value),
+                new MonsterArchetypeId(monster.ArchetypeId),
+                new GroundPosition(
+                    CanonicalizeZero(monster.Position.XMetres),
+                    CanonicalizeZero(monster.Position.ZMetres)),
+                CanonicalizeZero(monster.Behavior.VelocityMetresPerSecond),
+                CanonicalizeZero(monster.Behavior.Facing),
+                CanonicalizeZero(monster.Behavior.CollisionRadiusMetres),
+                ToProtocolBehavior(monster.Behavior.Mode),
+                monster.Behavior.TargetEntityId is { } target
+                    ? new ProtocolEntityId(target.Value)
+                    : null,
+                monster.HealthUnits,
+                monster.MaximumHealthUnits))
+            .ToArray();
+        DefeatedMonsterSnapshot[] defeated = monsterPopulation.DefeatedSnapshot()
+            .Select(static monster => new DefeatedMonsterSnapshot(
+                new ProtocolEntityId(monster.EntityId.Value),
+                new MonsterArchetypeId(monster.ArchetypeId),
+                new GroundPosition(
+                    CanonicalizeZero(monster.LastPosition.XMetres),
+                    CanonicalizeZero(monster.LastPosition.ZMetres)),
+                CanonicalizeZero(monster.LastFacing),
+                monster.DefeatedAtTick))
+            .ToArray();
+
+        var snapshot = new BoundedMonsterSnapshot(
+            snapshotSession.SnapshotSequences.Allocate(),
+            currentTick,
+            live,
+            defeated);
+        snapshotSession.LastPublishedTick = currentTick;
+        return snapshot;
+    }
+
+    private static MonsterBehaviorKind ToProtocolBehavior(Draft0MonsterBehaviorMode mode) =>
+        mode switch
+        {
+            Draft0MonsterBehaviorMode.Idle => MonsterBehaviorKind.Idle,
+            Draft0MonsterBehaviorMode.Pursuing => MonsterBehaviorKind.Pursuing,
+            Draft0MonsterBehaviorMode.Attacking => MonsterBehaviorKind.Attacking,
+            Draft0MonsterBehaviorMode.Returning => MonsterBehaviorKind.Returning,
+            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, "Unknown monster behavior mode."),
+        };
 
     private static Vector2 CanonicalizeZero(Vector2 value) =>
         new(CanonicalizeZero(value.X), CanonicalizeZero(value.Y));

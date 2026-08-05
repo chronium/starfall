@@ -5,23 +5,25 @@ using Starfall.Protocol.Admission;
 using Starfall.Protocol.Networking;
 using Starfall.World.Admission;
 using Starfall.World.Lifecycle;
+using Starfall.World.Monsters;
 using Starfall.World.Movement;
 
 namespace Starfall.World.Networking;
 
-internal sealed class WorldConnectedWalkingNetworkHost : INetworkEventHandler, IDisposable
+internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposable
 {
     internal static readonly TimeSpan AdmissionTimeout = TimeSpan.FromSeconds(10);
     private readonly INetworkTransport transport;
     private readonly WorldChannelRuntime runtime;
     private readonly WorldJoinAdmissionExchange admission;
     private readonly WorldWalkingExchange walking;
+    private readonly WorldMonsterExchange monsters;
     private readonly TimeProvider timeProvider;
     private readonly Dictionary<NetworkPeerId, PeerState> peers = [];
     private readonly Dictionary<GameplaySessionId, NetworkPeerId> sessionPeers = [];
     private bool disposed;
 
-    internal WorldConnectedWalkingNetworkHost(
+    internal WorldGameplayNetworkHost(
         INetworkTransport transport,
         WorldChannelRuntime runtime,
         WorldJoinTicketVerificationKeyRing verificationKeys,
@@ -31,6 +33,7 @@ internal sealed class WorldConnectedWalkingNetworkHost : INetworkEventHandler, I
         this.runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
         admission = new WorldJoinAdmissionExchange(runtime, verificationKeys ?? throw new ArgumentNullException(nameof(verificationKeys)));
         walking = new WorldWalkingExchange(runtime);
+        monsters = new WorldMonsterExchange(runtime);
         this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -150,6 +153,14 @@ internal sealed class WorldConnectedWalkingNetworkHost : INetworkEventHandler, I
             if (sessionPeers.TryGetValue(publication.SessionId, out NetworkPeerId peerId))
             {
                 _ = TrySend(peerId, publication.Payload, NetworkDelivery.Sequenced, StarfallNetworkChannels.MovementSnapshots);
+            }
+        }
+
+        foreach (WorldMonsterSnapshotPublication publication in monsters.CaptureSnapshots())
+        {
+            if (sessionPeers.TryGetValue(publication.SessionId, out NetworkPeerId peerId))
+            {
+                _ = TrySend(peerId, publication.Payload, NetworkDelivery.Sequenced, StarfallNetworkChannels.MonsterSnapshots);
             }
         }
     }

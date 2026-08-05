@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using ChronoFall.Network.Transport;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
 
@@ -109,6 +110,19 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         if (!peerAssigned || sender != peerId)
         {
             failure = "Received a packet from an unexpected peer.";
+            return;
+        }
+        if (channel == StarfallNetworkChannels.MonsterSnapshots)
+        {
+            if (delivery == NetworkDelivery.Sequenced &&
+                BoundedMonsterSnapshotCodec.TryDecode(packet.Span, out _))
+            {
+                // SERVER-0007 introduces the authoritative stream before CLIENT-0023
+                // retains and presents it. Valid packets are forward-compatible here.
+                return;
+            }
+
+            failure = "World sent malformed or misrouted monster snapshot data.";
             return;
         }
         if (!admissionAccepted)

@@ -10,14 +10,26 @@ internal sealed class WorldMonsterState
         Draft0MonsterBehaviorState behavior,
         int healthUnits,
         ulong spawnedAtTick)
+        : this(behavior, healthUnits, healthUnits, spawnedAtTick)
+    {
+    }
+
+    internal WorldMonsterState(
+        Draft0MonsterBehaviorState behavior,
+        int healthUnits,
+        int maximumHealthUnits,
+        ulong spawnedAtTick)
     {
         if (behavior.EntityId.Value == 0)
             throw new ArgumentException("Monster behavior state must be valid.", nameof(behavior));
-        if (healthUnits <= 0)
+        if (maximumHealthUnits <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maximumHealthUnits));
+        if (healthUnits <= 0 || healthUnits > maximumHealthUnits)
             throw new ArgumentOutOfRangeException(nameof(healthUnits));
 
         Behavior = behavior;
         HealthUnits = healthUnits;
+        MaximumHealthUnits = maximumHealthUnits;
         SpawnedAtTick = spawnedAtTick;
     }
 
@@ -41,6 +53,11 @@ internal sealed class WorldMonsterState
         get;
     }
 
+    internal int MaximumHealthUnits
+    {
+        get;
+    }
+
     internal ulong SpawnedAtTick
     {
         get;
@@ -50,6 +67,7 @@ internal sealed class WorldMonsterState
         new(
             Behavior,
             healthUnits,
+            MaximumHealthUnits,
             SpawnedAtTick);
 
     internal WorldMonsterState WithBehavior(Draft0MonsterBehaviorState behavior)
@@ -66,6 +84,6 @@ internal sealed class WorldMonsterState
                 nameof(behavior));
         }
 
-        return new WorldMonsterState(behavior, HealthUnits, SpawnedAtTick);
+        return new WorldMonsterState(behavior, HealthUnits, MaximumHealthUnits, SpawnedAtTick);
     }
 }

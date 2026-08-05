@@ -1,7 +1,7 @@
 ---
 title: Network Transport Adoption
 createdAt: 2026-08-04T16:38:15.6691070Z
-modifiedAt: 2026-08-04T17:18:04.7917050Z
+modifiedAt: 2026-08-05T18:26:49.2819460Z
 ---
 
 ## Decision
@@ -39,3 +39,9 @@ The coordinator transport does not supply confidentiality. Protected transport r
 Starfall assigns channel 0 reliable ordered admission, channel 1 reliable sequenced commands, channel 2 sequenced routine snapshots, and channel 3 reliable ordered corrections. Protocol remains free of transport references; it publishes only channel byte constants and exact fact codecs. Client and World alone own LiteNetLib polling and process lifecycle.
 
 The World binds each admitted peer to one world gameplay session/player and disconnect cleans up only that ownership chain. The Client connects only to a literal loopback address, uses a ticket file rather than a raw command-line bearer token, waits up to ten seconds for admission plus the initial snapshot, and does not reconnect or resume. Plaintext loopback is approved solely for this development proof. Protected non-loopback transport, production key provisioning and broader packet policy remain future contracts.
+
+## Bounded monster snapshot continuation
+
+SERVER-0007 extends the same admitted gameplay-session host rather than adding another listener or exchange framework. Starfall assigns channel 4 to bounded full-state monster snapshots with `Sequenced` delivery. Each session owns an independent checked sequence and receives an initial tick-zero snapshot plus at most one latest snapshot per observed simulation tick. Admission and movement bytes, delivery modes and channels remain unchanged.
+
+Because channel ordering is independent, a monster snapshot may arrive before admission acceptance. Until CLIENT-0023 retains and presents this stream, the connected-walking client validates and ignores well-formed channel-4 payloads both before and after acceptance. Invalid payloads or delivery modes remain failures. This compatibility seam adds no presentation state, generic framing, reconnect behavior or transport dependency outside Client and World.

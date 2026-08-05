@@ -3,6 +3,7 @@ using ChronoFall.Network.Transport;
 using Starfall.Client.Networking;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
 
@@ -115,6 +116,100 @@ public sealed class ConnectedWalkingClientSessionTests
     }
 
     [Fact]
+    public void Session_validates_and_ignores_monster_snapshots_until_client_consumption_exists()
+    {
+        var transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket");
+        transport.OnPoll = handler =>
+        {
+            if (transport.PollCount != 1)
+                return;
+            handler.Connected(transport.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                transport.Peer,
+                MonsterSnapshot(1, 0),
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MonsterSnapshots);
+            handler.PacketReceived(
+                transport.Peer,
+                WorldJoinAdmissionCodec.EncodeAccepted(
+                    new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                NetworkDelivery.ReliableOrdered,
+                StarfallNetworkChannels.Admission);
+            handler.PacketReceived(
+                transport.Peer,
+                Snapshot(1, 0, acknowledged: null),
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MovementSnapshots);
+        };
+
+        session.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, 7777, "unused"));
+        session.PacketReceived(
+            transport.Peer,
+            MonsterSnapshot(2, 1),
+            NetworkDelivery.Sequenced,
+            StarfallNetworkChannels.MonsterSnapshots);
+
+        Assert.True(session.IsReady);
+        Assert.False(session.IsDisconnected);
+        Assert.Equal(0UL, session.Snapshot!.Value.Tick);
+    }
+
+    [Theory]
+    [InlineData(NetworkDelivery.ReliableOrdered)]
+    [InlineData(NetworkDelivery.Unreliable)]
+    public void Session_rejects_misdelivered_monster_snapshots(NetworkDelivery delivery)
+    {
+        var transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket");
+        transport.OnPoll = handler =>
+        {
+            if (transport.PollCount != 1)
+                return;
+            handler.Connected(transport.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                transport.Peer,
+                MonsterSnapshot(1, 0),
+                delivery,
+                StarfallNetworkChannels.MonsterSnapshots);
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            session.ConnectAndAwaitInitialSnapshot(
+                new(IPAddress.Loopback, 7777, "unused"),
+                TimeSpan.FromSeconds(1)));
+
+        Assert.Contains("monster snapshot", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(session.IsDisconnected);
+    }
+
+    [Fact]
+    public void Session_rejects_malformed_sequenced_monster_snapshots()
+    {
+        var transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket");
+        transport.OnPoll = handler =>
+        {
+            if (transport.PollCount != 1)
+                return;
+            handler.Connected(transport.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                transport.Peer,
+                new byte[] { 1, 2, 3 },
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MonsterSnapshots);
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            session.ConnectAndAwaitInitialSnapshot(
+                new(IPAddress.Loopback, 7777, "unused"),
+                TimeSpan.FromSeconds(1)));
+
+        Assert.Contains("monster snapshot", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(session.IsDisconnected);
+    }
+
+    [Fact]
     public void Admission_rejection_and_timeout_fail_without_reconnect()
     {
         var rejectedTransport = new ScriptedTransport();
@@ -158,6 +253,13 @@ public sealed class ConnectedWalkingClientSessionTests
             System.Numerics.Vector2.UnitX,
             new PlayerCollisionCapsule(0.4f, 1.8f),
             acknowledged));
+
+    private static byte[] MonsterSnapshot(ulong sequence, ulong tick) =>
+        BoundedMonsterSnapshotCodec.Encode(new BoundedMonsterSnapshot(
+            new MonsterSnapshotSequence(sequence),
+            tick,
+            [],
+            []));
 
     private sealed class ScriptedTransport : INetworkTransport
     {

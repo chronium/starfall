@@ -16,6 +16,7 @@ internal sealed class WorldMonsterPopulation : IDisposable
     private readonly Dictionary<WorldEntityId, WorldMonsterState> monsters = [];
     private readonly Dictionary<string, WorldEntityId> occupantsBySpawnId = new(StringComparer.Ordinal);
     private readonly Dictionary<string, Draft0CampVacancy> vacanciesBySpawnId = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, WorldDefeatedMonsterState> defeatedBySpawnId = new(StringComparer.Ordinal);
     private readonly Draft0MonsterBehaviorSimulation behavior;
     private bool initialized;
     private bool disposed;
@@ -80,6 +81,14 @@ internal sealed class WorldMonsterPopulation : IDisposable
         return Array.AsReadOnly(snapshot);
     }
 
+    internal IReadOnlyList<WorldDefeatedMonsterState> DefeatedSnapshot()
+    {
+        WorldDefeatedMonsterState[] snapshot = defeatedBySpawnId.Values
+            .OrderBy(static monster => monster.EntityId.Value)
+            .ToArray();
+        return Array.AsReadOnly(snapshot);
+    }
+
     internal IReadOnlyList<Draft0MonsterAttackResolution> StepBehavior(
         IEnumerable<Draft0MonsterPlayerTarget> players,
         ulong currentTick)
@@ -129,12 +138,29 @@ internal sealed class WorldMonsterPopulation : IDisposable
         monsters.TryGetValue(entityId, out monster);
 
     internal bool Remove(WorldEntityId entityId, ulong removedAtTick)
+        => Remove(entityId, removedAtTick, retainDefeat: false);
+
+    private bool Remove(WorldEntityId entityId, ulong removedAtTick, bool retainDefeat)
     {
         RequireInitialized();
         if (!monsters.TryGetValue(entityId, out WorldMonsterState? monster))
             return false;
 
         var vacancy = new Draft0CampVacancy(monster.CampId, monster.SpawnId, removedAtTick);
+        WorldDefeatedMonsterState? defeated = retainDefeat
+            ? new(
+                monster.EntityId,
+                monster.SpawnId,
+                monster.ArchetypeId,
+                monster.Position,
+                monster.Behavior.Facing,
+                removedAtTick)
+            : null;
+        if (defeated is not null && defeatedBySpawnId.ContainsKey(monster.SpawnId))
+        {
+            throw new InvalidOperationException(
+                $"Placement slot '{monster.SpawnId}' already retains a defeated monster.");
+        }
         Draft0CampVacancy[] candidateVacancies = vacanciesBySpawnId.Values
             .Append(vacancy)
             .ToArray();
@@ -151,6 +177,8 @@ internal sealed class WorldMonsterPopulation : IDisposable
             throw new InvalidOperationException("Monster entity and placement-slot ownership diverged.");
         }
         vacanciesBySpawnId.Add(monster.SpawnId, vacancy);
+        if (defeated is not null)
+            defeatedBySpawnId.Add(monster.SpawnId, defeated);
         return true;
     }
 
@@ -168,7 +196,7 @@ internal sealed class WorldMonsterPopulation : IDisposable
             requestedDamageUnits);
         if (damage.Defeated)
         {
-            if (!Remove(entityId, resolvedAtTick))
+            if (!Remove(entityId, resolvedAtTick, retainDefeat: true))
                 throw new InvalidOperationException("A defeated monster disappeared before removal.");
         }
         else
@@ -205,6 +233,7 @@ internal sealed class WorldMonsterPopulation : IDisposable
             occupantsBySpawnId.Add(monster.SpawnId, monster.EntityId);
             if (!vacanciesBySpawnId.Remove(monster.SpawnId))
                 throw new InvalidOperationException("Replenished placement slot had no pending vacancy.");
+            defeatedBySpawnId.Remove(monster.SpawnId);
         }
     }
 
@@ -214,6 +243,7 @@ internal sealed class WorldMonsterPopulation : IDisposable
         monsters.Clear();
         occupantsBySpawnId.Clear();
         vacanciesBySpawnId.Clear();
+        defeatedBySpawnId.Clear();
         behavior.Clear();
     }
 
@@ -225,6 +255,7 @@ internal sealed class WorldMonsterPopulation : IDisposable
         monsters.Clear();
         occupantsBySpawnId.Clear();
         vacanciesBySpawnId.Clear();
+        defeatedBySpawnId.Clear();
         behavior.Dispose();
         disposed = true;
     }
@@ -249,6 +280,7 @@ internal sealed class WorldMonsterPopulation : IDisposable
             assignment.Point);
         return new WorldMonsterState(
             behaviorState,
+            archetype.AuthoritativeHealthUnits,
             archetype.AuthoritativeHealthUnits,
             spawnedAtTick);
     }

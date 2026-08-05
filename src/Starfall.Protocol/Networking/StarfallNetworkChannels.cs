@@ -6,4 +6,5 @@ public static class StarfallNetworkChannels
     public const byte MovementCommands = 1;
     public const byte MovementSnapshots = 2;
     public const byte MovementCorrections = 3;
+    public const byte MonsterSnapshots = 4;
 }

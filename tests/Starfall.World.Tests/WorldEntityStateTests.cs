@@ -126,7 +126,14 @@ public sealed class WorldEntityStateTests
         Assert.Equal("starter_flyer_light", monster.ArchetypeId);
         Assert.Equal(position, monster.Position);
         Assert.Equal(700, monster.HealthUnits);
+        Assert.Equal(700, monster.MaximumHealthUnits);
         Assert.Equal(42UL, monster.SpawnedAtTick);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WorldMonsterState(
+            behavior,
+            701,
+            700,
+            0));
     }
 
     private static Draft0MonsterBehaviorState CreateBehavior(
