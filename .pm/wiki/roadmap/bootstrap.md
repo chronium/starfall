@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T07:42:31.6873980Z
+modifiedAt: 2026-08-05T10:47:23.3215500Z
 ---
 
 ## Execution standard
@@ -201,6 +201,12 @@ EDITOR-0007 remains the first real Draft 0 authoring document. It owns actual hi
 EDITOR-0010 depends only on EDITOR-0007, consumes the interaction-owned persistence machinery transitively and polishes the real Assets, Validation, Log and status adapters. It does not block SERVER-0012, CLIENT-0016 or first scene authoring.
 
 Durable design language: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/development/editor-design-language
+
+### Scheduling gate
+
+Completion of `SHARED-0024` makes the native UI foundation technically available; it does not make editor work the next product priority. `EDITOR-0008` remains in M2 but is intentionally priority none while the generated Draft 0 graybox is sufficient.
+
+Reconsider `EDITOR-0008` after the connected Basic Arrow loop is natively playable and owner-validated through `CLIENT-0007`, unless the owner explicitly reprioritizes it earlier. This is an evidence and scheduling gate rather than a source dependency: canonical `SHARED-0024` remains the task's only dependency.
 
 ### Numerical policy
 

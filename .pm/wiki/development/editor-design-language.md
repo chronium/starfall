@@ -1,7 +1,7 @@
 ---
 title: Starfall Editor Design Language
 createdAt: 2026-08-05T07:41:56.3992770Z
-modifiedAt: 2026-08-05T07:41:56.3992770Z
+modifiedAt: 2026-08-05T10:47:23.3109750Z
 ---
 
 ## Purpose
@@ -36,6 +36,12 @@ parent SHARED-0024
 ChronoFall owns the caller-controlled SDL GPU ImGui/ImGuizmo backend. Starfall owns its editor executable, application loop, window/device scheduling, design tokens, fonts, layout, UI vocabulary, interaction state, documents, inspectors and workflows. Royale remains unchanged.
 
 EDITOR-0008 depends only on canonical SHARED-0024. Completed Starfall EDITOR-0003 and CLIENT-0020 and completed Royale editor work are architectural evidence, not PM dependencies.
+
+### Scheduling gate
+
+Completion of `SHARED-0024` makes the native UI foundation technically available; it does not make editor work the next product priority. `EDITOR-0008` remains in M2 but is intentionally priority none while the generated Draft 0 graybox is sufficient.
+
+Reconsider `EDITOR-0008` after the connected Basic Arrow loop is natively playable and owner-validated through `CLIENT-0007`, unless the owner explicitly reprioritizes it earlier. This is an evidence and scheduling gate rather than a source dependency: canonical `SHARED-0024` remains the task's only dependency.
 
 ## Proposed v0.1 theme tokens
 
