@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T10:47:23.3215500Z
+modifiedAt: 2026-08-05T13:18:39.9616770Z
 ---
 
 ## Execution standard
@@ -95,8 +95,8 @@ CONTENT-0003 + SIM-0006 + SIM-0008 -> SIM-0004
 SIM-0004 + SIM-0006 + SIM-0008 + CONTENT-0007 -> SIM-0010
 SIM-0010 + SIM-0008 + CONTENT-0014 -> SIM-0011
 
-CLIENT-0021 + CONTENT-0007 + SIM-0010
-  -> CLIENT-0022  local placeholder monster fixtures
+CLIENT-0021 + CONTENT-0007
+  -> CLIENT-0022  visible local placeholder monster fixtures
 
 PROTOCOL-0004 + SIM-0006 + SIM-0010 + SIM-0011
   -> PROTOCOL-0005
@@ -109,7 +109,7 @@ CLIENT-0023 + CONTENT-0013 + parent ASSET-0008
   -> CLIENT-0017  exact selected monster presentation
 ~~~
 
-Placeholder monsters use generated shapes or separately approved temporary assets. Exact presentation remains evidence-gated.
+CLIENT-0022 deliberately precedes SIM-0010: it uses generated forward-readable shapes at CONTENT-0007's exact ten ordered spawn assignments to prove visible presence, identity, archetype distinction and client-only hover in the local graybox. It owns no behavior, combat, death or return state. CLIENT-0023 later replaces those local fixtures with real bounded world snapshots and adds presentation of approved behavior/health/death facts without creating a second adapter. Exact source-asset presentation remains evidence-gated to CONTENT-0013, parent ASSET-0008 and CLIENT-0017.
 
 CONTENT-0007 is the immutable domain input: light then heavy archetype order, 700/2,000 health units and the exact 3-light / 2-light-plus-2-heavy / 3-heavy assignment split across the ten graybox spawns. It does not own capacity, runtime entities or numeric behavior.
 

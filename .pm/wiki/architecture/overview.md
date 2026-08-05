@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-05T06:16:38.0229970Z
+modifiedAt: 2026-08-05T13:18:39.8598430Z
 ---
 
 ## Purpose
@@ -66,7 +66,9 @@ The native-presentation lane proves:
 2. CLIENT-0005 camera/ground picking;
 3. CLIENT-0020 generated graybox rendering;
 4. CLIENT-0021 technical humanoid and reusable world-presentation adapter;
-5. CLIENT-0022 placeholder monster presentation from deterministic fixtures.
+5. CLIENT-0022 placeholder monster presentation from CONTENT-0007's deterministic fixtures before monster behavior exists.
+
+This visible-first lane proves presence, stable local identity, exact placement, archetype distinction, diagnostic facing and client-only hover through generated shapes. It does not wait for or imply authoritative awareness, pursuit, attacks, death or return. Those remain in the separate Simulation lane and converge with presentation only through the later monster protocol and connected snapshot tasks.
 
 The authoritative lane proves:
 

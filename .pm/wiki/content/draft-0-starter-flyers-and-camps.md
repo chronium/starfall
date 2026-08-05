@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T12:32:15.7852170Z
+modifiedAt: 2026-08-05T13:18:40.0637880Z
 ---
 
 ## Purpose and ownership
@@ -67,8 +67,10 @@ Players and monsters share one checked monotonic world-local identity sequence. 
 - Completed `SIM-0004` owns Basic Arrow integer damage/death and applies first defeat through the existing validated removal seam.
 - `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
 - `SIM-0011` owns protected-town exclusion, disengagement at its boundary and player defeat/respawn behavior.
+- `CLIENT-0022` owns the generated local placeholder proof at these exact ten ordered spawn assignments before authoritative behavior exists.
+- `CLIENT-0023` later replaces local fixtures with bounded world snapshots and presents approved behavior, health, disengage/return and death facts.
 - `CONTENT-0013` owns exact monster presentation selection.
-- Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state.
+- Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state; only the gentle hover belongs to CLIENT-0022.
 
 Running and Draining use the same deterministic camp rules; draining blocks new admission/technical creation but continues retained gameplay until its separately owned deadline policy. Stopping clears entities, occupancy and pending replenishments without reusing identities.
 
