@@ -1,7 +1,7 @@
 ---
 title: Editor and Balance Lab Boundaries
 createdAt: 2026-08-04T11:24:42.1457150Z
-modifiedAt: 2026-08-05T07:42:31.6796350Z
+modifiedAt: 2026-08-05T11:39:54.3827980Z
 ---
 
 ## Purpose
@@ -21,6 +21,8 @@ For `EDITOR-0003`, both `Starfall.Editor` and `Starfall.BalanceLab` remain libra
 | World | Authoritative runtime entities, sessions, camps, spawning, deaths, replenishment, drops, and active gameplay lifecycle | Content authoring UI or balance-analysis presentation |
 
 Camp definitions and spawn/replenishment policy inputs may be shared through Content, and their deterministic rules may be shared through Simulation. Actual camp entities and outcomes remain World-owned. This sharing does not create a camp service.
+
+`SIM-0003` makes that split concrete. `Starfall.Content` exposes immutable camp layouts, compositions, fixed capacities, initial populations, exact placement slots, 600-tick replenishment delays and opaque authoritative seeds. `Starfall.Simulation` exposes only the pure vacancy-to-eligibility schedule and canonical ordering. Editor can inspect the Content inputs without a Simulation dependency; Balance Lab can exercise both inputs and rules. World later owns occupancy and applies eligible decisions through `SIM-0006`.
 
 ## Editor UI boundary
 

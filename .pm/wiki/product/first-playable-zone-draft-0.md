@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T06:50:08.4497300Z
+modifiedAt: 2026-08-05T11:40:07.4241820Z
 ---
 
 ## Status and purpose
@@ -121,15 +121,17 @@ CONTENT-0007 freezes the immutable starter-monster catalog in this authoritative
 - `starter_flyer_light`: 700 internal HP (7 displayed);
 - `starter_flyer_heavy`: 2,000 internal HP (20 displayed).
 
-The exact initial camp composition is three light assignments in `camp_easy`; two light followed by two heavy assignments in `camp_mixed`; and three heavy assignments in `camp_hard`. These ten assignments copy the graybox's stable spawn identities and exact ground points in branch/local order. They do not define camp capacity, spawning policy or runtime entities.
+The exact initial camp composition is three light assignments in `camp_easy`; two light followed by two heavy assignments in `camp_mixed`; and three heavy assignments in `camp_hard`. These ten assignments copy the graybox's stable spawn identities and exact ground points in branch/local order.
 
-“Flyer” is a provisional technical identity. Both archetypes remain ordinary authoritative ground-plane occupants. Hovering, bobbing or lunging is presentation only and grants no altitude, airborne navigation, vertical targeting or special collision semantics.
+`SIM-0003` binds those inputs into fixed-slot policies. Easy, mixed and hard have capacity and full initial population 3/4/3, opaque authoritative seeds 1/2/3 and the same 600-tick (10-second) replenishment delay. Each assignment is one fixed placement slot. Authoritative removal at tick `T` makes that slot eligible at checked `T + 600`; simultaneous eligibility uses canonical camp then slot order. No randomness is consumed because the policy currently has no random choice.
 
-`SIM-0003` later owns capacity, authoritative seeds and replenishment; `SIM-0006` owns runtime entities; and `SIM-0010` owns evidence-backed radius, speed, target selection/tie-breaking, awareness, pursuit/leash, attack range/damage/cadence and return behavior. The town rejects hostile actions, excludes monsters and owns the configured defeat/respawn anchor.
+The policy inputs live in Content for authoring and Balance Lab inspection. The pure eligibility schedule lives in Simulation. Neither creates or owns runtime entities: `SIM-0006` owns occupancy, identity allocation, removals and spawn application. `SIM-0010` owns evidence-backed radius, speed, target selection/tie-breaking, awareness, pursuit/leash, attack range/damage/cadence and return behavior.
+
+“Flyer” is a provisional technical identity. Both archetypes remain ordinary authoritative ground-plane occupants. Hovering, bobbing or lunging is presentation only and grants no altitude, airborne navigation, vertical targeting or special collision semantics. The town rejects hostile actions, excludes monsters and owns the configured defeat/respawn anchor.
 
 The local placeholder-monster task uses generated shapes or separately approved temporary assets and deterministic fixtures. A focused protocol/server/client extension later connects real monster snapshots. Exact selected monster assets remain a separate CONTENT-0013 and coordinator ASSET-0008 path.
 
-Durable monster catalog: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
+Durable camp contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
 
 ## Asset ownership and source direction
 

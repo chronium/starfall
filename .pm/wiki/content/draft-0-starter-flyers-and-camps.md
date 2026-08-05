@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T06:49:56.3861690Z
+modifiedAt: 2026-08-05T11:39:47.3187740Z
 ---
 
 ## Purpose and ownership
@@ -40,15 +40,31 @@ The catalog describes exactly ten initial assignments in stable branch/local ord
 
 The aggregate catalog validates the exact archetype and camp ordering, known archetype references, exact spawn coverage, and exact position equality against the executable graybox. Structural definitions independently validate lowercase ASCII identities, positive health, immutable nonempty collections, non-null entries, and ordinal identity uniqueness.
 
+## Fixed-slot camp policy
+
+`Draft0CampPolicyCatalog.FirstPlayable` binds the approved layouts and compositions into three immutable fixed-slot policies:
+
+| Ordered camp | Geometry | Capacity / initial population | Authoritative seed | Replenishment delay |
+| --- | --- | ---: | ---: | ---: |
+| `camp_easy` | Broad open circle | 3 | 1 | 600 ticks / 10 seconds |
+| `camp_mixed` | Elongated or divided | 4 | 2 | 600 ticks / 10 seconds |
+| `camp_hard` | Tight bowl or constrained approach | 3 | 3 | 600 ticks / 10 seconds |
+
+Every approved assignment is both one initially occupied slot and its exact valid ground-plane replenishment placement. Capacity therefore equals initial population and placement-slot count. A slot becomes vacant only when World later reports authoritative removal of its occupant. It becomes eligible again at `removedAtTick + 600` using checked unsigned tick arithmetic; overflow fails explicitly.
+
+When multiple vacancies become eligible together, the reusable Simulation schedule orders them by eligible tick, canonical camp order and canonical slot order. The policy creates no entity, occupancy state or spawn application. Those remain `SIM-0006` responsibilities.
+
+Seeds are explicit provisional Balance Lab inputs but are not consumed in Draft 0 because fixed slots contain no random choice. Adding randomized placement or selection requires separate evidence and an approved deterministic algorithm.
+
 ## Downstream ownership
 
-- `SIM-0003` owns camp capacity, authoritative seeds and replenishment policy.
-- `SIM-0006` owns authoritative runtime monster entities and identity allocation.
+- Completed `SIM-0003` owns the immutable camp-policy inputs and pure replenishment schedule described above.
+- `SIM-0006` owns authoritative runtime occupancy, monster entities, identity allocation, removal handling and spawn application.
 - `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
 - `SIM-0011` owns protected-town exclusion, disengagement at its boundary and player defeat/respawn behavior.
 - `CONTENT-0013` owns exact monster presentation selection.
 - Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state.
 
-This catalog intentionally contains no camp capacity, spawn templates, replenishment, respawn timing, random selection, authoritative entity identity, runtime ownership, asset choice, or presentation contract.
+The starter-monster composition catalog itself still contains no runtime capacity state, spawn templates, replenishment schedule, authoritative entity identity, asset choice or presentation contract. The separate camp-policy catalog adds only immutable inputs; neither catalog owns World outcomes.
 
 Durable identity: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps.
