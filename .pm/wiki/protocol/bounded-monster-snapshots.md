@@ -1,12 +1,12 @@
 ---
 title: Bounded Monster Snapshots
 createdAt: 2026-08-05T17:41:38.0022610Z
-modifiedAt: 2026-08-05T18:27:19.0603880Z
+modifiedAt: 2026-08-05T18:52:35.7437290Z
 ---
 
 ## Purpose
 
-PROTOCOL-0005 defines Starfall's first bounded full-state monster snapshot facts and deterministic binary serialization. The contract carries already-proven authoritative monster state from World to later Client presentation without giving Protocol simulation rules or transport ownership.
+PROTOCOL-0005 defines Starfall's first bounded full-state monster snapshot facts and deterministic binary serialization. The contract carries already-proven authoritative monster state from World to Client presentation without giving Protocol simulation rules or transport ownership.
 
 The implementation lives in `Starfall.Protocol.Monsters`. Protocol remains product-dependency-free and transport-neutral.
 
@@ -68,13 +68,13 @@ Every admitted gameplay session owns an independent checked monster-snapshot seq
 
 World retains one immutable defeated state keyed by the authoritative placement slot only after lethal damage. The tombstone repeats in every later snapshot while the slot remains vacant, including to a session admitted during that vacancy. Exact-slot replenishment removes the tombstone and publishes the fresh entity identity. Technical removal and lifecycle shutdown do not fabricate defeat facts.
 
-Admission acceptance and snapshot channels may reorder. Until CLIENT-0023 owns retained monster consumption, the completed connected-walking client validates and ignores well-formed channel-4 packets before or after acceptance. Malformed or misrouted monster data remains a connection failure. CLIENT-0023 must replace that compatibility seam with latest-snapshot retention and presentation without creating a second adapter.
+Admission acceptance and snapshot channels may reorder. CLIENT-0023 retains the latest valid channel-4 batch independently of movement before or after acceptance, ignores stale monster sequences and rejects a newer batch whose simulation tick moves backwards. Monster availability does not gate admission readiness: connected presentation remains empty until the first batch arrives. Malformed payloads and delivery modes remain connection failures.
 
 ## Ownership and next consumers
 
 - PROTOCOL-0005 owns facts, validation and deterministic serialization only.
 - SERVER-0007 maps World state into these facts, allocates per-session sequences, retains tombstones and owns channel-4 sequenced delivery.
-- CLIENT-0023 will replace the temporary validate-and-ignore compatibility path with retained consumption through the existing placeholder-monster presentation adapter.
+- CLIENT-0023 retains the latest valid batch and maps ordered live/tombstone facts through the existing placeholder-monster presentation adapter.
 - Later combat protocol tasks own action/result facts such as damage source, attack timing and effects.
 
 SERVER-0007 introduces only the focused exchange described above. No source asset, renderer, monster AI, combat command, persistence, interest management or generic entity/message framework is introduced.

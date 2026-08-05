@@ -1,7 +1,7 @@
 ---
 title: Network Transport Adoption
 createdAt: 2026-08-04T16:38:15.6691070Z
-modifiedAt: 2026-08-05T18:26:49.2819460Z
+modifiedAt: 2026-08-05T18:52:35.8393240Z
 ---
 
 ## Decision
@@ -44,4 +44,4 @@ The World binds each admitted peer to one world gameplay session/player and disc
 
 SERVER-0007 extends the same admitted gameplay-session host rather than adding another listener or exchange framework. Starfall assigns channel 4 to bounded full-state monster snapshots with `Sequenced` delivery. Each session owns an independent checked sequence and receives an initial tick-zero snapshot plus at most one latest snapshot per observed simulation tick. Admission and movement bytes, delivery modes and channels remain unchanged.
 
-Because channel ordering is independent, a monster snapshot may arrive before admission acceptance. Until CLIENT-0023 retains and presents this stream, the connected-walking client validates and ignores well-formed channel-4 payloads both before and after acceptance. Invalid payloads or delivery modes remain failures. This compatibility seam adds no presentation state, generic framing, reconnect behavior or transport dependency outside Client and World.
+Because channel ordering is independent, a monster snapshot may arrive before admission acceptance. CLIENT-0023 retains the latest valid channel-4 batch before or after acceptance without making monster availability part of admission readiness. It ignores stale independent monster sequences, rejects backwards ticks on newer batches and preserves malformed-payload or delivery failures. Client maps the retained facts through the existing placeholder presentation adapter; no generic framing, reconnect behavior or transport dependency was added.

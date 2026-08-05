@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-05T17:42:11.2434030Z
+modifiedAt: 2026-08-05T18:52:35.9348610Z
 ---
 
 ## Purpose
@@ -78,7 +78,7 @@ The authoritative lane proves:
 4. SIM-0008 authoritative movement;
 5. camp spawning, Basic Arrow, bounded monster behavior and protected-town return.
 
-Protocol is derived from those proven concepts. PROTOCOL-0003/0004 first cover only connected player walking. SERVER-0005 exchanges those commands/snapshots and CLIENT-0009 maps them into the same adapter used by the local fixture. PROTOCOL-0005 defines bounded full-state monster facts with retained defeat tombstones; SERVER-0007 and CLIENT-0023 remain the later exchange and presentation consumers. Combat facts/serialization/exchange follow proven combat simulation. Durable monster snapshot contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/bounded-monster-snapshots
+Protocol is derived from those proven concepts. PROTOCOL-0003/0004 first cover only connected player walking. SERVER-0005 exchanges those commands/snapshots and CLIENT-0009 maps them into the same adapter used by the local fixture. PROTOCOL-0005 defines bounded full-state monster facts with retained defeat tombstones; SERVER-0007 exchanges them and CLIENT-0023 presents the retained stream through the same placeholder adapter proven locally. Combat facts/serialization/exchange follow proven combat simulation. Durable monster snapshot contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/bounded-monster-snapshots
 
 Progression, physical drops and inventory/equipment each retain focused protocol and server-exchange extensions rather than expanding the connected-walking contract.
 

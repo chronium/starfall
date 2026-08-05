@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-05T18:27:03.2049530Z
+modifiedAt: 2026-08-05T18:52:36.2266100Z
 ---
 
 ## Purpose
@@ -150,7 +150,7 @@ Every active session has independent walking and monster publication state. Mons
 
 Disconnect atomically removes the active gameplay session, walking publication state, authoritative player and Simulation mover while the world is Running or Draining. Entity IDs are never reused. Draining continues to poll and serve existing sessions and ordinary deterministic camp simulation but rejects new admission. There is no reconnect grace or resumable session in this slice.
 
-Bounded monster behavior and requested-damage attack facts remain inside World/Simulation. `SIM-0011` owns player damage/defeat/protected-town/respawn application; PROTOCOL-0005 and SERVER-0007 expose only approved authoritative state and retained defeat facts. CLIENT-0023 still owns connected monster presentation. Combat exchange, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
+Bounded monster behavior and requested-damage attack facts remain inside World/Simulation. `SIM-0011` owns player damage/defeat/protected-town/respawn application; PROTOCOL-0005 and SERVER-0007 expose only approved authoritative state and retained defeat facts. CLIENT-0023 retains and presents connected monster snapshots without changing World authority. Combat exchange, persistence, protected non-loopback transport, multiple-world hosting and final deployment topology remain separately owned.
 
 ## Non-goals
 

@@ -62,6 +62,10 @@ public sealed class ConnectedWalkingLoopbackTests
         Assert.True(client.IsReady);
         Assert.Equal(1, runtime.ActiveSessionCount);
         Assert.Equal(Draft0GrayboxCatalog.FirstPlayable.Town.RespawnAnchor, client.Snapshot!.Value.Position);
+        await PumpUntilAsync(client, () => client.MonsterSnapshot is not null);
+        Assert.Equal(0UL, client.MonsterSnapshot!.SimulationTick);
+        Assert.Equal(10, client.MonsterSnapshot.LiveMonsters.Length);
+        Assert.Empty(client.MonsterSnapshot.DefeatedMonsters);
 
         client.SendMovementIntent(new GroundPoint(100, 50));
         await PumpUntilAsync(client, () =>

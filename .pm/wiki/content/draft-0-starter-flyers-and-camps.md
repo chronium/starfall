@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T16:01:32.8567880Z
+modifiedAt: 2026-08-05T18:54:49.8177340Z
 ---
 
 ## Purpose and ownership
@@ -87,7 +87,7 @@ Defeated players retain entity/session identity, receive connected movement corr
 - Completed `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
 - Completed `SIM-0011` owns ordered player damage application, the inclusive protected-town boundary, deterministic disengagement, one defeat transition, movement/action lockout and exact 180-tick respawn of the same player/session identity.
 - `CLIENT-0022` owns the generated local placeholder proof at these exact ten ordered spawn assignments.
-- `CLIENT-0023` later replaces local fixtures with bounded world snapshots and presents approved behavior, health, disengage/return and death facts.
+- `CLIENT-0023` replaces connected local fixtures with bounded world snapshots and presents behavior, target, health, disengage/return and retained death facts through the existing placeholder adapter.
 - `CONTENT-0013` owns exact monster presentation selection.
 - Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state; only the gentle hover belongs to CLIENT-0022.
 

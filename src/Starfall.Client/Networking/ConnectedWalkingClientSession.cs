@@ -24,6 +24,8 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
     private ulong lastSentIntentSequence;
     private ulong lastSnapshotSequence;
     private ulong lastTick;
+    private ulong lastMonsterSnapshotSequence;
+    private ulong lastMonsterTick;
     private ulong? entityId;
 
     internal ConnectedWalkingClientSession(INetworkTransport transport, string ticket)
@@ -37,6 +39,10 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         get; private set;
     }
     internal TechnicalPlayerSnapshot? Snapshot
+    {
+        get; private set;
+    }
+    internal BoundedMonsterSnapshot? MonsterSnapshot
     {
         get; private set;
     }
@@ -115,10 +121,9 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         if (channel == StarfallNetworkChannels.MonsterSnapshots)
         {
             if (delivery == NetworkDelivery.Sequenced &&
-                BoundedMonsterSnapshotCodec.TryDecode(packet.Span, out _))
+                BoundedMonsterSnapshotCodec.TryDecode(packet.Span, out BoundedMonsterSnapshot? monsterSnapshot))
             {
-                // SERVER-0007 introduces the authoritative stream before CLIENT-0023
-                // retains and presents it. Valid packets are forward-compatible here.
+                AcceptMonsterSnapshot(monsterSnapshot);
                 return;
             }
 
@@ -227,5 +232,20 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
             new GroundPoint(snapshot.Position.XMetres, snapshot.Position.ZMetres),
             snapshot.VelocityMetresPerSecond,
             snapshot.Facing);
+    }
+
+    private void AcceptMonsterSnapshot(BoundedMonsterSnapshot snapshot)
+    {
+        if (snapshot.Sequence.Value <= lastMonsterSnapshotSequence)
+            return;
+        if (snapshot.SimulationTick < lastMonsterTick)
+        {
+            failure = "World monster snapshot tick moved backwards.";
+            return;
+        }
+
+        lastMonsterSnapshotSequence = snapshot.Sequence.Value;
+        lastMonsterTick = snapshot.SimulationTick;
+        MonsterSnapshot = snapshot;
     }
 }

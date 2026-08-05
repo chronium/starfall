@@ -116,7 +116,7 @@ public sealed class ConnectedWalkingClientSessionTests
     }
 
     [Fact]
-    public void Session_validates_and_ignores_monster_snapshots_until_client_consumption_exists()
+    public void Session_retains_latest_monster_snapshot_across_admission_reordering()
     {
         var transport = new ScriptedTransport();
         var session = new ConnectedWalkingClientSession(transport, "ticket");
@@ -153,6 +153,58 @@ public sealed class ConnectedWalkingClientSessionTests
         Assert.True(session.IsReady);
         Assert.False(session.IsDisconnected);
         Assert.Equal(0UL, session.Snapshot!.Value.Tick);
+        Assert.Equal(2UL, session.MonsterSnapshot!.Sequence.Value);
+        Assert.Equal(1UL, session.MonsterSnapshot.SimulationTick);
+
+        session.PacketReceived(
+            transport.Peer,
+            MonsterSnapshot(1, 0),
+            NetworkDelivery.Sequenced,
+            StarfallNetworkChannels.MonsterSnapshots);
+        Assert.Equal(2UL, session.MonsterSnapshot.Sequence.Value);
+    }
+
+    [Fact]
+    public void Session_rejects_a_newer_monster_sequence_with_a_backward_tick_independently_of_movement()
+    {
+        var transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket");
+        transport.OnPoll = handler =>
+        {
+            if (transport.PollCount != 1)
+                return;
+            handler.Connected(transport.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                transport.Peer,
+                WorldJoinAdmissionCodec.EncodeAccepted(
+                    new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                NetworkDelivery.ReliableOrdered,
+                StarfallNetworkChannels.Admission);
+            handler.PacketReceived(
+                transport.Peer,
+                Snapshot(1, 100, acknowledged: null),
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MovementSnapshots);
+            handler.PacketReceived(
+                transport.Peer,
+                MonsterSnapshot(1, 5),
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MonsterSnapshots);
+        };
+
+        session.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, 7777, "unused"));
+        Assert.Equal(100UL, session.Snapshot!.Value.Tick);
+        Assert.Equal(5UL, session.MonsterSnapshot!.SimulationTick);
+
+        session.PacketReceived(
+            transport.Peer,
+            MonsterSnapshot(2, 4),
+            NetworkDelivery.Sequenced,
+            StarfallNetworkChannels.MonsterSnapshots);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(session.Poll);
+        Assert.Contains("monster snapshot tick moved backwards", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(1UL, session.MonsterSnapshot.Sequence.Value);
     }
 
     [Theory]

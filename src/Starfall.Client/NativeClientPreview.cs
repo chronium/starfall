@@ -72,6 +72,7 @@ internal static unsafe class NativeClientPreview
         private readonly FixedTickAccumulator fixedTicks = new();
         private readonly Draft0GrayboxPresentation graybox;
         private readonly IReadOnlyList<Draft0MonsterPresentationSnapshot> localMonsterSnapshots;
+        private readonly Draft0ConnectedMonsterPresentation connectedMonsterPresentation = new();
         private readonly GroundBounds validGround;
         private readonly SDL_GPUTextureFormat colorFormat;
         private SDL_Window* window;
@@ -86,6 +87,7 @@ internal static unsafe class NativeClientPreview
         private uint depthWidth;
         private uint depthHeight;
         private bool windowClaimed;
+        private bool reportedConnectedMonsters;
 
         internal PreviewSession(SkinnedMeshDefinition sourceMesh, bool visible)
         {
@@ -196,7 +198,7 @@ internal static unsafe class NativeClientPreview
             if (frequency == 0)
                 throw new InvalidOperationException("SDL returned a zero performance-counter frequency.");
             ulong previousCounter = SDL_GetPerformanceCounter();
-            double localMonsterPresentationSeconds = 0.0;
+            double monsterPresentationSeconds = 0.0;
 
             bool running = true;
             while (running)
@@ -229,17 +231,27 @@ internal static unsafe class NativeClientPreview
 
                 connectedSession?.Poll();
                 if (connectedSession is not null)
+                {
                     SetWindowTitle(CreateWindowTitle(connectedSession));
+                    if (connectedSession.MonsterSnapshot is { } monsterSnapshot &&
+                        connectedMonsterPresentation.Accept(monsterSnapshot, monsterPresentationSeconds) &&
+                        !reportedConnectedMonsters)
+                    {
+                        reportedConnectedMonsters = true;
+                        Console.WriteLine(
+                            $"STARFALL_CONNECTED_MONSTERS sequence={monsterSnapshot.Sequence} " +
+                            $"tick={monsterSnapshot.SimulationTick} live={monsterSnapshot.LiveMonsters.Length} " +
+                            $"defeated={monsterSnapshot.DefeatedMonsters.Length}");
+                    }
+                }
 
                 ulong counter = SDL_GetPerformanceCounter();
                 double elapsedSeconds = (counter - previousCounter) / (double)frequency;
                 previousCounter = counter;
                 double presentationElapsed = Math.Min(elapsedSeconds, FixedTickAccumulator.MaximumElapsedSeconds);
+                monsterPresentationSeconds += presentationElapsed;
                 if (connectedSession is null)
-                {
                     fixedTicks.Advance(elapsedSeconds, fixture.AdvanceTick);
-                    localMonsterPresentationSeconds += presentationElapsed;
-                }
                 TechnicalPlayerSnapshot currentSnapshot = connectedSession?.Snapshot ?? fixture.Snapshot;
                 TechnicalPlayerPresentationState presentation =
                     TechnicalPlayerPresentationAdapter.Adapt(currentSnapshot);
@@ -253,12 +265,13 @@ internal static unsafe class NativeClientPreview
                         playback.CreatePose(),
                         skin,
                         presentation,
-                        connectedSession is null ? localMonsterPresentationSeconds : null);
+                        monsterPresentationSeconds,
+                        connectedSession is not null);
                 }
                 catch (Exception exception)
                 {
                     throw new InvalidOperationException(
-                        $"Starfall local walking presentation failed at tick {presentation.Snapshot.Tick} " +
+                        $"Starfall client presentation failed at tick {presentation.Snapshot.Tick} " +
                         $"(joints={skin.Skeleton.JointCount}, view={cameras.CurrentPreset.Name}, " +
                         $"mode={(connectedSession is null ? "local" : "connected")}).",
                         exception);
@@ -378,7 +391,8 @@ internal static unsafe class NativeClientPreview
             SkeletonPose pose,
             SkinDefinition skin,
             TechnicalPlayerPresentationState presentation,
-            double? localMonsterPresentationSeconds)
+            double monsterPresentationSeconds,
+            bool connectedMonsters)
         {
             SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
 
@@ -415,7 +429,8 @@ internal static unsafe class NativeClientPreview
                         sourcePalette,
                         presentation,
                         cameras.CreateCamera(presentation.Snapshot.Position),
-                        localMonsterPresentationSeconds);
+                        monsterPresentationSeconds,
+                        connectedMonsters);
                 }
             }
             catch (Exception exception)
@@ -447,7 +462,7 @@ internal static unsafe class NativeClientPreview
             SDL_GPUTexture* color,
             SDL_GPUTexture* captureDepth,
             TechnicalPlayerPresentationState presentation,
-            double localMonsterPresentationSeconds)
+            double monsterPresentationSeconds)
         {
             SkeletonPose pose = AnimationSampler.Sample(animation, sampleTime, AnimationPlaybackMode.Loop);
             SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
@@ -463,7 +478,8 @@ internal static unsafe class NativeClientPreview
                     sourcePalette,
                     presentation,
                     cameras.CreateCamera(presentation.Snapshot.Position),
-                    localMonsterPresentationSeconds);
+                    monsterPresentationSeconds,
+                    connectedMonsters: false);
             }
             catch (Exception exception)
             {
@@ -497,7 +513,8 @@ internal static unsafe class NativeClientPreview
             SkinningPalette sourcePalette,
             TechnicalPlayerPresentationState presentation,
             PerspectiveIsometricCamera camera,
-            double? localMonsterPresentationSeconds)
+            double monsterPresentationSeconds,
+            bool connectedMonsters)
         {
             renderer!.UploadPalette(command, palette!, sourcePalette);
             Matrix4x4 viewProjection = camera.CreateViewProjection(width, height);
@@ -536,12 +553,42 @@ internal static unsafe class NativeClientPreview
                             new Vector3(-0.35f, -0.70f, -0.62f)));
                 }
 
-                if (localMonsterPresentationSeconds is { } sampleSeconds)
+                if (connectedMonsters)
+                {
+                    foreach (Draft0MonsterPresentationState monster in
+                        connectedMonsterPresentation.CreateLiveStates(monsterPresentationSeconds))
+                    {
+                        staticRenderer!.Draw(
+                            command,
+                            pass,
+                            monsterMesh!,
+                            new StaticMeshDraw(
+                                monster.World,
+                                viewProjection,
+                                monster.BaseColor,
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
+
+                    foreach (Draft0MonsterDefeatPresentationState monster in
+                        connectedMonsterPresentation.CreateDefeatStates(monsterPresentationSeconds))
+                    {
+                        staticRenderer!.Draw(
+                            command,
+                            pass,
+                            monsterMesh!,
+                            new StaticMeshDraw(
+                                monster.World,
+                                viewProjection,
+                                monster.BaseColor,
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
+                }
+                else
                 {
                     foreach (Draft0MonsterPresentationSnapshot snapshot in localMonsterSnapshots)
                     {
                         Draft0MonsterPresentationState monster =
-                            Draft0MonsterPresentationAdapter.Adapt(snapshot, sampleSeconds);
+                            Draft0MonsterPresentationAdapter.Adapt(snapshot, monsterPresentationSeconds);
                         staticRenderer!.Draw(
                             command,
                             pass,
