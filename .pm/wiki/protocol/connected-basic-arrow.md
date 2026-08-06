@@ -1,7 +1,7 @@
 ---
 title: Connected Basic Arrow Protocol
 createdAt: 2026-08-06T08:30:27.7701150Z
-modifiedAt: 2026-08-06T10:29:34.2824180Z
+modifiedAt: 2026-08-06T11:01:35.9148220Z
 ---
 
 ## Purpose
@@ -35,7 +35,7 @@ The typed Basic Arrow command makes the simulation's `WrongAction` start result 
 
 ## Proven rule mapping
 
-The later World adapter maps the completed authoritative rule without making Protocol depend on Simulation:
+The World adapter maps the completed authoritative rule without making Protocol depend on Simulation:
 
 | Simulation evidence | Protocol fact |
 | --- | --- |
@@ -68,6 +68,16 @@ Sequences, entity identities and ticks are unsigned 64-bit big-endian values. Da
 Every encoder validates the complete source fact before allocating and returns a new exact-length byte array. Every `TryDecode` path rejects unsupported kinds, wrong action bytes, truncation, trailing bytes, zero required identities, actor-as-target, impossible timing, unsupported reasons, noncanonical damage, and invalid flags without throwing. Tick zero remains valid. The public kind inspection validates only the complete fixed header and exact kind-specific length; the corresponding decoder still performs full fact validation.
 
 This is a focused Basic Arrow datagram family governed by `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility`. It establishes evidence and malformed-input conventions for later Fire Arrow planning without creating a generic ability protocol, message framework, channel assignment, or transport dispatcher.
+
+## World exchange
+
+`SERVER-0008` binds this transport-neutral fact family to the admitted gameplay session without accepting an actor from the Client. Channel 5 accepts Basic Arrow commands with reliable-sequenced delivery; channel 6 returns accepted, rejected, canceled and resolved outcomes to that requesting session with reliable-ordered delivery. Other sessions observe only the existing sequenced monster snapshot stream.
+
+Command sequences are monotonic per admitted session. Gaps are valid. A fresh sequence is consumed before domain evaluation and produces exactly one accepted or rejected fact; stale and duplicate commands are ignored without a response. A malformed payload, wrong channel or delivery mode, or unknown admitted session is a protocol violation.
+
+Movement and Basic Arrow commands use separate transport channels and therefore have arrival-order semantics rather than one total input order. Movement processed after acceptance cancels the windup immediately. Basic Arrow processed after movement stops and faces the authoritative player through the existing simulation rule. The outcome and corresponding monster snapshot also use separate channels, so a future Client must tolerate either arriving first.
+
+One World-owned correlation binds the requesting session, command sequence, actor, target and accepted timing until the terminal result. Fixed-step catch-up publishes outcomes after every individual simulation tick before a later tick can replace the runtime's bounded result batch. Disconnect and host teardown remove exchange correlation together with the World-owned gameplay session.
 
 ## Explicit exclusions
 

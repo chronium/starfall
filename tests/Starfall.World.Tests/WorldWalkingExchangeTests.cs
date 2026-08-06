@@ -91,6 +91,7 @@ public sealed class WorldWalkingExchangeTests
             EncodeCommand(1, 70.0f, 70.0f));
 
         Assert.Equal(WorldWalkingCommandDisposition.Accepted, outcome.Disposition);
+        Assert.NotNull(outcome.BasicArrowCancellation);
         Assert.Equal(0, runtime.PendingBasicArrowCount);
         BasicArrowResolution canceled = Assert.Single(runtime.LastBasicArrowResolutions);
         Assert.Equal(BasicArrowResolutionDisposition.CanceledByMovement, canceled.Disposition);

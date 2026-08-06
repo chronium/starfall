@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-06T10:29:50.2952920Z
+modifiedAt: 2026-08-06T11:01:27.4465540Z
 ---
 
 ## Purpose
@@ -87,13 +87,13 @@ World replaces each immutable monster record with the new behavior state while p
 
 ## Basic Arrow combat scheduling
 
-`SIM-0004` adds one bounded authoritative combat lane without changing the world lifecycle or project graph. Simulation owns immutable Basic Arrow intent, tuning, pending-action, cancellation/resolution and integer-damage facts. World owns per-actor pending/cadence state, immutable player/monster replacement and application to the fixed-slot monster population.
+`SIM-0004` supplies the bounded authoritative Basic Arrow rule and `SERVER-0008` now binds it to admitted gameplay sessions. The Client sends only a positive command sequence and live monster target on reliable-sequenced channel 5. World derives the actor from the session, validates protected-town, life, cadence, range and target state, stops and faces an accepted actor, and sends authoritative lifecycle facts back to that requester on reliable-ordered channel 6.
 
-At an accepted start tick `T`, World stops the actor's current destination, zeroes velocity, faces the target, records resolution at `T + 12` and reserves the next start at `T + 48`. Accepted movement before resolution cancels the shot while preserving cadence. After movement advances and the world tick increments, due shots resolve in ascending actor identity order before camp replenishment. Nonlethal damage replaces monster health; first defeat validates and creates the vacancy at the resolve tick. Running and Draining share these rules. Player/session removal clears that actor's combat state, and Stop clears all pending combat state.
+A fresh per-session sequence is consumed before evaluation; gaps are valid and stale or duplicate commands are silent. Movement and combat are intentionally separate arrival-ordered inputs. Accepted movement cancels a pending windup immediately, while an attack processed after movement uses the existing stop-and-face rule. No authoritative projectile entity or travel collision exists.
 
-The completed SIM-0004 seam remains local and headless. M5 Connected Basic Arrow now owns the bounded continuation: Basic-only facts/serialization, admitted-session actor derivation, World exchange, connected intent and presentation convergence. SIM-0011 participates only in defeated-player and protected-town rejection. Player health, defeat, restoration and same-entity town respawn are not Basic transport or presentation scope.
+The 60 Hz runtime retains only the current tick's bounded Basic Arrow resolution batch. The connected host therefore observes and publishes that batch after every individual fixed step, including each step within a catch-up cycle, before the next tick can overwrite it. Immediate movement cancellation is carried directly by the accepted walking-command result and published during transport polling.
 
-The Basic action creates no authoritative projectile entity. Client bow animation and the visual arrow/impact present authoritative timing and outcomes. Camp replenishment remains the independently completed camp-lifecycle behavior and is not part of the attack deliverable.
+Accepted, rejected, canceled and resolved facts are requester-only. The existing channel-4 monster snapshot remains the shared authoritative health/defeat stream, so cross-channel ordering between a combat outcome and the matching monster snapshot is not guaranteed. Session termination, send failure, disconnect and host teardown remove pending exchange correlation with the World-owned session.
 
 ## Fixed-step scheduling
 

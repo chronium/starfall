@@ -49,6 +49,21 @@ internal static class WorldFixedStepLoop
     internal const int MaximumCatchUpTicksPerCycle = 5;
     internal const double FixedStepSeconds = 1.0 / TickRateHz;
 
+    internal static FixedStepAdvanceResult AdvanceRealtimeCycle(
+        FixedStepAccumulator accumulator,
+        WorldChannelRuntime runtime,
+        double elapsedSeconds,
+        Action? postTick = null)
+    {
+        ArgumentNullException.ThrowIfNull(accumulator);
+        ArgumentNullException.ThrowIfNull(runtime);
+        return accumulator.Advance(elapsedSeconds, () =>
+        {
+            runtime.Step();
+            postTick?.Invoke();
+        });
+    }
+
     internal static WorldRunResult RunFinite(
         WorldChannelRuntime runtime,
         int runTicks,
@@ -68,6 +83,7 @@ internal static class WorldFixedStepLoop
     internal static async Task<WorldRunResult> RunRealtimeAsync(
         WorldChannelRuntime runtime,
         CancellationToken cancellationToken,
+        Action? postTick = null,
         Action? postCycle = null)
     {
         ArgumentNullException.ThrowIfNull(runtime);
@@ -84,7 +100,11 @@ internal static class WorldFixedStepLoop
             double elapsedSeconds = (current - previous).TotalSeconds;
             previous = current;
 
-            FixedStepAdvanceResult advance = accumulator.Advance(elapsedSeconds, runtime.Step);
+            FixedStepAdvanceResult advance = AdvanceRealtimeCycle(
+                accumulator,
+                runtime,
+                elapsedSeconds,
+                postTick);
             if (advance.BacklogClamped)
                 catchUpClampCount = checked(catchUpClampCount + 1);
 

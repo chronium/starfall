@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-06T10:30:02.4437700Z
+modifiedAt: 2026-08-06T11:01:27.5578980Z
 ---
 
 ## Execution standard
@@ -206,6 +206,10 @@ For M5 presentation, CLIENT-0007 owns Basic bow-body animation, CLIENT-0011 owns
 No authoritative spatial projectile exists. Basic/Fire arrows and Rain effects remain presentation; World decides action validity, timing, resource expenditure, victims, damage and defeat.
 
 Durable catalog: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
+
+`SERVER-0008` is complete. Admitted sessions now send Basic Arrow commands on reliable-sequenced channel 5 and receive their own authoritative lifecycle facts on reliable-ordered channel 6. The host derives actor identity from admission, consumes fresh per-session command sequences before evaluation, maps the established rejection and cancellation rules, and publishes each fixed-tick terminal result even during catch-up. Movement and combat retain explicit cross-channel arrival ordering; combat outcomes and monster snapshots may arrive in either order.
+
+Real LiteNetLib loopback evidence admits one player, moves it out of town, resolves three Basic Arrows against `starter_flyer_light`, observes health 700 -> 400 -> 100 -> 0, and receives the existing defeat tombstone. Client command production and presentation remain owned by CLIENT-0012 and later M5 tasks.
 
 ### Deferred progression, inventory, equipment and drops
 

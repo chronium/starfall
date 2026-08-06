@@ -82,6 +82,7 @@ internal static class WorldProgram
                     result = await WorldFixedStepLoop.RunRealtimeAsync(
                         runtime,
                         shutdown.Token,
+                        connectedHost!.PublishBasicArrowTickOutcomes,
                         connectedHost!.Pump);
                 }
                 else

@@ -1,7 +1,7 @@
 ---
 title: Gameplay Protocol Compatibility
 createdAt: 2026-08-06T10:28:11.1704800Z
-modifiedAt: 2026-08-06T10:28:11.1704800Z
+modifiedAt: 2026-08-06T11:01:27.3484820Z
 ---
 
 ## Purpose
@@ -45,17 +45,16 @@ The current request and accepted version-1 bytes remain unchanged from the earli
 
 Current gameplay codecs contain no packet-local version:
 
-| Channel or family | Layout discriminator |
-| --- | --- |
-| Movement command | channel 1 |
-| Movement snapshot | channel 2 |
-| Movement correction | channel 3 |
-| Monster snapshot | channel 4 |
-| Basic Arrow lifecycle | its eventual exchange channel plus `BasicArrowPayloadKind` and the bounded action identity |
+| Channel or family | Layout discriminator | Delivery |
+| --- | --- | --- |
+| Movement command | channel 1 | reliable sequenced |
+| Movement snapshot | channel 2 | sequenced |
+| Movement correction | channel 3 | reliable ordered |
+| Monster snapshot | channel 4 | sequenced |
+| Basic Arrow command | channel 5 plus its fixed action/kind header | reliable sequenced |
+| Basic Arrow outcomes | channel 6 plus accepted/rejected/canceled/resolved kind | reliable ordered |
 
-Walking payload lengths are 16, 65 and 73 bytes. The monster header is 18 bytes with a maximum 1,208-byte payload. Basic Arrow uses a 13-byte kind/action header with 29, 53, 46, 62 and 62-byte command/accepted/rejected/canceled/resolved payloads.
-
-All existing exact-length, canonical-number, identity, ordering, acknowledgement, bound and malformed-input rules remain in force.
+The accepted connection protocol version plus channel and message kind selects the exact layout. Basic Arrow facts are returned only to the requesting admitted session; authoritative monster health and defeat continue through channel 4. Movement and Basic Arrow channels have arrival-order semantics, and a Basic Arrow terminal outcome may arrive before or after the corresponding monster snapshot.
 
 ## Cross-channel admission ordering
 

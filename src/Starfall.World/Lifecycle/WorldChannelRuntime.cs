@@ -578,8 +578,10 @@ internal sealed class WorldChannelRuntime
             walkingSession.LastProcessedIntentSequence = command.Sequence;
             if (movementDisposition == GroundMovementIntentDisposition.Accepted)
             {
-                RecordAcceptedMovement(walkingSession.Session.PlayerEntityId);
-                return new(WorldWalkingCommandDisposition.Accepted);
+                BasicArrowResolution? cancellation = RecordAcceptedMovement(walkingSession.Session.PlayerEntityId);
+                return new(
+                    WorldWalkingCommandDisposition.Accepted,
+                    BasicArrowCancellation: cancellation);
             }
 
             PlayerMovementSnapshot snapshot = CreateMovementSnapshot(walkingSession);
@@ -816,10 +818,15 @@ internal sealed class WorldChannelRuntime
             previous.LifeStatus,
             previous.RespawnAtTick);
 
-    private void RecordAcceptedMovement(SimulationEntityId entityId)
+    private BasicArrowResolution? RecordAcceptedMovement(SimulationEntityId entityId)
     {
         if (basicArrowCombat.CancelForMovement(entityId, currentTick) is { } cancellation)
+        {
             lastBasicArrowResolutions = Array.AsReadOnly([cancellation]);
+            return cancellation;
+        }
+
+        return null;
     }
 
     private IReadOnlyList<BasicArrowResolution> ResolveBasicArrows()

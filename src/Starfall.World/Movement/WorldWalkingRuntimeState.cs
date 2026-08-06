@@ -1,5 +1,6 @@
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
+using Starfall.Simulation.Combat;
 using Starfall.World.Admission;
 
 namespace Starfall.World.Movement;
@@ -31,7 +32,8 @@ internal sealed class WorldWalkingSessionState
 
 internal sealed record WorldWalkingCommandResult(
     WorldWalkingCommandDisposition Disposition,
-    PlayerMovementCorrection? Correction = null);
+    PlayerMovementCorrection? Correction = null,
+    BasicArrowResolution? BasicArrowCancellation = null);
 
 internal sealed record WorldWalkingSnapshot(
     GameplaySessionId SessionId,

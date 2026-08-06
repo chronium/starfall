@@ -1,5 +1,6 @@
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Movement;
+using Starfall.Simulation.Combat;
 using Starfall.World.Lifecycle;
 
 namespace Starfall.World.Movement;
@@ -17,7 +18,8 @@ internal sealed class WorldWalkingCommandOutcome
 {
     internal WorldWalkingCommandOutcome(
         WorldWalkingCommandDisposition disposition,
-        byte[]? correctionPayload = null)
+        byte[]? correctionPayload = null,
+        BasicArrowResolution? basicArrowCancellation = null)
     {
         if (disposition == WorldWalkingCommandDisposition.Corrected && correctionPayload is null)
             throw new ArgumentException("A corrected command must carry a correction payload.", nameof(correctionPayload));
@@ -26,6 +28,7 @@ internal sealed class WorldWalkingCommandOutcome
 
         Disposition = disposition;
         CorrectionPayload = correctionPayload;
+        BasicArrowCancellation = basicArrowCancellation;
     }
 
     internal WorldWalkingCommandDisposition Disposition
@@ -34,6 +37,11 @@ internal sealed class WorldWalkingCommandOutcome
     }
 
     internal byte[]? CorrectionPayload
+    {
+        get;
+    }
+
+    internal BasicArrowResolution? BasicArrowCancellation
     {
         get;
     }
@@ -61,10 +69,11 @@ internal sealed class WorldWalkingExchange
 
         WorldWalkingCommandResult result = runtime.HandleWalkingCommand(sessionId, command);
         return result.Correction is null
-            ? new(result.Disposition)
+            ? new(result.Disposition, basicArrowCancellation: result.BasicArrowCancellation)
             : new(
                 result.Disposition,
-                ConnectedWalkingCodec.EncodeCorrection(result.Correction));
+                ConnectedWalkingCodec.EncodeCorrection(result.Correction),
+                result.BasicArrowCancellation);
     }
 
     internal IReadOnlyList<WorldWalkingSnapshotPublication> CaptureSnapshots() =>
