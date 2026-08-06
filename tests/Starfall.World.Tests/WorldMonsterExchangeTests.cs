@@ -1,6 +1,7 @@
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Simulation.Combat;
 using Starfall.Simulation.Movement;
@@ -266,6 +267,7 @@ public sealed class WorldMonsterExchangeTests
             NowUnixMilliseconds + 30_000);
         WorldJoinAdmissionOutcome outcome = runtime.ConsumeTicketAndCreateSession(
             claims,
+            StarfallGameplayProtocol.CurrentVersion,
             NowUnixMilliseconds);
         GameplaySessionId sessionId = Assert.IsType<WorldJoinAccepted>(outcome.Accepted).SessionId;
         Assert.True(runtime.TryGetGameplaySession(sessionId, out WorldGameplaySession? session));

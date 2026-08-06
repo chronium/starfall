@@ -2,6 +2,7 @@ using System.Numerics;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Simulation.Combat;
@@ -630,9 +631,12 @@ internal sealed class WorldChannelRuntime
 
     internal WorldJoinAdmissionOutcome ConsumeTicketAndCreateSession(
         WorldJoinTicketClaims claims,
+        ProtocolVersion protocolVersion,
         long nowUnixMilliseconds)
     {
         ArgumentNullException.ThrowIfNull(claims);
+        if (protocolVersion.Value == 0)
+            throw new ArgumentException("Gameplay protocol version must be valid.", nameof(protocolVersion));
 
         lock (synchronization)
         {
@@ -663,12 +667,13 @@ internal sealed class WorldChannelRuntime
                 claims.AccountId,
                 claims.CharacterId,
                 claims.WorldInstanceId,
-                CreateSessionPlayer().EntityId);
+                CreateSessionPlayer().EntityId,
+                protocolVersion);
             activeSessions.Add(sessionId, session);
             walkingSessions.Add(sessionId, new WorldWalkingSessionState(session));
             monsterSnapshotSessions.Add(sessionId, new WorldMonsterSnapshotSessionState(session));
 
-            return WorldJoinAdmissionOutcome.Accept(new WorldJoinAccepted(sessionId));
+            return WorldJoinAdmissionOutcome.Accept(new WorldJoinAccepted(protocolVersion, sessionId));
         }
     }
 

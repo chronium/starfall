@@ -1,4 +1,5 @@
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Simulation.Entities;
 
 namespace Starfall.World.Admission;
@@ -10,7 +11,8 @@ internal sealed class WorldGameplaySession
         AccountId accountId,
         CharacterId characterId,
         WorldInstanceId worldInstanceId,
-        WorldEntityId playerEntityId)
+        WorldEntityId playerEntityId,
+        ProtocolVersion protocolVersion)
     {
         if (sessionId.Value == Guid.Empty)
             throw new ArgumentException("Gameplay session identity must not be empty.", nameof(sessionId));
@@ -22,12 +24,15 @@ internal sealed class WorldGameplaySession
             throw new ArgumentException("World instance identity must not be empty.", nameof(worldInstanceId));
         if (playerEntityId.Value == 0)
             throw new ArgumentException("Player entity identity must be valid.", nameof(playerEntityId));
+        if (protocolVersion.Value == 0)
+            throw new ArgumentException("Gameplay protocol version must be valid.", nameof(protocolVersion));
 
         SessionId = sessionId;
         AccountId = accountId;
         CharacterId = characterId;
         WorldInstanceId = worldInstanceId;
         PlayerEntityId = playerEntityId;
+        ProtocolVersion = protocolVersion;
     }
 
     internal GameplaySessionId SessionId
@@ -51,6 +56,11 @@ internal sealed class WorldGameplaySession
     }
 
     internal WorldEntityId PlayerEntityId
+    {
+        get;
+    }
+
+    internal ProtocolVersion ProtocolVersion
     {
         get;
     }

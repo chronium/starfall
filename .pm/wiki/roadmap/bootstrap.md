@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-06T07:12:01.0469360Z
+modifiedAt: 2026-08-06T10:30:02.4437700Z
 ---
 
 ## Execution standard
@@ -148,7 +148,10 @@ SIM-0004 + SIM-0011
 PROTOCOL-0004 + PROTOCOL-0006
   -> PROTOCOL-0007  deterministic serialization
 
-SERVER-0005 + SERVER-0007 + PROTOCOL-0007
+CLIENT-0009 + PROTOCOL-0007 + SERVER-0007
+  -> PROTOCOL-0015  admission-time gameplay protocol compatibility
+
+SERVER-0005 + SERVER-0007 + PROTOCOL-0007 + PROTOCOL-0015
   + SIM-0004 + SIM-0011
   -> SERVER-0008  first connected-combat exchange
 
@@ -156,7 +159,9 @@ CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
   -> CLIENT-0012  right-click Basic Arrow intent
 ~~~
 
-PROTOCOL-0006/0007, SERVER-0008 and CLIENT-0012 have explicit high priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
+PROTOCOL-0015 replaces the four packet-local schema bytes with one exact protocol version offered and accepted at admission. It blocks SERVER-0008 and every unfinished gameplay serializer; the `sfjt1` ticket and persisted formats remain independently versioned. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility
+
+PROTOCOL-0006/0007, PROTOCOL-0015, SERVER-0008 and CLIENT-0012 have explicit high priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
 
 Mana is an independent prerequisite rather than Fire or Rain-owned state:
 

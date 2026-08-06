@@ -8,7 +8,6 @@ namespace Starfall.Protocol.Tests.Monsters;
 public sealed class BoundedMonsterSnapshotCodecTests
 {
     private const string GoldenHex =
-        "01" +
         "0102030405060708" +
         "1112131415161718" +
         "01" +
@@ -40,12 +39,11 @@ public sealed class BoundedMonsterSnapshotCodecTests
     private static readonly byte[] Golden = Convert.FromHexString(GoldenHex);
 
     [Fact]
-    public void Schema_and_payload_bounds_are_frozen()
+    public void Payload_bounds_are_frozen_without_a_packet_local_version()
     {
-        Assert.Equal(1, BoundedMonsterSnapshotCodec.SchemaVersion);
-        Assert.Equal(19, BoundedMonsterSnapshotCodec.HeaderPayloadLength);
-        Assert.Equal(1_209, BoundedMonsterSnapshotCodec.MaxPayloadLength);
-        Assert.Equal(109, Golden.Length);
+        Assert.Equal(18, BoundedMonsterSnapshotCodec.HeaderPayloadLength);
+        Assert.Equal(1_208, BoundedMonsterSnapshotCodec.MaxPayloadLength);
+        Assert.Equal(108, Golden.Length);
     }
 
     [Fact]
@@ -120,42 +118,41 @@ public sealed class BoundedMonsterSnapshotCodecTests
     [Fact]
     public void Invalid_header_identity_order_and_archetype_encoding_are_rejected()
     {
-        AssertRejected(payload => payload[0] = 2);
-        AssertRejected(payload => Array.Clear(payload, 1, sizeof(ulong)));
-        AssertRejected(payload => payload[17] = 11);
-        AssertRejected(payload => payload[27] = 0);
-        AssertRejected(payload => payload[28] = (byte)'A');
+        AssertRejected(payload => Array.Clear(payload, 0, sizeof(ulong)));
+        AssertRejected(payload => payload[16] = 11);
+        AssertRejected(payload => payload[26] = 0);
+        AssertRejected(payload => payload[27] = (byte)'A');
 
         byte[] unordered = BoundedMonsterSnapshotCodec.Encode(new BoundedMonsterSnapshot(
             new MonsterSnapshotSequence(1),
             0,
             [CreateLive(1, MonsterBehaviorKind.Idle), CreateLive(2, MonsterBehaviorKind.Idle)],
             []));
-        BinaryPrimitives.WriteUInt64BigEndian(unordered.AsSpan(19), 3);
+        BinaryPrimitives.WriteUInt64BigEndian(unordered.AsSpan(18), 3);
         Assert.False(BoundedMonsterSnapshotCodec.TryDecode(unordered, out _));
 
-        AssertRejected(payload => Golden.AsSpan(19, 8).CopyTo(payload.AsSpan(75, 8)));
+        AssertRejected(payload => Golden.AsSpan(18, 8).CopyTo(payload.AsSpan(74, 8)));
     }
 
     [Fact]
     public void Noncanonical_spatial_behavior_target_and_health_values_are_rejected()
     {
-        AssertRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(29), int.MinValue));
-        AssertRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(37), 0x7fc00000));
+        AssertRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(28), int.MinValue));
+        AssertRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(36), 0x7fc00000));
         AssertRejected(payload =>
         {
-            Array.Clear(payload, 45, 8);
+            Array.Clear(payload, 44, 8);
         });
-        AssertRejected(payload => payload[57] = 4);
-        AssertRejected(payload => payload[58] = 2);
-        AssertRejected(payload => payload[58] = 0);
-        AssertRejected(payload => Array.Clear(payload, 59, 8));
-        AssertRejected(payload => Array.Clear(payload, 67, 4));
-        AssertRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(67), 701));
+        AssertRejected(payload => payload[56] = 4);
+        AssertRejected(payload => payload[57] = 2);
+        AssertRejected(payload => payload[57] = 0);
+        AssertRejected(payload => Array.Clear(payload, 58, 8));
+        AssertRejected(payload => Array.Clear(payload, 66, 4));
+        AssertRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(66), 701));
         AssertRejected(payload =>
         {
-            BinaryPrimitives.WriteUInt64BigEndian(payload.AsSpan(9), 1);
-            BinaryPrimitives.WriteUInt64BigEndian(payload.AsSpan(101), 2);
+            BinaryPrimitives.WriteUInt64BigEndian(payload.AsSpan(8), 1);
+            BinaryPrimitives.WriteUInt64BigEndian(payload.AsSpan(100), 2);
         });
     }
 
@@ -184,7 +181,7 @@ public sealed class BoundedMonsterSnapshotCodecTests
     public void Arbitrary_bounded_payloads_never_make_decoder_throw()
     {
         var random = new Random(0x5f3759df);
-        foreach (int length in Enumerable.Range(0, 256).Concat([1_208, 1_209, 1_210, 2_048]))
+        foreach (int length in Enumerable.Range(0, 256).Concat([1_207, 1_208, 1_209, 2_048]))
         {
             byte[] payload = new byte[length];
             random.NextBytes(payload);

@@ -6,8 +6,9 @@ priority: none
 dependsOn:
 - SIM-0007
 - PROTOCOL-0007
+- PROTOCOL-0015
 createdAt: 2026-08-05T19:46:44.8390510Z
-modifiedAt: 2026-08-06T06:43:25.6214780Z
+modifiedAt: 2026-08-06T10:20:20.3758310Z
 ---
 
 Extend the proven first connected-combat contract with focused Arrow Rain facts and deterministic serialization.

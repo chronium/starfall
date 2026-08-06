@@ -6,12 +6,11 @@ namespace Starfall.Protocol.Movement;
 
 public static class ConnectedWalkingCodec
 {
-    public const byte SchemaVersion = 1;
-    public const int CommandPayloadLength = 17;
-    public const int SnapshotPayloadLength = 66;
-    public const int CorrectionPayloadLength = 74;
+    public const int CommandPayloadLength = 16;
+    public const int SnapshotPayloadLength = 65;
+    public const int CorrectionPayloadLength = 73;
 
-    private const int SnapshotBodyLength = SnapshotPayloadLength - 1;
+    private const int SnapshotBodyLength = SnapshotPayloadLength;
     private const byte AcknowledgementAbsent = 0;
     private const byte AcknowledgementPresent = 1;
 
@@ -20,10 +19,9 @@ public static class ConnectedWalkingCodec
         ValidateCommand(command);
 
         byte[] payload = new byte[CommandPayloadLength];
-        payload[0] = SchemaVersion;
-        WriteUInt64(payload, 1, command.Sequence.Value);
-        WriteSingle(payload, 9, command.Destination.XMetres);
-        WriteSingle(payload, 13, command.Destination.ZMetres);
+        WriteUInt64(payload, 0, command.Sequence.Value);
+        WriteSingle(payload, 8, command.Destination.XMetres);
+        WriteSingle(payload, 12, command.Destination.ZMetres);
         return payload;
     }
 
@@ -32,12 +30,12 @@ public static class ConnectedWalkingCodec
         [NotNullWhen(true)] out GroundMovementCommand? command)
     {
         command = null;
-        if (payload.Length != CommandPayloadLength || payload[0] != SchemaVersion)
+        if (payload.Length != CommandPayloadLength)
             return false;
 
-        ulong sequence = ReadUInt64(payload, 1);
-        float destinationX = ReadSingle(payload, 9);
-        float destinationZ = ReadSingle(payload, 13);
+        ulong sequence = ReadUInt64(payload, 0);
+        float destinationX = ReadSingle(payload, 8);
+        float destinationZ = ReadSingle(payload, 12);
         if (sequence == 0 || !IsCanonicalFinite(destinationX) || !IsCanonicalFinite(destinationZ))
             return false;
 
@@ -52,8 +50,7 @@ public static class ConnectedWalkingCodec
         ValidateSnapshot(snapshot);
 
         byte[] payload = new byte[SnapshotPayloadLength];
-        payload[0] = SchemaVersion;
-        WriteSnapshotBody(payload.AsSpan(1), snapshot);
+        WriteSnapshotBody(payload, snapshot);
         return payload;
     }
 
@@ -63,8 +60,7 @@ public static class ConnectedWalkingCodec
     {
         snapshot = null;
         return payload.Length == SnapshotPayloadLength &&
-            payload[0] == SchemaVersion &&
-            TryDecodeSnapshotBody(payload[1..], out snapshot);
+            TryDecodeSnapshotBody(payload, out snapshot);
     }
 
     public static byte[] EncodeCorrection(PlayerMovementCorrection correction)
@@ -72,9 +68,8 @@ public static class ConnectedWalkingCodec
         ValidateCorrection(correction);
 
         byte[] payload = new byte[CorrectionPayloadLength];
-        payload[0] = SchemaVersion;
-        WriteUInt64(payload, 1, correction.CorrectedIntentSequence.Value);
-        WriteSnapshotBody(payload.AsSpan(9), correction.AuthoritativeSnapshot);
+        WriteUInt64(payload, 0, correction.CorrectedIntentSequence.Value);
+        WriteSnapshotBody(payload.AsSpan(8), correction.AuthoritativeSnapshot);
         return payload;
     }
 
@@ -83,11 +78,11 @@ public static class ConnectedWalkingCodec
         [NotNullWhen(true)] out PlayerMovementCorrection? correction)
     {
         correction = null;
-        if (payload.Length != CorrectionPayloadLength || payload[0] != SchemaVersion)
+        if (payload.Length != CorrectionPayloadLength)
             return false;
 
-        ulong correctedSequence = ReadUInt64(payload, 1);
-        if (correctedSequence == 0 || !TryDecodeSnapshotBody(payload[9..], out PlayerMovementSnapshot? snapshot))
+        ulong correctedSequence = ReadUInt64(payload, 0);
+        if (correctedSequence == 0 || !TryDecodeSnapshotBody(payload[8..], out PlayerMovementSnapshot? snapshot))
             return false;
 
         if (snapshot.LastProcessedIntentSequence is not { } acknowledged ||

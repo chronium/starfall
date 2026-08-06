@@ -5,8 +5,9 @@ track: PROTOCOL
 priority: none
 dependsOn:
 - GAME-0003
+- PROTOCOL-0015
 createdAt: 2026-08-03T07:29:09.8915960Z
-modifiedAt: 2026-08-06T06:44:37.2679700Z
+modifiedAt: 2026-08-06T10:20:20.1690260Z
 ---
 
 Define and deterministically serialize the bounded provisional Inventory contract.

@@ -1,3 +1,5 @@
+using Starfall.Protocol.Compatibility;
+
 namespace Starfall.Protocol.Admission;
 
 public sealed class WorldJoinTicketClaims
@@ -199,17 +201,26 @@ public enum WorldJoinRejectionReason
     AlreadyConsumed = 2,
     WrongDestination = 3,
     WorldNotAcceptingAdmissions = 4,
+    IncompatibleProtocolVersion = 5,
 }
 
 public sealed class WorldJoinRequest
 {
-    public WorldJoinRequest(string ticket)
+    public WorldJoinRequest(ProtocolVersion protocolVersion, string ticket)
     {
+        if (protocolVersion.Value == 0)
+            throw new ArgumentException("Gameplay protocol version must be valid.", nameof(protocolVersion));
         ArgumentException.ThrowIfNullOrWhiteSpace(ticket);
         if (ticket.Length > WorldJoinTicketCodec.MaximumTokenLength)
             throw new ArgumentOutOfRangeException(nameof(ticket), "Join ticket exceeds the protocol limit.");
 
+        ProtocolVersion = protocolVersion;
         Ticket = ticket;
+    }
+
+    public ProtocolVersion ProtocolVersion
+    {
+        get;
     }
 
     public string Ticket
@@ -220,12 +231,20 @@ public sealed class WorldJoinRequest
 
 public sealed class WorldJoinAccepted
 {
-    public WorldJoinAccepted(GameplaySessionId sessionId)
+    public WorldJoinAccepted(ProtocolVersion selectedProtocolVersion, GameplaySessionId sessionId)
     {
+        if (selectedProtocolVersion.Value == 0)
+            throw new ArgumentException("Selected gameplay protocol version must be valid.", nameof(selectedProtocolVersion));
         if (!sessionId.IsValid)
             throw new ArgumentException("Gameplay session identity must not be empty.", nameof(sessionId));
 
+        SelectedProtocolVersion = selectedProtocolVersion;
         SessionId = sessionId;
+    }
+
+    public ProtocolVersion SelectedProtocolVersion
+    {
+        get;
     }
 
     public GameplaySessionId SessionId

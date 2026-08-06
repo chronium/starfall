@@ -1,4 +1,5 @@
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.World.Lifecycle;
 
 namespace Starfall.World.Admission;
@@ -57,6 +58,9 @@ internal sealed class WorldJoinAdmissionExchange
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        if (request.ProtocolVersion != StarfallGameplayProtocol.CurrentVersion)
+            return WorldJoinAdmissionOutcome.Reject(WorldJoinRejectionReason.IncompatibleProtocolVersion);
+
         WorldJoinTicketValidationResult validation = WorldJoinTicketCodec.Validate(
             request.Ticket,
             verificationKeys,
@@ -68,6 +72,7 @@ internal sealed class WorldJoinAdmissionExchange
 
         return runtime.ConsumeTicketAndCreateSession(
             validation.Claims!,
+            request.ProtocolVersion,
             nowUnixMilliseconds);
     }
 }

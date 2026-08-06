@@ -8,10 +8,11 @@ dependsOn:
 - SERVER-0005
 - SERVER-0007
 - PROTOCOL-0007
+- PROTOCOL-0015
 - SIM-0004
 - SIM-0011
 createdAt: 2026-08-03T07:29:07.3311690Z
-modifiedAt: 2026-08-06T06:42:59.5427760Z
+modifiedAt: 2026-08-06T10:20:19.8546520Z
 ---
 
 Route connected Basic Arrow requests and publish authoritative Basic outcomes through admitted World sessions.

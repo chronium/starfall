@@ -1,7 +1,7 @@
 ---
 title: World Admission and Join Tickets
 createdAt: 2026-08-03T06:08:22.0865090Z
-modifiedAt: 2026-08-04T17:26:13.3818190Z
+modifiedAt: 2026-08-06T10:28:41.6296400Z
 ---
 
 ## Purpose
@@ -17,9 +17,9 @@ The protocol defines:
 - opaque non-empty GUID identities for the ticket, account, character, world lifecycle instance, and world-owned gameplay session;
 - lowercase configured world and channel identities using 1-64 ASCII letters, digits, or underscores and beginning with a letter;
 - ticket claims containing those identities plus issue and expiry times in Unix milliseconds;
-- a join request carrying the compact ticket;
-- a successful response carrying a newly generated gameplay-session ID;
-- bounded rejection reasons: invalid ticket, expired ticket, already consumed, wrong destination, and world not accepting admissions.
+- a join request carrying one offered gameplay protocol version and the compact ticket;
+- a successful response carrying the exact selected protocol version and a newly generated gameplay-session ID;
+- bounded rejection reasons: invalid ticket, expired ticket, already consumed, wrong destination, world not accepting admissions, and incompatible gameplay protocol version.
 
 Account and character IDs contain no personal display information. The ticket does not contain credentials, character state, authorization roles, chat state, gameplay state, or persistence data.
 
@@ -77,24 +77,25 @@ Every ticket is bound to an exact world ID, channel ID, and lifecycle-specific w
 
 A world performs the bounded work in this order:
 
-1. Reject an oversized or malformed envelope.
-2. Resolve the authenticated key ID from local public-key configuration.
-3. Verify the ECDSA signature before interpreting claims.
-4. Decode and validate the canonical payload and lifetime.
-5. Apply issue-time and expiry rules using the explicit clock.
-6. Match world, channel, and world-instance audience exactly.
-7. Atomically consume the unique ticket ID before creating a gameplay session.
-8. Generate a new world-owned gameplay-session ID and continue independently of identity.
+1. Reject an oversized or malformed admission envelope.
+2. Compare the non-zero offered gameplay protocol version with the one exact version supported by the World; reject incompatibility before cryptographic work or world-state mutation.
+3. Resolve the authenticated key ID from local public-key configuration.
+4. Verify the ECDSA signature before interpreting claims.
+5. Decode and validate the canonical payload and lifetime.
+6. Apply issue-time and expiry rules using the explicit clock.
+7. Match world, channel, and world-instance audience exactly.
+8. Atomically consume the unique ticket ID before creating a gameplay session.
+9. Generate a new world-owned gameplay-session ID, record the selected protocol version, and continue independently of identity.
 
-Steps 1-6 are implemented by `Starfall.Protocol`. `SERVER-0003` implements steps 7-8 in `Starfall.World` behind one synchronized world-lifecycle gate. The gate makes ticket consumption, lifecycle eligibility, session creation, draining, and stopping one world-local ownership boundary.
+Admission envelope decoding and ticket validation are implemented by `Starfall.Protocol`. The compatibility decision, steps 8-9 and the synchronized world-lifecycle gate are implemented by `Starfall.World`. The gate makes ticket consumption, lifecycle eligibility, session creation, draining, and stopping one world-local ownership boundary.
 
 Exactly one concurrent admission may consume a ticket. A failed attempt before consumption may retry while the ticket remains valid. A failure after consumption never makes the credential reusable; the client must return to identity/lobby for a new ticket. Consumed ticket IDs are retained through expiry plus the five-second skew and lazily pruned when a later cryptographically valid request reaches the world boundary. A world restart changes the world-instance ID and discards the lifecycle-local replay set rather than recovering or distributing it.
 
-An active in-memory session retains only its new session ID plus the admitted account, character, and world-instance identities. The raw bearer ticket is never retained. Draining rejects new admission while retaining existing sessions and fixed-step execution. Stopping terminates and clears the remaining session and replay registries.
+An active in-memory session retains its selected gameplay protocol version, new session ID, and the admitted account, character, and world-instance identities. The raw bearer ticket is never retained. Draining rejects new admission while retaining existing sessions and fixed-step execution. Stopping terminates and clears the remaining session and replay registries.
 
 ## Failure and diagnostic boundary
 
-Protocol validation exposes only invalid ticket, expired ticket, or wrong destination. The world adds already consumed and world not accepting admissions when it owns those facts. Malformed encoding, unknown keys, bad signatures, excessive lifetime, and future issuance map to invalid ticket rather than exposing cryptographic detail to clients.
+Protocol ticket validation exposes only invalid ticket, expired ticket, or wrong destination. The world adds incompatible protocol version, already consumed and world not accepting admissions when it owns those facts. Malformed encoding, unknown keys, bad signatures, excessive lifetime, and future issuance map to invalid ticket rather than exposing cryptographic detail to clients.
 
 Implementations may record bounded counters for internal diagnosis, but must never log raw tickets, signatures, private keys, or complete bearer credentials.
 
@@ -102,15 +103,15 @@ Implementations may record bounded counters for internal diagnosis, but must nev
 
 `PROTOCOL-0002` continues to own the self-contained `sfjt1` ticket and transport-neutral admission facts. `CLIENT-0009` adds one host-specific datagram binding without changing that ticket format or introducing a generic framing layer.
 
-Channel 0 uses reliable ordered delivery. Its exact schema-version-1 datagrams are:
+Channel 0 uses reliable ordered delivery. Its exact admission-bootstrap datagrams are:
 
 | Fact | Layout |
 | --- | --- |
-| Join request | version `1`, kind `1`, unsigned 16-bit big-endian ticket-byte length, then 1-512 canonical ASCII ticket bytes; total 5-516 bytes |
-| Accepted | version `1`, kind `2`, then the 16-byte gameplay-session GUID in RFC 4122 network byte order; exactly 18 bytes |
-| Rejected | version `1`, kind `3`, then one bounded `WorldJoinRejectionReason` byte; exactly 3 bytes |
+| Join request | offered gameplay protocol version byte, kind `1`, unsigned 16-bit big-endian ticket-byte length, then 1-512 canonical ASCII ticket bytes; total 5-516 bytes |
+| Accepted | selected gameplay protocol version byte, kind `2`, then the 16-byte gameplay-session GUID in RFC 4122 network byte order; exactly 18 bytes |
+| Rejected | kind `3`, then one bounded `WorldJoinRejectionReason` byte; exactly 2 bytes |
 
-Unsupported versions or kinds, invalid ASCII/GUID/reason values, inconsistent lengths, truncation and trailing bytes fail closed. The server binds the transport peer to the newly created world-owned session after ticket consumption. A pending loopback peer has ten seconds to submit exactly one valid admission request. Packets on the wrong channel or delivery mode are protocol violations.
+Version zero, unsupported kinds, invalid ASCII/GUID/reason values, inconsistent lengths, truncation and trailing bytes fail closed. The codec preserves any non-zero offered version so the World can return `IncompatibleProtocolVersion` before ticket validation or consumption. Version 1 is the only accepted gameplay protocol; the selected version must equal the Client's offer. The server binds the transport peer to the newly created world-owned session after ticket consumption. A pending loopback peer has ten seconds to submit exactly one valid admission request. Packets on the wrong channel or delivery mode are protocol violations.
 
 The first executable development transport is intentionally plaintext and loopback-only. The Client accepts only a literal `127.0.0.1` or `::1` destination. World rejects non-loopback peers before parsing admission data. Production/non-loopback use still requires a later protected-transport decision because signatures provide authenticity and integrity, not confidentiality.
 
@@ -122,4 +123,4 @@ Once admitted, gameplay does not call identity, chat or operations. Disconnect i
 
 This admission contract still does not implement accounts, credentials, lobby UI, character summaries, identity services, protected non-loopback transport, production key storage/distribution, persistent or distributed replay storage, durable or resumable sessions, persistence, chat, JWT, a generic token framework or physical deployment topology.
 
-CLIENT-0009 adds only a loopback development socket binding and local key/ticket utility around the existing admission facts. Movement commands and snapshots remain separately specified by the connected-walking contract; they are not part of the ticket or admission schema.
+CLIENT-0009 adds only a loopback development socket binding and local key/ticket utility around the existing admission facts. Movement commands and snapshots remain separately specified by the connected-walking contract; they are not part of the ticket or admission bootstrap. Gameplay packets do not repeat the selected protocol version. The independently signed and stored `sfjt1` ticket retains its own version.

@@ -1,7 +1,7 @@
 ---
 title: Connected Basic Arrow Protocol
 createdAt: 2026-08-06T08:30:27.7701150Z
-modifiedAt: 2026-08-06T10:05:28.7486100Z
+modifiedAt: 2026-08-06T10:29:34.2824180Z
 ---
 
 ## Purpose
@@ -53,21 +53,21 @@ The existing bounded monster snapshot stream remains the authoritative ongoing h
 
 ## Deterministic binary representation
 
-`ConnectedBasicArrowCodec` schema version 1 uses exact big-endian datagrams. Every payload starts with version byte `1`, one payload-kind byte, action-identity length `11`, and canonical ASCII `basic_arrow`. The payload kinds are command `1`, accepted `2`, rejected `3`, canceled `4`, and resolved `5`. The fixed action bytes are carried explicitly so another action cannot be decoded as Basic Arrow.
+`ConnectedBasicArrowCodec` uses exact big-endian datagrams under the gameplay protocol version accepted at admission. Every payload starts with one payload-kind byte, action-identity length `11`, and canonical ASCII `basic_arrow`; it does not repeat a packet-local version. The payload kinds are command `1`, accepted `2`, rejected `3`, canceled `4`, and resolved `5`. The fixed action bytes are carried explicitly so another action cannot be decoded as Basic Arrow.
 
-| Payload | Exact length | Body after the 14-byte header |
+| Payload | Exact length | Body after the 13-byte header |
 | --- | ---: | --- |
-| command | 30 bytes | command sequence, target entity |
-| accepted | 54 bytes | command sequence, actor, target, start tick, resolve tick |
-| rejected | 47 bytes | command sequence, actor, target, decision tick, rejection reason |
-| canceled | 63 bytes | command sequence, actor, target, start tick, resolve tick, cancellation tick, cancellation reason |
-| resolved | 63 bytes | command sequence, actor, target, start tick, resolve tick, requested damage, effective damage, defeated flag |
+| command | 29 bytes | command sequence, target entity |
+| accepted | 53 bytes | command sequence, actor, target, start tick, resolve tick |
+| rejected | 46 bytes | command sequence, actor, target, decision tick, rejection reason |
+| canceled | 62 bytes | command sequence, actor, target, start tick, resolve tick, cancellation tick, cancellation reason |
+| resolved | 62 bytes | command sequence, actor, target, start tick, resolve tick, requested damage, effective damage, defeated flag |
 
 Sequences, entity identities and ticks are unsigned 64-bit big-endian values. Damage uses signed 32-bit big-endian integers, matching authoritative monster-health representation. Reasons and the defeated flag use one byte. The only canonical defeated values are `0` and `1`.
 
-Every encoder validates the complete source fact before allocating and returns a new exact-length byte array. Every `TryDecode` path rejects unsupported versions or kinds, wrong action bytes, truncation, trailing bytes, zero required identities, actor-as-target, impossible timing, unsupported reasons, noncanonical damage, and invalid flags without throwing. Tick zero remains valid. The public kind inspection validates only the complete fixed header and exact kind-specific length; the corresponding decoder still performs full fact validation.
+Every encoder validates the complete source fact before allocating and returns a new exact-length byte array. Every `TryDecode` path rejects unsupported kinds, wrong action bytes, truncation, trailing bytes, zero required identities, actor-as-target, impossible timing, unsupported reasons, noncanonical damage, and invalid flags without throwing. Tick zero remains valid. The public kind inspection validates only the complete fixed header and exact kind-specific length; the corresponding decoder still performs full fact validation.
 
-This is a focused Basic Arrow datagram family. It establishes evidence and malformed-input conventions for later Fire Arrow planning without creating a generic ability protocol, message framework, channel assignment, or transport dispatcher.
+This is a focused Basic Arrow datagram family governed by `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility`. It establishes evidence and malformed-input conventions for later Fire Arrow planning without creating a generic ability protocol, message framework, channel assignment, or transport dispatcher.
 
 ## Explicit exclusions
 

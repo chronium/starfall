@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-06T07:12:01.0686450Z
+modifiedAt: 2026-08-06T10:29:50.2952920Z
 ---
 
 ## Purpose
@@ -49,7 +49,7 @@ All current world/channel invocations use this one provisional layout. A zone-se
 
 After entering `Running`, the standalone host creates one generic authoritative player at `town_safe`'s configured respawn anchor `(100,0,25)`, with zero planar velocity and normalized `+Z` facing. This command-line fixture is separate from admitted gameplay sessions and remains useful for deterministic lifecycle checks.
 
-Successful admission atomically creates a distinct generic player at the same configured anchor and binds its immutable `WorldEntityId` to the new gameplay session. Rejected and replayed admissions create no player. The binding is host-owned context: connected movement commands carry no entity identity, so a session cannot nominate another player.
+Successful admission first requires an exact match with `StarfallGameplayProtocol.CurrentVersion`, then atomically creates a distinct generic player at the same configured anchor and binds its immutable `WorldEntityId` plus the selected protocol version to the new gameplay session. Incompatible, rejected and replayed admissions create no player or consume no ticket. The binding is host-owned context: connected movement commands carry no entity identity, so a session cannot nominate another player.
 
 `WorldPlayerState` is an immutable World-owned bucket containing its world-local entity identity, finite ground position, finite planar velocity in metres/second, normalized planar facing, 0.35 m radius by 1.8 m tall collision capsule, latest movement outcome, current integer health, life state and optional respawn tick. The shared life tuning supplies maximum and restored health. Lookup never exposes mutable runtime-owned state. World replaces whole states under the runtime lock; ordered defensive snapshots therefore remain stable after later movement, damage, defeat, respawn, creation or removal. Ordering is ascending `WorldEntityId`, independent of dictionary or native query enumeration.
 
@@ -152,7 +152,7 @@ M6 Authoritative Mana adds per-session checked integer Mana, fixed-tick regenera
 
 Offline mode creates one standalone technical player and supports finite or persistent execution. Connected mode requires `--listen-port` plus one or more repeatable `--verification-key <key-id>=<public-pem-path>` values, creates no player before admission, and cannot combine with `--run-ticks`.
 
-`WorldGameplayNetworkHost` owns one caller-polled peer/session registry. It rejects non-loopback endpoints before parsing, binds accepted peers to gameplay sessions, routes commands through the focused `WorldWalkingExchange`, publishes walking snapshots/corrections and independently publishes bounded monster snapshots through `WorldMonsterExchange`. Network errors and one-peer send failures are diagnostic and isolate cleanup to that peer/session; they do not stop the world.
+`WorldGameplayNetworkHost` owns one caller-polled peer/session registry. Its connection-level compatibility contract is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility`. It rejects non-loopback endpoints before parsing, binds accepted peers to gameplay sessions, routes commands through the focused `WorldWalkingExchange`, publishes walking snapshots/corrections and independently publishes bounded monster snapshots through `WorldMonsterExchange`. Network errors and one-peer send failures are diagnostic and isolate cleanup to that peer/session; they do not stop the world.
 
 Every active session has independent walking and monster publication state. Monster channel 4 uses sequenced full snapshots at most once per observed simulation tick. World captures live and defeated facts under its runtime lock; live and tombstone arrays remain ordered by entity identity and together remain bounded to the ten placement slots. A lethal removal retains the last authoritative state by slot until exact-slot replenishment, while technical removal and Stop do not fabricate death. Draining continues publication and deterministic simulation; disconnect or Stop clears the applicable session publication state.
 

@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using ChronoFall.Network.Transport;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -31,10 +32,14 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
     internal ConnectedWalkingClientSession(INetworkTransport transport, string ticket)
     {
         this.transport = transport ?? throw new ArgumentNullException(nameof(transport));
-        request = new WorldJoinRequest(ticket);
+        request = new WorldJoinRequest(StarfallGameplayProtocol.CurrentVersion, ticket);
     }
 
     internal GameplaySessionId? SessionId
+    {
+        get; private set;
+    }
+    internal ProtocolVersion? ProtocolVersion
     {
         get; private set;
     }
@@ -149,7 +154,13 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
             }
             if (WorldJoinAdmissionCodec.TryDecodeAccepted(packet.Span, out WorldJoinAccepted? accepted))
             {
+                if (accepted.SelectedProtocolVersion != request.ProtocolVersion)
+                {
+                    failure = $"World selected incompatible gameplay protocol version {accepted.SelectedProtocolVersion}.";
+                    return;
+                }
                 SessionId = accepted.SessionId;
+                ProtocolVersion = accepted.SelectedProtocolVersion;
                 admissionAccepted = true;
                 return;
             }

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Simulation.Entities;
 using Starfall.World.Admission;
 using Starfall.World.Lifecycle;
@@ -30,6 +31,8 @@ public sealed class WorldJoinAdmissionExchangeTests
         Assert.True(runtime.TryGetGameplaySession(accepted.SessionId, out WorldGameplaySession? session));
         Assert.NotNull(session);
         Assert.Equal(accepted.SessionId, session.SessionId);
+        Assert.Equal(StarfallGameplayProtocol.CurrentVersion, accepted.SelectedProtocolVersion);
+        Assert.Equal(accepted.SelectedProtocolVersion, session.ProtocolVersion);
         Assert.Equal(claims.AccountId, session.AccountId);
         Assert.Equal(claims.CharacterId, session.CharacterId);
         Assert.Equal(runtime.InstanceId, session.WorldInstanceId);
@@ -50,7 +53,9 @@ public sealed class WorldJoinAdmissionExchangeTests
         WorldJoinAdmissionExchange exchange = CreateExchange(runtime, signingKey);
 
         AssertRejected(
-            exchange.Handle(new WorldJoinRequest("not-a-ticket"), NowUnixMilliseconds),
+            exchange.Handle(
+                new WorldJoinRequest(StarfallGameplayProtocol.CurrentVersion, "not-a-ticket"),
+                NowUnixMilliseconds),
             WorldJoinRejectionReason.InvalidTicket);
 
         WorldJoinTicketClaims expired = CreateClaims(
@@ -71,6 +76,46 @@ public sealed class WorldJoinAdmissionExchangeTests
             exchange.Handle(IssueRequest(wrongDestination, signingKey), NowUnixMilliseconds),
             WorldJoinRejectionReason.WrongDestination);
 
+        Assert.Equal(0, runtime.ActiveSessionCount);
+        Assert.Equal(0, runtime.PlayerCount);
+        Assert.Equal(0, runtime.ConsumedTicketCount);
+    }
+
+    [Fact]
+    public void Incompatible_protocol_is_rejected_before_ticket_validation_or_consumption_and_can_retry()
+    {
+        using ECDsa signingKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        WorldChannelRuntime runtime = CreateRuntime(start: true);
+        WorldJoinAdmissionExchange exchange = CreateExchange(runtime, signingKey);
+        WorldJoinRequest compatible = IssueRequest(CreateClaims(runtime), signingKey);
+        var incompatible = new WorldJoinRequest(new ProtocolVersion(2), compatible.Ticket);
+
+        AssertRejected(
+            exchange.Handle(incompatible, NowUnixMilliseconds),
+            WorldJoinRejectionReason.IncompatibleProtocolVersion);
+        Assert.Equal(0, runtime.ActiveSessionCount);
+        Assert.Equal(0, runtime.PlayerCount);
+        Assert.Equal(0, runtime.ConsumedTicketCount);
+
+        WorldJoinAdmissionOutcome retried = exchange.Handle(compatible, NowUnixMilliseconds);
+        Assert.True(retried.IsAccepted);
+        Assert.Equal(1, runtime.ActiveSessionCount);
+        Assert.Equal(1, runtime.PlayerCount);
+        Assert.Equal(1, runtime.ConsumedTicketCount);
+    }
+
+    [Fact]
+    public void Runtime_rejects_an_invalid_protocol_before_consuming_a_validated_ticket()
+    {
+        WorldChannelRuntime runtime = CreateRuntime(start: true);
+
+        ArgumentException exception = Assert.Throws<ArgumentException>(() =>
+            runtime.ConsumeTicketAndCreateSession(
+                CreateClaims(runtime),
+                default,
+                NowUnixMilliseconds));
+
+        Assert.Equal("protocolVersion", exception.ParamName);
         Assert.Equal(0, runtime.ActiveSessionCount);
         Assert.Equal(0, runtime.PlayerCount);
         Assert.Equal(0, runtime.ConsumedTicketCount);
@@ -223,7 +268,9 @@ public sealed class WorldJoinAdmissionExchangeTests
     private static WorldJoinRequest IssueRequest(
         WorldJoinTicketClaims claims,
         ECDsa signingKey) =>
-        new(WorldJoinTicketCodec.Issue(claims, "test_key", signingKey));
+        new(
+            StarfallGameplayProtocol.CurrentVersion,
+            WorldJoinTicketCodec.Issue(claims, "test_key", signingKey));
 
     private static void AssertRejected(
         WorldJoinAdmissionOutcome outcome,

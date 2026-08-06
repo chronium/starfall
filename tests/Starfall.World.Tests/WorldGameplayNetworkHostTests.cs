@@ -4,6 +4,7 @@ using ChronoFall.Network.Transport;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -40,6 +41,7 @@ public sealed class WorldGameplayNetworkHostTests
         SentPacket accepted = Assert.Single(transport.Sent, static value => value.Channel == 0);
         Assert.Equal(NetworkDelivery.ReliableOrdered, accepted.Delivery);
         Assert.True(WorldJoinAdmissionCodec.TryDecodeAccepted(accepted.Payload, out WorldJoinAccepted? admission));
+        Assert.Equal(StarfallGameplayProtocol.CurrentVersion, admission.SelectedProtocolVersion);
         Assert.Equal(1, runtime.ActiveSessionCount);
         Assert.Equal(1, runtime.PlayerCount);
         Assert.Contains(transport.Sent, static value => value.Channel == StarfallNetworkChannels.MovementSnapshots);
@@ -90,6 +92,33 @@ public sealed class WorldGameplayNetworkHostTests
         Assert.Equal(0, runtime.ActiveSessionCount);
         Assert.Equal(0, runtime.PlayerCount);
         Assert.False(runtime.TryGetGameplaySession(admission.SessionId, out _));
+    }
+
+    [Fact]
+    public void Incompatible_protocol_is_rejected_without_creating_a_session_or_consuming_the_ticket()
+    {
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var transport = new RecordingTransport();
+        WorldChannelRuntime runtime = CreateRuntime();
+        using var runtimeScope = new RuntimeScope(runtime);
+        using var host = new WorldGameplayNetworkHost(transport, runtime, Ring(key), new FixedTimeProvider(Now));
+        var peer = new NetworkPeerId(8);
+        WorldJoinRequest compatible = Issue(runtime, key);
+        var incompatible = new WorldJoinRequest(new ProtocolVersion(2), compatible.Ticket);
+
+        host.Connected(peer, new NetworkEndpoint("127.0.0.1", 40000));
+        host.PacketReceived(
+            peer,
+            WorldJoinAdmissionCodec.EncodeRequest(incompatible),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.Admission);
+
+        SentPacket rejection = Assert.Single(transport.Sent);
+        Assert.True(WorldJoinAdmissionCodec.TryDecodeRejected(rejection.Payload, out WorldJoinRejected? decoded));
+        Assert.Equal(WorldJoinRejectionReason.IncompatibleProtocolVersion, decoded.Reason);
+        Assert.Equal(0, runtime.ActiveSessionCount);
+        Assert.Equal(0, runtime.PlayerCount);
+        Assert.Equal(0, runtime.ConsumedTicketCount);
     }
 
     [Fact]
@@ -162,7 +191,9 @@ public sealed class WorldGameplayNetworkHostTests
             runtime.InstanceId,
             now,
             now + 30_000);
-        return new WorldJoinRequest(WorldJoinTicketCodec.Issue(claims, "development", key));
+        return new WorldJoinRequest(
+            StarfallGameplayProtocol.CurrentVersion,
+            WorldJoinTicketCodec.Issue(claims, "development", key));
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider

@@ -1,4 +1,5 @@
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 
 namespace Starfall.Protocol.Tests.Admission;
 
@@ -66,14 +67,20 @@ public sealed class AdmissionContractTests
     [Fact]
     public void AdmissionFactsRejectInvalidValues()
     {
-        Assert.Throws<ArgumentException>(() => new WorldJoinRequest(""));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ProtocolVersion(0));
+        Assert.Throws<ArgumentException>(() => new WorldJoinRequest(default, "ticket"));
+        Assert.Throws<ArgumentException>(() => new WorldJoinRequest(StarfallGameplayProtocol.CurrentVersion, ""));
         Assert.Throws<ArgumentOutOfRangeException>(() => new WorldJoinRequest(
+            StarfallGameplayProtocol.CurrentVersion,
             new string('a', WorldJoinTicketCodec.MaximumTokenLength + 1)));
-        Assert.Throws<ArgumentException>(() => new WorldJoinAccepted(default));
+        Assert.Throws<ArgumentException>(() => new WorldJoinAccepted(default, new GameplaySessionId(Guid.NewGuid())));
+        Assert.Throws<ArgumentException>(() => new WorldJoinAccepted(StarfallGameplayProtocol.CurrentVersion, default));
         Assert.Throws<ArgumentOutOfRangeException>(() => new WorldJoinRejected((WorldJoinRejectionReason)999));
 
         GameplaySessionId sessionId = new(Guid.Parse("55555555-5555-5555-5555-555555555555"));
-        Assert.Equal(sessionId, new WorldJoinAccepted(sessionId).SessionId);
+        WorldJoinAccepted accepted = new(StarfallGameplayProtocol.CurrentVersion, sessionId);
+        Assert.Equal(sessionId, accepted.SessionId);
+        Assert.Equal(StarfallGameplayProtocol.CurrentVersion, accepted.SelectedProtocolVersion);
         Assert.Equal(
             WorldJoinRejectionReason.AlreadyConsumed,
             new WorldJoinRejected(WorldJoinRejectionReason.AlreadyConsumed).Reason);

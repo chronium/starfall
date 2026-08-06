@@ -1,7 +1,7 @@
 ---
 title: Bounded Monster Snapshots
 createdAt: 2026-08-05T17:41:38.0022610Z
-modifiedAt: 2026-08-05T18:52:35.7437290Z
+modifiedAt: 2026-08-06T10:30:14.9403050Z
 ---
 
 ## Purpose
@@ -43,28 +43,29 @@ This is bounded retained state, not a reliable event stream or combat-result pro
 
 ## Binary contract
 
-`BoundedMonsterSnapshotCodec` schema version 1 uses a standalone packet payload:
+`BoundedMonsterSnapshotCodec` uses a standalone packet payload whose layout is selected by the gameplay protocol version accepted at admission:
 
-1. version byte;
-2. unsigned 64-bit snapshot sequence;
-3. unsigned 64-bit simulation tick;
-4. one-byte live and defeated counts;
-5. ordered live entries;
-6. ordered defeated entries.
+1. unsigned 64-bit snapshot sequence;
+2. unsigned 64-bit simulation tick;
+3. one-byte live and defeated counts;
+4. ordered live entries;
+5. ordered defeated entries.
+
+The packet does not repeat a schema-version byte. Channel 4 identifies this fact under the negotiated connection contract.
 
 Integers and IEEE-754 single bit patterns are big-endian. Archetype identities use one length byte followed by canonical ASCII bytes. Optional targets use a canonical flag plus unsigned 64-bit value: absent requires zero; present requires a positive identity. Health uses positive signed 32-bit integers.
 
-The maximum payload is 1,209 bytes: a 19-byte header plus ten maximum-sized live entries. Encoding validates the complete fact and throws `ArgumentException` before returning output. Decoding accepts only exact complete payloads, rejects trailing bytes and malformed/non-canonical values, and never throws for arbitrary input.
+The maximum payload is 1,208 bytes: an 18-byte header plus ten maximum-sized live entries. Encoding validates the complete fact and throws `ArgumentException` before returning output. Decoding accepts only exact complete payloads, rejects trailing bytes and malformed/non-canonical values, and never throws for arbitrary input.
 
 Finite floats are required and negative zero is non-canonical. Facing uses the same `1e-4` normalization tolerance as connected walking.
 
-The entry digest or generic framing concepts do not exist here. Existing admission and connected-walking payload bytes remain unchanged.
+The entry digest or generic framing concepts do not exist here. The connection-level compatibility contract is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility`.
 
 ## Implemented exchange
 
 SERVER-0007 maps immutable World-owned state into this contract and publishes it from the existing gameplay network host. Channel 4 carries standalone monster snapshots with `Sequenced` delivery; admission remains channel 0, movement commands channel 1, movement snapshots channel 2 and movement corrections channel 3. No generic framing or multiplex envelope was introduced.
 
-Every admitted gameplay session owns an independent checked monster-snapshot sequence beginning at one. It receives one latest full snapshot at most once per observed fixed tick, including an initial tick-zero snapshot. Repeated host polls without a new tick send nothing, while a catch-up cycle may skip intermediate ticks and publish only the latest completed state. At the 1,209-byte maximum and nominal 60 Hz this Draft 0 bound is approximately 70.8 KiB/s per client before transport overhead. That is accepted evidence for ten prototype slots, not a scalable cadence or interest-management contract.
+Every admitted gameplay session owns an independent checked monster-snapshot sequence beginning at one. It receives one latest full snapshot at most once per observed fixed tick, including an initial tick-zero snapshot. Repeated host polls without a new tick send nothing, while a catch-up cycle may skip intermediate ticks and publish only the latest completed state. At the 1,208-byte maximum and nominal 60 Hz this Draft 0 bound is approximately 70.8 KiB/s per client before transport overhead. That is accepted evidence for ten prototype slots, not a scalable cadence or interest-management contract.
 
 World retains one immutable defeated state keyed by the authoritative placement slot only after lethal damage. The tombstone repeats in every later snapshot while the slot remains vacant, including to a session admitted during that vacancy. Exact-slot replenishment removes the tombstone and publishes the fresh entity identity. Technical removal and lifecycle shutdown do not fabricate defeat facts.
 

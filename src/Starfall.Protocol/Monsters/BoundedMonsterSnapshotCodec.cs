@@ -8,9 +8,8 @@ namespace Starfall.Protocol.Monsters;
 
 public static class BoundedMonsterSnapshotCodec
 {
-    public const byte SchemaVersion = 1;
-    public const int HeaderPayloadLength = 19;
-    public const int MaxPayloadLength = 1_209;
+    public const int HeaderPayloadLength = 18;
+    public const int MaxPayloadLength = 1_208;
 
     private const int LiveFixedPayloadLength = 55;
     private const int DefeatedFixedPayloadLength = 33;
@@ -29,7 +28,6 @@ public static class BoundedMonsterSnapshotCodec
 
         byte[] payload = new byte[length];
         int offset = 0;
-        WriteByte(payload, ref offset, SchemaVersion);
         WriteUInt64(payload, ref offset, snapshot.Sequence.Value);
         WriteUInt64(payload, ref offset, snapshot.SimulationTick);
         WriteByte(payload, ref offset, checked((byte)snapshot.LiveMonsters.Length));
@@ -54,8 +52,7 @@ public static class BoundedMonsterSnapshotCodec
             return false;
 
         int offset = 0;
-        if (!TryReadByte(payload, ref offset, out byte version) || version != SchemaVersion ||
-            !TryReadUInt64(payload, ref offset, out ulong sequence) || sequence == 0 ||
+        if (!TryReadUInt64(payload, ref offset, out ulong sequence) || sequence == 0 ||
             !TryReadUInt64(payload, ref offset, out ulong simulationTick) ||
             !TryReadByte(payload, ref offset, out byte liveCount) ||
             !TryReadByte(payload, ref offset, out byte defeatedCount) ||

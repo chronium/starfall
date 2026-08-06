@@ -7,8 +7,9 @@ dependsOn:
 - SIM-0009
 - PROTOCOL-0007
 - PROTOCOL-0014
+- PROTOCOL-0015
 createdAt: 2026-08-05T19:46:44.5364970Z
-modifiedAt: 2026-08-06T06:43:25.2045640Z
+modifiedAt: 2026-08-06T10:20:20.2688570Z
 ---
 
 Extend the proven connected Basic combat envelope with focused Fire Arrow facts and deterministic serialization.

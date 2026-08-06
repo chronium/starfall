@@ -7,25 +7,24 @@ namespace Starfall.Protocol.Tests.Movement;
 public sealed class ConnectedWalkingCodecTests
 {
     private static readonly byte[] CommandGolden = Convert.FromHexString(
-        "0101020304050607083FC00000C0100000");
+        "01020304050607083FC00000C0100000");
 
     private static readonly byte[] SnapshotGolden = Convert.FromHexString(
-        "01010203040506070800000000000000001112131415161718" +
+        "010203040506070800000000000000001112131415161718" +
         "3FC00000C01000004080000000000000000000003F800000" +
         "3F00000040000000012122232425262728");
 
     private static readonly byte[] CorrectionGolden = Convert.FromHexString(
-        "01212223242526272801020304050607080000000000000000" +
+        "212223242526272801020304050607080000000000000000" +
         "11121314151617183FC00000C01000004080000000000000" +
         "000000003F8000003F00000040000000012122232425262728");
 
     [Fact]
-    public void Public_schema_and_payload_lengths_are_frozen()
+    public void Public_payload_lengths_are_frozen_without_packet_local_versions()
     {
-        Assert.Equal(1, ConnectedWalkingCodec.SchemaVersion);
-        Assert.Equal(17, ConnectedWalkingCodec.CommandPayloadLength);
-        Assert.Equal(66, ConnectedWalkingCodec.SnapshotPayloadLength);
-        Assert.Equal(74, ConnectedWalkingCodec.CorrectionPayloadLength);
+        Assert.Equal(16, ConnectedWalkingCodec.CommandPayloadLength);
+        Assert.Equal(65, ConnectedWalkingCodec.SnapshotPayloadLength);
+        Assert.Equal(73, ConnectedWalkingCodec.CorrectionPayloadLength);
     }
 
     [Fact]
@@ -75,7 +74,7 @@ public sealed class ConnectedWalkingCodecTests
         Assert.Equal(CorrectionGolden, first);
         Assert.Equal(CorrectionGolden, second);
         Assert.NotSame(first, second);
-        Assert.Equal(SnapshotGolden.AsSpan(1).ToArray(), first.AsSpan(9).ToArray());
+        Assert.Equal(SnapshotGolden, first.AsSpan(8).ToArray());
         Assert.True(ConnectedWalkingCodec.TryDecodeCorrection(first, out PlayerMovementCorrection? decoded));
         Assert.NotNull(decoded);
         Assert.Equal(correction.CorrectedIntentSequence, decoded.CorrectedIntentSequence);
@@ -89,12 +88,12 @@ public sealed class ConnectedWalkingCodecTests
 
         byte[] payload = ConnectedWalkingCodec.EncodeSnapshot(snapshot);
 
-        Assert.Equal(0, payload[57]);
-        Assert.Equal(0UL, BinaryPrimitives.ReadUInt64BigEndian(payload.AsSpan(58, 8)));
+        Assert.Equal(0, payload[56]);
+        Assert.Equal(0UL, BinaryPrimitives.ReadUInt64BigEndian(payload.AsSpan(57, 8)));
         Assert.True(ConnectedWalkingCodec.TryDecodeSnapshot(payload, out PlayerMovementSnapshot? decoded));
         Assert.Null(decoded!.LastProcessedIntentSequence);
 
-        payload[65] = 1;
+        payload[64] = 1;
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(payload, out _));
     }
 
@@ -115,25 +114,15 @@ public sealed class ConnectedWalkingCodecTests
     }
 
     [Fact]
-    public void Unsupported_versions_and_invalid_acknowledgement_flags_are_rejected()
+    public void Invalid_acknowledgement_flags_are_rejected()
     {
-        byte[] command = [.. CommandGolden];
         byte[] snapshot = [.. SnapshotGolden];
         byte[] correction = [.. CorrectionGolden];
 
-        command[0] = 2;
-        snapshot[0] = 2;
-        correction[0] = 2;
-        Assert.False(ConnectedWalkingCodec.TryDecodeCommand(command, out _));
-        Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(snapshot, out _));
-        Assert.False(ConnectedWalkingCodec.TryDecodeCorrection(correction, out _));
-
-        snapshot = [.. SnapshotGolden];
-        snapshot[57] = 2;
+        snapshot[56] = 2;
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(snapshot, out _));
 
-        correction = [.. CorrectionGolden];
-        correction[65] = 2;
+        correction[64] = 2;
         Assert.False(ConnectedWalkingCodec.TryDecodeCorrection(correction, out _));
     }
 
@@ -141,10 +130,10 @@ public sealed class ConnectedWalkingCodecTests
     public void Required_identifiers_and_sequences_reject_zero_while_tick_zero_remains_valid()
     {
         byte[] command = [.. CommandGolden];
-        command.AsSpan(1, 8).Clear();
+        command.AsSpan(0, 8).Clear();
         Assert.False(ConnectedWalkingCodec.TryDecodeCommand(command, out _));
 
-        foreach (int offset in new[] { 1, 17 })
+        foreach (int offset in new[] { 0, 16 })
         {
             byte[] snapshot = [.. SnapshotGolden];
             snapshot.AsSpan(offset, 8).Clear();
@@ -152,11 +141,11 @@ public sealed class ConnectedWalkingCodecTests
         }
 
         byte[] presentZero = [.. SnapshotGolden];
-        presentZero.AsSpan(58, 8).Clear();
+        presentZero.AsSpan(57, 8).Clear();
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(presentZero, out _));
 
         byte[] correction = [.. CorrectionGolden];
-        correction.AsSpan(1, 8).Clear();
+        correction.AsSpan(0, 8).Clear();
         Assert.False(ConnectedWalkingCodec.TryDecodeCorrection(correction, out _));
 
         Assert.True(ConnectedWalkingCodec.TryDecodeSnapshot(SnapshotGolden, out PlayerMovementSnapshot? decoded));
@@ -175,11 +164,11 @@ public sealed class ConnectedWalkingCodecTests
         })
         {
             byte[] command = [.. CommandGolden];
-            BinaryPrimitives.WriteInt32BigEndian(command.AsSpan(9, 4), bits);
+            BinaryPrimitives.WriteInt32BigEndian(command.AsSpan(8, 4), bits);
             Assert.False(ConnectedWalkingCodec.TryDecodeCommand(command, out _));
         }
 
-        foreach (int offset in new[] { 25, 29, 33, 37, 41, 45, 49, 53 })
+        foreach (int offset in new[] { 24, 28, 32, 36, 40, 44, 48, 52 })
         {
             byte[] snapshot = [.. SnapshotGolden];
             BinaryPrimitives.WriteInt32BigEndian(snapshot.AsSpan(offset, 4), int.MinValue);
@@ -191,19 +180,19 @@ public sealed class ConnectedWalkingCodecTests
     public void Facing_and_capsule_validation_reuses_the_fact_contract()
     {
         byte[] zeroFacing = [.. SnapshotGolden];
-        zeroFacing.AsSpan(41, 8).Clear();
+        zeroFacing.AsSpan(40, 8).Clear();
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(zeroFacing, out _));
 
         byte[] longFacing = [.. SnapshotGolden];
-        BinaryPrimitives.WriteInt32BigEndian(longFacing.AsSpan(41, 4), BitConverter.SingleToInt32Bits(2.0f));
+        BinaryPrimitives.WriteInt32BigEndian(longFacing.AsSpan(40, 4), BitConverter.SingleToInt32Bits(2.0f));
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(longFacing, out _));
 
         byte[] zeroRadius = [.. SnapshotGolden];
-        zeroRadius.AsSpan(49, 4).Clear();
+        zeroRadius.AsSpan(48, 4).Clear();
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(zeroRadius, out _));
 
         byte[] shortCapsule = [.. SnapshotGolden];
-        BinaryPrimitives.WriteInt32BigEndian(shortCapsule.AsSpan(53, 4), BitConverter.SingleToInt32Bits(1.0f));
+        BinaryPrimitives.WriteInt32BigEndian(shortCapsule.AsSpan(52, 4), BitConverter.SingleToInt32Bits(1.0f));
         Assert.False(ConnectedWalkingCodec.TryDecodeSnapshot(shortCapsule, out _));
     }
 
@@ -211,12 +200,12 @@ public sealed class ConnectedWalkingCodecTests
     public void Correction_requires_an_acknowledgement_equal_to_the_corrected_sequence()
     {
         byte[] absent = [.. CorrectionGolden];
-        absent[65] = 0;
-        absent.AsSpan(66, 8).Clear();
+        absent[64] = 0;
+        absent.AsSpan(65, 8).Clear();
         Assert.False(ConnectedWalkingCodec.TryDecodeCorrection(absent, out _));
 
         byte[] unequal = [.. CorrectionGolden];
-        BinaryPrimitives.WriteUInt64BigEndian(unequal.AsSpan(66, 8), 99);
+        BinaryPrimitives.WriteUInt64BigEndian(unequal.AsSpan(65, 8), 99);
         Assert.False(ConnectedWalkingCodec.TryDecodeCorrection(unequal, out _));
     }
 

@@ -3,6 +3,7 @@ using ChronoFall.Network.Transport;
 using Starfall.Client.Networking;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -45,7 +46,9 @@ public sealed class ConnectedWalkingClientSessionTests
                 handler.PacketReceived(
                     transport.Peer,
                     WorldJoinAdmissionCodec.EncodeAccepted(
-                        new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                        new WorldJoinAccepted(
+                            StarfallGameplayProtocol.CurrentVersion,
+                            new GameplaySessionId(Guid.NewGuid()))),
                     NetworkDelivery.ReliableOrdered,
                     StarfallNetworkChannels.Admission);
                 handler.PacketReceived(
@@ -58,6 +61,7 @@ public sealed class ConnectedWalkingClientSessionTests
 
         session.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, 7777, "unused"));
         Assert.True(session.IsReady);
+        Assert.Equal(StarfallGameplayProtocol.CurrentVersion, session.ProtocolVersion);
         Assert.Equal(0UL, session.Snapshot!.Value.Tick);
         Assert.Contains(transport.Sent, static value => value.Channel == StarfallNetworkChannels.Admission);
 
@@ -104,7 +108,9 @@ public sealed class ConnectedWalkingClientSessionTests
             handler.PacketReceived(
                 transport.Peer,
                 WorldJoinAdmissionCodec.EncodeAccepted(
-                    new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                    new WorldJoinAccepted(
+                        StarfallGameplayProtocol.CurrentVersion,
+                        new GameplaySessionId(Guid.NewGuid()))),
                 NetworkDelivery.ReliableOrdered,
                 StarfallNetworkChannels.Admission);
         };
@@ -113,6 +119,39 @@ public sealed class ConnectedWalkingClientSessionTests
 
         Assert.True(session.IsReady);
         Assert.Equal(0UL, session.Snapshot!.Value.Tick);
+    }
+
+    [Fact]
+    public void Session_rejects_an_accepted_version_other_than_the_one_it_offered()
+    {
+        var transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket");
+        transport.OnPoll = handler =>
+        {
+            if (transport.PollCount != 1)
+                return;
+            handler.Connected(transport.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                transport.Peer,
+                WorldJoinAdmissionCodec.EncodeAccepted(
+                    new WorldJoinAccepted(new ProtocolVersion(2), new GameplaySessionId(Guid.NewGuid()))),
+                NetworkDelivery.ReliableOrdered,
+                StarfallNetworkChannels.Admission);
+        };
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+            session.ConnectAndAwaitInitialSnapshot(
+                new(IPAddress.Loopback, 7777, "unused"),
+                TimeSpan.FromSeconds(1)));
+
+        Assert.Contains("incompatible gameplay protocol version 2", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Null(session.ProtocolVersion);
+        Assert.Null(session.SessionId);
+        SentPacket requestPacket = Assert.Single(
+            transport.Sent,
+            static value => value.Channel == StarfallNetworkChannels.Admission);
+        Assert.True(WorldJoinAdmissionCodec.TryDecodeRequest(requestPacket.Payload, out WorldJoinRequest? request));
+        Assert.Equal(StarfallGameplayProtocol.CurrentVersion, request.ProtocolVersion);
     }
 
     [Fact]
@@ -133,7 +172,9 @@ public sealed class ConnectedWalkingClientSessionTests
             handler.PacketReceived(
                 transport.Peer,
                 WorldJoinAdmissionCodec.EncodeAccepted(
-                    new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                    new WorldJoinAccepted(
+                        StarfallGameplayProtocol.CurrentVersion,
+                        new GameplaySessionId(Guid.NewGuid()))),
                 NetworkDelivery.ReliableOrdered,
                 StarfallNetworkChannels.Admission);
             handler.PacketReceived(
@@ -177,7 +218,9 @@ public sealed class ConnectedWalkingClientSessionTests
             handler.PacketReceived(
                 transport.Peer,
                 WorldJoinAdmissionCodec.EncodeAccepted(
-                    new WorldJoinAccepted(new GameplaySessionId(Guid.NewGuid()))),
+                    new WorldJoinAccepted(
+                        StarfallGameplayProtocol.CurrentVersion,
+                        new GameplaySessionId(Guid.NewGuid()))),
                 NetworkDelivery.ReliableOrdered,
                 StarfallNetworkChannels.Admission);
             handler.PacketReceived(

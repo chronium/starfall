@@ -8,12 +8,12 @@ namespace Starfall.Protocol.Tests.Combat;
 public sealed class ConnectedBasicArrowCodecTests
 {
     private static readonly byte[] CommandGolden = Convert.FromHexString(
-        "01010B62617369635F6172726F77" +
+        "010B62617369635F6172726F77" +
         "0102030405060708" +
         "1112131415161718");
 
     private static readonly byte[] AcceptedGolden = Convert.FromHexString(
-        "01020B62617369635F6172726F77" +
+        "020B62617369635F6172726F77" +
         "0102030405060708" +
         "1112131415161718" +
         "2122232425262728" +
@@ -21,7 +21,7 @@ public sealed class ConnectedBasicArrowCodecTests
         "0000000000000016");
 
     private static readonly byte[] RejectedGolden = Convert.FromHexString(
-        "01030B62617369635F6172726F77" +
+        "030B62617369635F6172726F77" +
         "0102030405060708" +
         "1112131415161718" +
         "2122232425262728" +
@@ -29,7 +29,7 @@ public sealed class ConnectedBasicArrowCodecTests
         "07");
 
     private static readonly byte[] CanceledGolden = Convert.FromHexString(
-        "01040B62617369635F6172726F77" +
+        "040B62617369635F6172726F77" +
         "0102030405060708" +
         "1112131415161718" +
         "2122232425262728" +
@@ -39,7 +39,7 @@ public sealed class ConnectedBasicArrowCodecTests
         "00");
 
     private static readonly byte[] ResolvedGolden = Convert.FromHexString(
-        "01050B62617369635F6172726F77" +
+        "050B62617369635F6172726F77" +
         "0102030405060708" +
         "1112131415161718" +
         "2122232425262728" +
@@ -50,19 +50,18 @@ public sealed class ConnectedBasicArrowCodecTests
         "01");
 
     [Fact]
-    public void Public_schema_kinds_and_payload_lengths_are_frozen()
+    public void Public_kinds_and_payload_lengths_are_frozen_without_a_packet_local_version()
     {
-        Assert.Equal(1, ConnectedBasicArrowCodec.SchemaVersion);
         Assert.Equal(1, (byte)BasicArrowPayloadKind.Command);
         Assert.Equal(2, (byte)BasicArrowPayloadKind.Accepted);
         Assert.Equal(3, (byte)BasicArrowPayloadKind.Rejected);
         Assert.Equal(4, (byte)BasicArrowPayloadKind.Canceled);
         Assert.Equal(5, (byte)BasicArrowPayloadKind.Resolved);
-        Assert.Equal(30, ConnectedBasicArrowCodec.CommandPayloadLength);
-        Assert.Equal(54, ConnectedBasicArrowCodec.AcceptedPayloadLength);
-        Assert.Equal(47, ConnectedBasicArrowCodec.RejectedPayloadLength);
-        Assert.Equal(63, ConnectedBasicArrowCodec.CanceledPayloadLength);
-        Assert.Equal(63, ConnectedBasicArrowCodec.ResolvedPayloadLength);
+        Assert.Equal(29, ConnectedBasicArrowCodec.CommandPayloadLength);
+        Assert.Equal(53, ConnectedBasicArrowCodec.AcceptedPayloadLength);
+        Assert.Equal(46, ConnectedBasicArrowCodec.RejectedPayloadLength);
+        Assert.Equal(62, ConnectedBasicArrowCodec.CanceledPayloadLength);
+        Assert.Equal(62, ConnectedBasicArrowCodec.ResolvedPayloadLength);
     }
 
     [Fact]
@@ -188,16 +187,15 @@ public sealed class ConnectedBasicArrowCodecTests
     [Fact]
     public void Unsupported_or_noncanonical_headers_are_rejected()
     {
-        AssertHeaderRejected(payload => payload[0] = 2);
-        AssertHeaderRejected(payload => payload[1] = 0);
-        AssertHeaderRejected(payload => payload[1] = 6);
-        AssertHeaderRejected(payload => payload[2] = 10);
-        AssertHeaderRejected(payload => payload[2] = 12);
-        AssertHeaderRejected(payload => payload[3] = (byte)'B');
-        AssertHeaderRejected(payload => payload[13] = (byte)'x');
+        AssertHeaderRejected(payload => payload[0] = 0);
+        AssertHeaderRejected(payload => payload[0] = 6);
+        AssertHeaderRejected(payload => payload[1] = 10);
+        AssertHeaderRejected(payload => payload[1] = 12);
+        AssertHeaderRejected(payload => payload[2] = (byte)'B');
+        AssertHeaderRejected(payload => payload[12] = (byte)'x');
 
         byte[] wrongKnownKind = [.. CommandGolden];
-        wrongKnownKind[1] = (byte)BasicArrowPayloadKind.Accepted;
+        wrongKnownKind[0] = (byte)BasicArrowPayloadKind.Accepted;
         Assert.False(ConnectedBasicArrowCodec.TryReadPayloadKind(wrongKnownKind, out _));
         Assert.False(ConnectedBasicArrowCodec.TryDecodeCommand(wrongKnownKind, out _));
     }
@@ -205,14 +203,14 @@ public sealed class ConnectedBasicArrowCodecTests
     [Fact]
     public void Required_sequences_and_entity_identities_reject_zero_or_self_targeting()
     {
-        foreach (int offset in new[] { 14, 22 })
+        foreach (int offset in new[] { 13, 21 })
         {
             byte[] command = [.. CommandGolden];
             command.AsSpan(offset, 8).Clear();
             Assert.False(ConnectedBasicArrowCodec.TryDecodeCommand(command, out _));
         }
 
-        foreach (int offset in new[] { 14, 22, 30 })
+        foreach (int offset in new[] { 13, 21, 29 })
         {
             byte[] accepted = [.. AcceptedGolden];
             accepted.AsSpan(offset, 8).Clear();
@@ -220,7 +218,7 @@ public sealed class ConnectedBasicArrowCodecTests
         }
 
         byte[] selfTarget = [.. AcceptedGolden];
-        selfTarget.AsSpan(22, 8).CopyTo(selfTarget.AsSpan(30, 8));
+        selfTarget.AsSpan(21, 8).CopyTo(selfTarget.AsSpan(29, 8));
         Assert.False(ConnectedBasicArrowCodec.TryDecodeAccepted(selfTarget, out _));
     }
 
@@ -228,29 +226,29 @@ public sealed class ConnectedBasicArrowCodecTests
     public void Temporal_reason_damage_and_flag_constraints_are_rejected()
     {
         byte[] accepted = [.. AcceptedGolden];
-        accepted.AsSpan(46, 8).Clear();
+        accepted.AsSpan(45, 8).Clear();
         Assert.False(ConnectedBasicArrowCodec.TryDecodeAccepted(accepted, out _));
 
         byte[] rejected = [.. RejectedGolden];
-        rejected[46] = 255;
+        rejected[45] = 255;
         Assert.False(ConnectedBasicArrowCodec.TryDecodeRejected(rejected, out _));
 
         byte[] cancellationBeforeStart = [.. CanceledGolden];
-        BinaryPrimitives.WriteUInt64BigEndian(cancellationBeforeStart.AsSpan(54, 8), 9);
+        BinaryPrimitives.WriteUInt64BigEndian(cancellationBeforeStart.AsSpan(53, 8), 9);
         Assert.False(ConnectedBasicArrowCodec.TryDecodeCanceled(cancellationBeforeStart, out _));
 
         byte[] cancellationAfterResolve = [.. CanceledGolden];
-        BinaryPrimitives.WriteUInt64BigEndian(cancellationAfterResolve.AsSpan(54, 8), 23);
+        BinaryPrimitives.WriteUInt64BigEndian(cancellationAfterResolve.AsSpan(53, 8), 23);
         Assert.False(ConnectedBasicArrowCodec.TryDecodeCanceled(cancellationAfterResolve, out _));
 
         byte[] invalidCancellationReason = [.. CanceledGolden];
-        invalidCancellationReason[62] = 255;
+        invalidCancellationReason[61] = 255;
         Assert.False(ConnectedBasicArrowCodec.TryDecodeCanceled(invalidCancellationReason, out _));
 
-        AssertResolvedRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(54, 4), 299));
-        AssertResolvedRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(58, 4), 0));
-        AssertResolvedRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(58, 4), 301));
-        AssertResolvedRejected(payload => payload[62] = 2);
+        AssertResolvedRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(53, 4), 299));
+        AssertResolvedRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(57, 4), 0));
+        AssertResolvedRejected(payload => BinaryPrimitives.WriteInt32BigEndian(payload.AsSpan(57, 4), 301));
+        AssertResolvedRejected(payload => payload[61] = 2);
     }
 
     [Fact]

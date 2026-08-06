@@ -5,6 +5,7 @@ using Starfall.Client.Networking;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Compatibility;
 using Starfall.World.Lifecycle;
 using Starfall.World.Networking;
 
@@ -60,6 +61,7 @@ public sealed class ConnectedWalkingLoopbackTests
 
         client.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, port, "unused"));
         Assert.True(client.IsReady);
+        Assert.Equal(StarfallGameplayProtocol.CurrentVersion, client.ProtocolVersion);
         Assert.Equal(1, runtime.ActiveSessionCount);
         Assert.Equal(Draft0GrayboxCatalog.FirstPlayable.Town.RespawnAnchor, client.Snapshot!.Value.Position);
         await PumpUntilAsync(client, () => client.MonsterSnapshot is not null);

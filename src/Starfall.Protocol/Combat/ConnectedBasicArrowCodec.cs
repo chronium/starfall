@@ -15,14 +15,13 @@ public enum BasicArrowPayloadKind : byte
 
 public static class ConnectedBasicArrowCodec
 {
-    public const byte SchemaVersion = 1;
-    public const int CommandPayloadLength = 30;
-    public const int AcceptedPayloadLength = 54;
-    public const int RejectedPayloadLength = 47;
-    public const int CanceledPayloadLength = 63;
-    public const int ResolvedPayloadLength = 63;
+    public const int CommandPayloadLength = 29;
+    public const int AcceptedPayloadLength = 53;
+    public const int RejectedPayloadLength = 46;
+    public const int CanceledPayloadLength = 62;
+    public const int ResolvedPayloadLength = 62;
 
-    private const int HeaderPayloadLength = 14;
+    private const int HeaderPayloadLength = 13;
     private const int ActionIdentityLength = 11;
     private const byte TargetNotDefeated = 0;
     private const byte TargetDefeated = 1;
@@ -33,15 +32,14 @@ public static class ConnectedBasicArrowCodec
     {
         kind = default;
         if (payload.Length < HeaderPayloadLength ||
-            payload[0] != SchemaVersion ||
-            !Enum.IsDefined((BasicArrowPayloadKind)payload[1]) ||
-            payload[2] != ActionIdentityLength ||
-            !payload.Slice(3, ActionIdentityLength).SequenceEqual(ActionIdentityBytes))
+            !Enum.IsDefined((BasicArrowPayloadKind)payload[0]) ||
+            payload[1] != ActionIdentityLength ||
+            !payload.Slice(2, ActionIdentityLength).SequenceEqual(ActionIdentityBytes))
         {
             return false;
         }
 
-        kind = (BasicArrowPayloadKind)payload[1];
+        kind = (BasicArrowPayloadKind)payload[0];
         if (payload.Length != GetPayloadLength(kind))
         {
             kind = default;
@@ -56,8 +54,8 @@ public static class ConnectedBasicArrowCodec
         ValidateCommand(command);
 
         byte[] payload = CreatePayload(BasicArrowPayloadKind.Command, CommandPayloadLength);
-        WriteUInt64(payload, 14, command.Sequence.Value);
-        WriteUInt64(payload, 22, command.TargetEntityId.Value);
+        WriteUInt64(payload, 13, command.Sequence.Value);
+        WriteUInt64(payload, 21, command.TargetEntityId.Value);
         return payload;
     }
 
@@ -69,8 +67,8 @@ public static class ConnectedBasicArrowCodec
         if (!HasKind(payload, BasicArrowPayloadKind.Command))
             return false;
 
-        ulong sequence = ReadUInt64(payload, 14);
-        ulong target = ReadUInt64(payload, 22);
+        ulong sequence = ReadUInt64(payload, 13);
+        ulong target = ReadUInt64(payload, 21);
         if (sequence == 0 || target == 0)
             return false;
 
@@ -86,8 +84,8 @@ public static class ConnectedBasicArrowCodec
 
         byte[] payload = CreatePayload(BasicArrowPayloadKind.Accepted, AcceptedPayloadLength);
         WriteAction(payload, accepted.Sequence, accepted.ActorEntityId, accepted.TargetEntityId);
-        WriteUInt64(payload, 38, accepted.StartTick);
-        WriteUInt64(payload, 46, accepted.ResolveTick);
+        WriteUInt64(payload, 37, accepted.StartTick);
+        WriteUInt64(payload, 45, accepted.ResolveTick);
         return payload;
     }
 
@@ -102,8 +100,8 @@ public static class ConnectedBasicArrowCodec
             return false;
         }
 
-        ulong startTick = ReadUInt64(payload, 38);
-        ulong resolveTick = ReadUInt64(payload, 46);
+        ulong startTick = ReadUInt64(payload, 37);
+        ulong resolveTick = ReadUInt64(payload, 45);
         if (resolveTick <= startTick)
             return false;
 
@@ -117,8 +115,8 @@ public static class ConnectedBasicArrowCodec
 
         byte[] payload = CreatePayload(BasicArrowPayloadKind.Rejected, RejectedPayloadLength);
         WriteAction(payload, rejected.Sequence, rejected.ActorEntityId, rejected.TargetEntityId);
-        WriteUInt64(payload, 38, rejected.DecisionTick);
-        payload[46] = (byte)rejected.Reason;
+        WriteUInt64(payload, 37, rejected.DecisionTick);
+        payload[45] = (byte)rejected.Reason;
         return payload;
     }
 
@@ -129,7 +127,7 @@ public static class ConnectedBasicArrowCodec
         rejected = null;
         if (!HasKind(payload, BasicArrowPayloadKind.Rejected) ||
             !TryReadAction(payload, out CombatCommandSequence sequence, out WorldEntityId actor, out WorldEntityId target) ||
-            !Enum.IsDefined((BasicArrowRejectionReason)payload[46]))
+            !Enum.IsDefined((BasicArrowRejectionReason)payload[45]))
         {
             return false;
         }
@@ -138,8 +136,8 @@ public static class ConnectedBasicArrowCodec
             sequence,
             actor,
             target,
-            ReadUInt64(payload, 38),
-            (BasicArrowRejectionReason)payload[46]);
+            ReadUInt64(payload, 37),
+            (BasicArrowRejectionReason)payload[45]);
         return true;
     }
 
@@ -149,10 +147,10 @@ public static class ConnectedBasicArrowCodec
 
         byte[] payload = CreatePayload(BasicArrowPayloadKind.Canceled, CanceledPayloadLength);
         WriteAction(payload, canceled.Sequence, canceled.ActorEntityId, canceled.TargetEntityId);
-        WriteUInt64(payload, 38, canceled.StartTick);
-        WriteUInt64(payload, 46, canceled.ResolveTick);
-        WriteUInt64(payload, 54, canceled.CancellationTick);
-        payload[62] = (byte)canceled.Reason;
+        WriteUInt64(payload, 37, canceled.StartTick);
+        WriteUInt64(payload, 45, canceled.ResolveTick);
+        WriteUInt64(payload, 53, canceled.CancellationTick);
+        payload[61] = (byte)canceled.Reason;
         return payload;
     }
 
@@ -163,14 +161,14 @@ public static class ConnectedBasicArrowCodec
         canceled = null;
         if (!HasKind(payload, BasicArrowPayloadKind.Canceled) ||
             !TryReadAction(payload, out CombatCommandSequence sequence, out WorldEntityId actor, out WorldEntityId target) ||
-            !Enum.IsDefined((BasicArrowCancellationReason)payload[62]))
+            !Enum.IsDefined((BasicArrowCancellationReason)payload[61]))
         {
             return false;
         }
 
-        ulong startTick = ReadUInt64(payload, 38);
-        ulong resolveTick = ReadUInt64(payload, 46);
-        ulong cancellationTick = ReadUInt64(payload, 54);
+        ulong startTick = ReadUInt64(payload, 37);
+        ulong resolveTick = ReadUInt64(payload, 45);
+        ulong cancellationTick = ReadUInt64(payload, 53);
         if (resolveTick <= startTick || cancellationTick < startTick || cancellationTick > resolveTick)
             return false;
 
@@ -181,7 +179,7 @@ public static class ConnectedBasicArrowCodec
             startTick,
             resolveTick,
             cancellationTick,
-            (BasicArrowCancellationReason)payload[62]);
+            (BasicArrowCancellationReason)payload[61]);
         return true;
     }
 
@@ -191,11 +189,11 @@ public static class ConnectedBasicArrowCodec
 
         byte[] payload = CreatePayload(BasicArrowPayloadKind.Resolved, ResolvedPayloadLength);
         WriteAction(payload, resolved.Sequence, resolved.ActorEntityId, resolved.TargetEntityId);
-        WriteUInt64(payload, 38, resolved.StartTick);
-        WriteUInt64(payload, 46, resolved.ResolveTick);
-        WriteInt32(payload, 54, resolved.RequestedDamageUnits);
-        WriteInt32(payload, 58, resolved.EffectiveDamageUnits);
-        payload[62] = resolved.TargetDefeated ? TargetDefeated : TargetNotDefeated;
+        WriteUInt64(payload, 37, resolved.StartTick);
+        WriteUInt64(payload, 45, resolved.ResolveTick);
+        WriteInt32(payload, 53, resolved.RequestedDamageUnits);
+        WriteInt32(payload, 57, resolved.EffectiveDamageUnits);
+        payload[61] = resolved.TargetDefeated ? TargetDefeated : TargetNotDefeated;
         return payload;
     }
 
@@ -210,11 +208,11 @@ public static class ConnectedBasicArrowCodec
             return false;
         }
 
-        ulong startTick = ReadUInt64(payload, 38);
-        ulong resolveTick = ReadUInt64(payload, 46);
-        int requestedDamage = ReadInt32(payload, 54);
-        int effectiveDamage = ReadInt32(payload, 58);
-        byte defeated = payload[62];
+        ulong startTick = ReadUInt64(payload, 37);
+        ulong resolveTick = ReadUInt64(payload, 45);
+        int requestedDamage = ReadInt32(payload, 53);
+        int effectiveDamage = ReadInt32(payload, 57);
+        byte defeated = payload[61];
         if (resolveTick <= startTick ||
             requestedDamage != ConnectedBasicArrow.RequestedDamageUnits ||
             effectiveDamage <= 0 ||
@@ -239,10 +237,9 @@ public static class ConnectedBasicArrowCodec
     private static byte[] CreatePayload(BasicArrowPayloadKind kind, int length)
     {
         byte[] payload = new byte[length];
-        payload[0] = SchemaVersion;
-        payload[1] = (byte)kind;
-        payload[2] = ActionIdentityLength;
-        ActionIdentityBytes.CopyTo(payload.AsSpan(3));
+        payload[0] = (byte)kind;
+        payload[1] = ActionIdentityLength;
+        ActionIdentityBytes.CopyTo(payload.AsSpan(2));
         return payload;
     }
 
@@ -265,9 +262,9 @@ public static class ConnectedBasicArrowCodec
         WorldEntityId actor,
         WorldEntityId target)
     {
-        WriteUInt64(payload, 14, sequence.Value);
-        WriteUInt64(payload, 22, actor.Value);
-        WriteUInt64(payload, 30, target.Value);
+        WriteUInt64(payload, 13, sequence.Value);
+        WriteUInt64(payload, 21, actor.Value);
+        WriteUInt64(payload, 29, target.Value);
     }
 
     private static bool TryReadAction(
@@ -276,9 +273,9 @@ public static class ConnectedBasicArrowCodec
         out WorldEntityId actor,
         out WorldEntityId target)
     {
-        ulong sequenceValue = ReadUInt64(payload, 14);
-        ulong actorValue = ReadUInt64(payload, 22);
-        ulong targetValue = ReadUInt64(payload, 30);
+        ulong sequenceValue = ReadUInt64(payload, 13);
+        ulong actorValue = ReadUInt64(payload, 21);
+        ulong targetValue = ReadUInt64(payload, 29);
         sequence = default;
         actor = default;
         target = default;

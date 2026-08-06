@@ -1,15 +1,15 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using Starfall.Protocol.Compatibility;
 
 namespace Starfall.Protocol.Admission;
 
 public static class WorldJoinAdmissionCodec
 {
-    public const byte SchemaVersion = 1;
     public const int MaximumRequestPayloadLength = 516;
     public const int AcceptedPayloadLength = 18;
-    public const int RejectedPayloadLength = 3;
+    public const int RejectedPayloadLength = 2;
 
     private const byte RequestKind = 1;
     private const byte AcceptedKind = 2;
@@ -27,7 +27,7 @@ public static class WorldJoinAdmissionCodec
         }
 
         byte[] payload = new byte[4 + ticket.Length];
-        payload[0] = SchemaVersion;
+        payload[0] = request.ProtocolVersion.Value;
         payload[1] = RequestKind;
         BinaryPrimitives.WriteUInt16BigEndian(payload.AsSpan(2), checked((ushort)ticket.Length));
         ticket.CopyTo(payload, 4);
@@ -38,7 +38,7 @@ public static class WorldJoinAdmissionCodec
     {
         request = null;
         if (payload.Length is < 5 or > MaximumRequestPayloadLength ||
-            payload[0] != SchemaVersion || payload[1] != RequestKind)
+            payload[0] == 0 || payload[1] != RequestKind)
         {
             return false;
         }
@@ -52,7 +52,9 @@ public static class WorldJoinAdmissionCodec
 
         try
         {
-            request = new WorldJoinRequest(Encoding.ASCII.GetString(ticketBytes));
+            request = new WorldJoinRequest(
+                new ProtocolVersion(payload[0]),
+                Encoding.ASCII.GetString(ticketBytes));
             return true;
         }
         catch (ArgumentException)
@@ -67,7 +69,7 @@ public static class WorldJoinAdmissionCodec
         if (!accepted.SessionId.IsValid)
             throw new ArgumentException("Accepted admission must contain a valid session.", nameof(accepted));
         byte[] payload = new byte[AcceptedPayloadLength];
-        payload[0] = SchemaVersion;
+        payload[0] = accepted.SelectedProtocolVersion.Value;
         payload[1] = AcceptedKind;
         if (!accepted.SessionId.Value.TryWriteBytes(payload.AsSpan(2), bigEndian: true, out int written) || written != 16)
             throw new InvalidOperationException("Could not encode gameplay session identity.");
@@ -77,12 +79,14 @@ public static class WorldJoinAdmissionCodec
     public static bool TryDecodeAccepted(ReadOnlySpan<byte> payload, [NotNullWhen(true)] out WorldJoinAccepted? accepted)
     {
         accepted = null;
-        if (payload.Length != AcceptedPayloadLength || payload[0] != SchemaVersion || payload[1] != AcceptedKind)
+        if (payload.Length != AcceptedPayloadLength || payload[0] == 0 || payload[1] != AcceptedKind)
             return false;
         Guid sessionId = new(payload[2..], bigEndian: true);
         if (sessionId == Guid.Empty)
             return false;
-        accepted = new WorldJoinAccepted(new GameplaySessionId(sessionId));
+        accepted = new WorldJoinAccepted(
+            new ProtocolVersion(payload[0]),
+            new GameplaySessionId(sessionId));
         return true;
     }
 
@@ -91,18 +95,18 @@ public static class WorldJoinAdmissionCodec
         ArgumentNullException.ThrowIfNull(rejected);
         if (!Enum.IsDefined(rejected.Reason))
             throw new ArgumentException("Rejected admission must contain a supported reason.", nameof(rejected));
-        return [SchemaVersion, RejectedKind, checked((byte)rejected.Reason)];
+        return [RejectedKind, checked((byte)rejected.Reason)];
     }
 
     public static bool TryDecodeRejected(ReadOnlySpan<byte> payload, [NotNullWhen(true)] out WorldJoinRejected? rejected)
     {
         rejected = null;
-        if (payload.Length != RejectedPayloadLength || payload[0] != SchemaVersion || payload[1] != RejectedKind ||
-            !Enum.IsDefined((WorldJoinRejectionReason)payload[2]))
+        if (payload.Length != RejectedPayloadLength || payload[0] != RejectedKind ||
+            !Enum.IsDefined((WorldJoinRejectionReason)payload[1]))
         {
             return false;
         }
-        rejected = new WorldJoinRejected((WorldJoinRejectionReason)payload[2]);
+        rejected = new WorldJoinRejected((WorldJoinRejectionReason)payload[1]);
         return true;
     }
 }

@@ -7,8 +7,9 @@ dependsOn:
 - GAME-0004
 - PROTOCOL-0004
 - PROTOCOL-0007
+- PROTOCOL-0015
 createdAt: 2026-08-03T07:29:09.6478270Z
-modifiedAt: 2026-08-06T06:44:37.7963440Z
+modifiedAt: 2026-08-06T10:20:20.0614730Z
 ---
 
 Add the focused bidirectional Draft 0 physical-drop protocol extension.

@@ -1,7 +1,7 @@
 ---
 title: Connected Walking Facts
 createdAt: 2026-08-04T14:02:01.5363760Z
-modifiedAt: 2026-08-04T17:50:35.7139560Z
+modifiedAt: 2026-08-06T10:28:54.9517510Z
 ---
 
 ## Purpose
@@ -51,15 +51,15 @@ The fact does not encode a rejection reason. Collision, exchange and later recon
 
 ## Deterministic serialization
 
-`PROTOCOL-0004` freezes three independent schema-version-1 payloads. These are fact codecs, not transport frames:
+`PROTOCOL-0004` freezes three independent payloads whose layout is selected by the gameplay protocol version accepted at admission. These are fact codecs, not transport frames, and they do not repeat a packet-local version:
 
 | Fact | Exact bytes | Layout |
 | --- | ---: | --- |
-| `GroundMovementCommand` | 17 | version 1; intent sequence 8; destination X 4; destination Z 4 |
-| `PlayerMovementSnapshot` | 66 | version 1; snapshot sequence 8; tick 8; entity 8; position X/Z 8; velocity X/Z 8; facing X/Z 8; capsule radius/height 8; acknowledgement flag 1; acknowledgement sequence 8 |
-| `PlayerMovementCorrection` | 74 | version 1; corrected intent sequence 8; the 65-byte snapshot body without a nested version |
+| `GroundMovementCommand` | 16 | intent sequence 8; destination X 4; destination Z 4 |
+| `PlayerMovementSnapshot` | 65 | snapshot sequence 8; tick 8; entity 8; position X/Z 8; velocity X/Z 8; facing X/Z 8; capsule radius/height 8; acknowledgement flag 1; acknowledgement sequence 8 |
+| `PlayerMovementCorrection` | 73 | corrected intent sequence 8; the complete 65-byte snapshot body |
 
-Every integer field is an unsigned 64-bit big-endian value except the one-byte schema version and acknowledgement flag. Floats are their IEEE 754 single-precision bit patterns in big-endian byte order. Encoders return a newly allocated array of the exact public length. Decoders require that exact length and reject trailing bytes; framing, message kinds and length prefixes belong to the later World-host exchange.
+Every integer field is an unsigned 64-bit big-endian value except the acknowledgement flag. Floats are their IEEE 754 single-precision bit patterns in big-endian byte order. Encoders return a newly allocated array of the exact public length. Decoders require that exact length and reject trailing bytes; framing, message kinds and length prefixes belong to the later World-host exchange.
 
 Command intent, snapshot, entity, corrected-intent and every present acknowledgement sequence must be non-zero. Tick zero is valid. A missing acknowledgement has exactly one encoding: flag 0 and sequence 0. A present acknowledgement uses flag 1 and a non-zero sequence. Corrections require a present acknowledgement equal to the corrected sequence.
 
@@ -88,6 +88,6 @@ The fixed channel/delivery assignment is:
 | 2 | routine latest snapshot | sequenced |
 | 3 | authoritative correction | reliable ordered |
 
-These are transport datagrams, not nested generic frames. The connected Client allocates positive command sequences monotonically, retains only newer global snapshot sequences, permits nondecreasing simulation ticks, requires stable entity identity, and rejects acknowledgements beyond the last command it sent. Corrections replace the latest authoritative snapshot. No interpolation, prediction, reconciliation math or local movement authority is introduced.
+These are transport datagrams, not nested generic frames. Their compatibility contract is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility`. The connected Client allocates positive command sequences monotonically, retains only newer global snapshot sequences, permits nondecreasing simulation ticks, requires stable entity identity, and rejects acknowledgements beyond the last command it sent. Corrections replace the latest authoritative snapshot. No interpolation, prediction, reconciliation math or local movement authority is introduced.
 
 The World polls transport each outer fixed-step cycle and publishes only the latest post-catch-up snapshot. Admission also publishes the current tick immediately, including tick zero. This keeps snapshot evidence explicit rather than fabricating an historical backlog. Because delivery ordering is not guaranteed across the reliable-ordered admission channel and sequenced snapshot channel, the Client may receive that valid initial snapshot before acceptance. It retains newer well-formed early snapshots from the expected peer/channel but does not become ready until admission acceptance arrives; corrections and malformed or misrouted data still fail closed.

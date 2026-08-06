@@ -6,8 +6,9 @@ priority: none
 dependsOn:
 - GAME-0002
 - PROTOCOL-0007
+- PROTOCOL-0015
 createdAt: 2026-08-03T07:29:09.3853040Z
-modifiedAt: 2026-08-06T06:43:45.0787110Z
+modifiedAt: 2026-08-06T10:20:19.9606420Z
 ---
 
 Add the focused one-way Draft 0 progression extension to the connected protocol.
