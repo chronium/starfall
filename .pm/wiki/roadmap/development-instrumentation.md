@@ -1,7 +1,7 @@
 ---
 title: Development Instrumentation
 createdAt: 2026-08-06T06:46:50.0961910Z
-modifiedAt: 2026-08-06T06:46:50.0961910Z
+modifiedAt: 2026-08-06T07:59:02.9793070Z
 ---
 
 ## Deliverable
@@ -13,7 +13,7 @@ This is milestone M4. It is durable engineering instrumentation with no gameplay
 ## Dependency path
 
 ~~~text
-parent coordinator Client-consumption boundary
+pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0026
   -> CLIENT-0029  adopt shared ImGui backend in Starfall.Client
   -> CLIENT-0030  Starfall debug shell
 
@@ -27,7 +27,7 @@ CLIENT-0030 + PROTOCOL-0013 + SERVER-0015
   -> CLIENT-0031  console and typed Ping World proof
 ~~~
 
-CLIENT-0029 is intentionally `priority: none` until the separately owned coordinator Cycle 2 allocates the exact Client-consumption prerequisite and Cycle 3 attaches its canonical URI. Planning and implementation must not begin while that dependency is absent.
+Cycle 3 attached the canonical coordinator dependency to CLIENT-0029 and cleared its temporary priority override. CLIENT-0029 now inherits M4's medium priority, but the dependency is valid and waiting while SHARED-0026 remains todo. CLIENT-0029 must not activate or consume shared source until SHARED-0026 completes and CLIENT-0029 receives its own approved implementation plan.
 
 ## Ownership
 
