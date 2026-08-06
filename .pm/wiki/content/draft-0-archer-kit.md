@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Archer Kit
 createdAt: 2026-08-05T06:16:02.6168200Z
-modifiedAt: 2026-08-06T06:48:49.5453210Z
+modifiedAt: 2026-08-06T08:30:45.0890660Z
 ---
 
 ## Status
@@ -53,6 +53,8 @@ World resolves same-tick actions in ascending actor identity order. Nonlethal hi
 - SIM-0009 later owns Fire-specific cost, range, cadence, interruption and timing while consuming completed Mana and the Basic action lifecycle. Its protocol/server/client tasks do not own Mana or depend on the permanent HUD.
 - SIM-0007 later owns Rain-specific cost, target/radius/cadence/interruption/timing/order while consuming completed Mana and the action contract proven reusable by Fire.
 - Equipment, Ranger mapping, permanent HUD, cursor/target-marker feedback and player-life presentation remain separate later deliverables.
+
+Completed fact contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/connected-basic-arrow
 
 ## Explicit gaps
 
