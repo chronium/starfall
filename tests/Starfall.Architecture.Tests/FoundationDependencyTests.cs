@@ -250,7 +250,7 @@ public sealed class FoundationDependencyTests
 
     [Theory]
     [InlineData("Starfall.World", "Starfall.World: does not recognize argument '--unexpected'.")]
-    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview, --validate-character-content, --capture-graybox-suite <directory>, or connected walking options.")]
+    [InlineData("Starfall.Client", "Starfall.Client accepts no arguments for the native preview, --validate-character-content, --capture-graybox-suite <directory>, or connected walking options; interactive previews also accept --debug-ui-hidden.")]
     public async Task Foundation_processes_reject_unknown_arguments(
         string projectName,
         string expectedError)

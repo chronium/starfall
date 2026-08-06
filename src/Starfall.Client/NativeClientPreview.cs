@@ -7,7 +7,9 @@ using System.Text;
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.SdlGpu;
 using ChronoFall.EditorUi.SdlGpu;
+using Evergine.Bindings.Imgui;
 using SDL;
+using Starfall.Client.DevelopmentUi;
 using Starfall.Client.Networking;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
@@ -25,14 +27,16 @@ internal static unsafe class NativeClientPreview
 
     internal static void Run(
         CharacterPresentationContent content,
-        ConnectedWalkingClientSession? connectedSession = null)
+        ConnectedWalkingClientSession? connectedSession = null,
+        bool developmentUiInitiallyVisible = true)
     {
         ArgumentNullException.ThrowIfNull(content);
         ConfigureNativeSdl();
         using var session = new PreviewSession(
             content.Cooked.Asset.Mesh,
             visible: true,
-            enableDevelopmentUi: true);
+            enableDevelopmentUi: true,
+            developmentUiInitiallyVisible);
         session.Run(content.IdleAnimation, content.WalkAnimation, content.Cooked.Asset.Mesh.Skin, connectedSession);
     }
 
@@ -44,7 +48,8 @@ internal static unsafe class NativeClientPreview
         using var session = new PreviewSession(
             content.Cooked.Asset.Mesh,
             visible: false,
-            enableDevelopmentUi: false);
+            enableDevelopmentUi: false,
+            developmentUiInitiallyVisible: false);
         session.CaptureSuite(content.IdleAnimation, content.Cooked.Asset.Mesh.Skin, outputDirectory);
     }
 
@@ -95,6 +100,8 @@ internal static unsafe class NativeClientPreview
         private SdlGpuStaticMesh? staticMesh;
         private SdlGpuStaticMesh? monsterMesh;
         private SdlGpuImGuiBackend? developmentUi;
+        private DevelopmentDebugShellState? developmentDebugState;
+        private DevelopmentDebugShell? developmentDebugShell;
         private SDL_GPUTexture* depth;
         private uint depthWidth;
         private uint depthHeight;
@@ -104,7 +111,8 @@ internal static unsafe class NativeClientPreview
         internal PreviewSession(
             SkinnedMeshDefinition sourceMesh,
             bool visible,
-            bool enableDevelopmentUi)
+            bool enableDevelopmentUi,
+            bool developmentUiInitiallyVisible)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
             Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
@@ -144,7 +152,21 @@ internal static unsafe class NativeClientPreview
                 SDL_GPUShaderFormat shaderFormat = SelectShaderFormat(SDL_GetGPUShaderFormats(device));
                 colorFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
                 if (enableDevelopmentUi)
-                    developmentUi = SdlGpuImGuiBackend.Create(window, device, colorFormat);
+                {
+                    developmentUi = SdlGpuImGuiBackend.Create(
+                        window,
+                        device,
+                        colorFormat,
+                        options: new SdlGpuImGuiBackendOptions(
+                            ConfigureFonts: static atlas =>
+                            {
+                                if (atlas is null || ImguiNative.ImFontAtlas_AddFontDefaultBitmap(atlas, null) is null)
+                                    throw new InvalidOperationException("Starfall could not add ImGui's default development font.");
+                            }));
+                    developmentDebugState = new DevelopmentDebugShellState(developmentUiInitiallyVisible);
+                    developmentDebugShell = new DevelopmentDebugShell(developmentDebugState);
+                    developmentUi.SetMouseInputEnabled(developmentDebugState.IsVisible);
+                }
                 renderer = new SdlGpuSkinnedCharacterRenderer(
                     device,
                     colorFormat,
@@ -209,7 +231,7 @@ internal static unsafe class NativeClientPreview
                 $"STARFALL_CLIENT_CONTROLS mode={(connectedSession is null ? "local" : "connected")} " +
                 "RightClick=move-intent LeftClick=basic-arrow-connected-only " +
                 "KPPlus/KPMinus=local-speed " +
-                "F1-F7=view Tab=next-view Up/Down=F1-distance Escape=close");
+                "F1-F7=view Tab=next-view Up/Down=F1-distance F12=debug-ui Escape=close");
             if (connectedSession is null)
                 Console.WriteLine($"STARFALL_LOCAL_MONSTERS count={localMonsterSnapshots.Count} source=CONTENT-0007");
             SetWindowTitle(CreateWindowTitle(connectedSession));
@@ -227,14 +249,31 @@ internal static unsafe class NativeClientPreview
                 while (SDL_PollEvent(&sdlEvent))
                 {
                     _ = developmentUi?.ProcessEvent(&sdlEvent);
+                    ImGuiCaptureState capture = developmentUi?.Capture ?? default;
+                    DevelopmentDebugInputOwnership inputOwnership = DevelopmentDebugInputOwnership.Resolve(
+                        developmentDebugState?.IsVisible ?? false,
+                        capture.WantsMouse,
+                        capture.WantsKeyboard,
+                        capture.WantsTextInput);
                     if (sdlEvent.Type is SDL_EventType.SDL_EVENT_QUIT or
-                        SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED ||
-                        sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
-                        sdlEvent.key.key == SDL_Keycode.SDLK_ESCAPE)
+                        SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED)
                     {
                         running = false;
                     }
-                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN)
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        sdlEvent.key.key == SDL_Keycode.SDLK_F12)
+                    {
+                        if (developmentDebugState?.ToggleVisibility(sdlEvent.key.repeat) == true)
+                            developmentUi!.SetMouseInputEnabled(developmentDebugState.IsVisible);
+                    }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        sdlEvent.key.key == SDL_Keycode.SDLK_ESCAPE &&
+                        !inputOwnership.SuppressKeyboardGameplay)
+                    {
+                        running = false;
+                    }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN &&
+                        !inputOwnership.SuppressMouseGameplay)
                     {
                         Draft0PointerAction action = sdlEvent.button.Button switch
                         {
@@ -252,6 +291,7 @@ internal static unsafe class NativeClientPreview
                             SubmitBasicArrowIntent(sdlEvent.button, connectedSession!);
                     }
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        !inputOwnership.SuppressKeyboardGameplay &&
                         HandlePreviewKey(sdlEvent.key.key, sdlEvent.key.repeat, connectedSession is not null))
                     {
                         SetWindowTitle(CreateWindowTitle(connectedSession));
@@ -295,6 +335,9 @@ internal static unsafe class NativeClientPreview
                 TechnicalPlayerSnapshot currentSnapshot = connectedSession?.Snapshot ?? fixture.Snapshot;
                 TechnicalPlayerPresentationState presentation =
                     TechnicalPlayerPresentationAdapter.Adapt(currentSnapshot);
+                DevelopmentDebugSnapshot developmentSnapshot = CreateDevelopmentDebugSnapshot(
+                    currentSnapshot,
+                    connectedSession);
                 playback.SetLocomotion(presentation.Locomotion);
                 playback.Advance(
                     presentationElapsed,
@@ -307,7 +350,8 @@ internal static unsafe class NativeClientPreview
                         presentation,
                         monsterPresentationSeconds,
                         connectedSession is not null,
-                        Math.Max(presentationElapsed, 1.0 / 1000.0));
+                        Math.Max(presentationElapsed, 1.0 / 1000.0),
+                        developmentSnapshot);
                 }
                 catch (Exception exception)
                 {
@@ -401,6 +445,8 @@ internal static unsafe class NativeClientPreview
                 _ = SDL_WaitForGPUIdle(device);
             developmentUi?.Dispose();
             developmentUi = null;
+            developmentDebugShell = null;
+            developmentDebugState = null;
             if (depth is not null && device is not null)
                 SDL_ReleaseGPUTexture(device, depth);
             depth = null;
@@ -436,7 +482,8 @@ internal static unsafe class NativeClientPreview
             TechnicalPlayerPresentationState presentation,
             double monsterPresentationSeconds,
             bool connectedMonsters,
-            double frameDeltaSeconds)
+            double frameDeltaSeconds,
+            DevelopmentDebugSnapshot? developmentSnapshot)
         {
             SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
 
@@ -476,7 +523,8 @@ internal static unsafe class NativeClientPreview
                         cameras.CreateCamera(presentation.Snapshot.Position),
                         monsterPresentationSeconds,
                         connectedMonsters,
-                        developmentUi);
+                        developmentUi,
+                        developmentSnapshot);
                 }
             }
             catch (Exception exception)
@@ -526,7 +574,8 @@ internal static unsafe class NativeClientPreview
                     cameras.CreateCamera(presentation.Snapshot.Position),
                     monsterPresentationSeconds,
                     connectedMonsters: false,
-                    developmentUi: null);
+                    developmentUi: null,
+                    developmentSnapshot: null);
             }
             catch (Exception exception)
             {
@@ -562,7 +611,8 @@ internal static unsafe class NativeClientPreview
             PerspectiveIsometricCamera camera,
             double monsterPresentationSeconds,
             bool connectedMonsters,
-            SdlGpuImGuiBackend? developmentUi)
+            SdlGpuImGuiBackend? developmentUi,
+            DevelopmentDebugSnapshot? developmentSnapshot)
         {
             bool developmentUiBuilding = developmentUi is not null;
             bool developmentUiPrepared = false;
@@ -572,6 +622,9 @@ internal static unsafe class NativeClientPreview
                 Matrix4x4 viewProjection = camera.CreateViewProjection(width, height);
                 if (developmentUi is not null)
                 {
+                    if (!developmentSnapshot.HasValue || developmentDebugShell is null)
+                        throw new InvalidOperationException("Interactive development UI requires a Starfall debug snapshot and shell.");
+                    developmentDebugShell.Draw(developmentSnapshot.Value);
                     developmentUi.PrepareDrawData(command);
                     developmentUiBuilding = false;
                     developmentUiPrepared = true;
@@ -678,15 +731,36 @@ internal static unsafe class NativeClientPreview
                                 new Vector3(-0.35f, -0.70f, -0.62f)));
                     }
 
-                    if (developmentUi is not null)
-                    {
-                        developmentUi.RecordDrawData(command, pass);
-                        developmentUiPrepared = false;
-                    }
                 }
                 finally
                 {
                     SDL_EndGPURenderPass(pass);
+                }
+
+                if (developmentUi is not null)
+                {
+                    var developmentUiTarget = new SDL_GPUColorTargetInfo
+                    {
+                        texture = color,
+                        load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_LOAD,
+                        store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                    };
+                    SDL_GPURenderPass* developmentUiPass = SDL_BeginGPURenderPass(
+                        command,
+                        &developmentUiTarget,
+                        1,
+                        null);
+                    if (developmentUiPass is null)
+                        throw new InvalidOperationException($"SDL GPU development UI render pass failed: {SDL_GetError()}");
+                    try
+                    {
+                        developmentUi.RecordDrawData(command, developmentUiPass);
+                        developmentUiPrepared = false;
+                    }
+                    finally
+                    {
+                        SDL_EndGPURenderPass(developmentUiPass);
+                    }
                 }
             }
             catch (Exception exception)
@@ -882,6 +956,23 @@ internal static unsafe class NativeClientPreview
                 $"metresPerSecond={fixture.SpeedMetresPerSecond:F1}"));
             return true;
         }
+
+        private DevelopmentDebugSnapshot CreateDevelopmentDebugSnapshot(
+            TechnicalPlayerSnapshot snapshot,
+            ConnectedWalkingClientSession? connectedSession) =>
+            new(
+                Mode: connectedSession is null ? "Local fixture" : "Connected world",
+                SessionStatus: connectedSession is null
+                    ? "Local authoritative-style fixture"
+                    : connectedSession.IsDisconnected
+                        ? "Disconnected"
+                        : connectedSession.IsReady ? "Ready" : "Admission pending",
+                SessionIdentity: connectedSession?.SessionId?.ToString() ?? "not applicable",
+                EntityIdentity: snapshot.Identity,
+                Tick: snapshot.Tick,
+                CameraPreset: cameras.CurrentPreset.Name,
+                CameraDistanceMetres: cameras.CurrentDistanceMetres,
+                LocalSpeedMetresPerSecond: connectedSession is null ? fixture.SpeedMetresPerSecond : null);
 
         private static Exception? TryCancelCommand(
             ref SDL_GPUCommandBuffer* command,

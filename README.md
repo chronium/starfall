@@ -86,6 +86,15 @@ Launch the persistent native SDL GPU preview with no client arguments:
 dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build
 ```
 
+Interactive local and connected previews show Starfall's compact development debug shell by default. Its `Debug` menu controls the independent `World / Session` and `Presentation / Rendering` windows. Press F12 to hide or restore the entire debug UI while retaining the current in-memory window choices. Start either interactive mode with `--debug-ui-hidden` to omit the shell until F12 is pressed; this modifier is intentionally invalid for the headless content probe and deterministic capture suite. Debug-shell mouse, keyboard and text capture suppresses conflicting gameplay controls, while OS window close and non-repeated F12 remain global. V1 writes no layout or visibility preferences to disk.
+
+For example, start the local preview with the debug shell hidden:
+
+```sh
+dotnet run --project src/Starfall.Client/Starfall.Client.csproj --no-restore --no-build -- \
+  --debug-ui-hidden
+```
+
 The preview loads the staged Quaternius technical humanoid, presents `Idle_Loop` and `Walk_Loop`, and renders the generated Draft 0 graybox from `Draft0GrayboxCatalog.FirstPlayable`. Flat-colour presentation layers distinguish the walkable ground, protected town, round-capped routes, three camp footprints, outer boundary, exact-height collision proxies, critical anchors, and sample spawns. These generated diagnostics do not select environment assets or change Content, collision, navigation, or gameplay state.
 
 Local preview and deterministic capture modes present the exact ten ordered `Draft0StarterMonsterCatalog.FirstPlayable` assignments as generated box-creature fixtures. Cyan 1.0-metre light creatures and orange 1.5-metre heavy creatures face each camp entry anchor and use a gentle identity-phased hover. Connected mode never uses those local fixtures: it retains the latest valid World-owned channel-4 monster batch and maps its ordered live and defeat-tombstone facts through the same placeholder adapter.
@@ -100,7 +109,7 @@ Right-click produces and logs a finite ground movement intent using the currentl
 
 In connected mode, left-click ray-tests the latest authoritative live-monster positions and collision radii against bounded vertical presentation cylinders. The nearest positive hit wins, with ascending world entity identity breaking equal-distance ties. A hit selects that monster and sends only a sequenced Basic Arrow target command; a miss clears selection and sends nothing. The admitted World session supplies the actor and decides acceptance, timing, range, facing, cancellation, integer damage and defeat. Authoritative monster snapshots continue to drive health-change flash and defeat presentation independently of outcome-packet arrival order. Left-click does not attack in the local fixture. Skill keys remain reserved for later focused actions. Escape or the window close control exits the preview.
 
-The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2.
+The `--validate-character-content` probe loads and validates the same runtime cook without initializing SDL; unknown client arguments fail with exit code 2. Debug-shell windows are read-only in this milestone: development commands, feature actions and the console remain later task-owned work.
 
 `Starfall.World` is the headless authoritative world-server boundary; its name does not imply a client-side world or a decision to split every logical service into its own process. It owns the provisional Draft 0 graybox input together with world/channel identity, lifecycle, fixed-step scheduler and world-local technical-player state. Simulation consumes finite ground intent at 60 Hz, moves a 0.35 m radius by 1.8 m tall capsule at the provisional 4.0 m/s speed, and stops and clears its destination at the first Box3D obstacle hit. The four walkable-boundary strips and seven catalog proxies are collision; the protected town remains traversable by players. Routes are not paths, and player-to-player collision is deferred. The layout remains validated immutable Content rather than a serialized map or general scene format. Admitted sessions bind to their own generic player and exchange connected-walking payloads over the approved shared transport. Combat, monsters and broader gameplay remain later task-owned work.
 

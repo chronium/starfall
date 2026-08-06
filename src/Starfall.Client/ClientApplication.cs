@@ -1,5 +1,6 @@
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.Cooking;
+using Starfall.Client.DevelopmentUi;
 using Starfall.Client.Networking;
 
 namespace Starfall.Client;
@@ -14,13 +15,17 @@ internal static class ClientApplication
         ArgumentNullException.ThrowIfNull(args);
         try
         {
+            DevelopmentDebugLaunchOptions developmentUi = DevelopmentDebugLaunchOptions.Extract(args);
+            args = developmentUi.RemainingArguments;
             if (args.Length == 0)
             {
                 CharacterPresentationContent content = CharacterPresentationContent.LoadFromRuntimeOutput();
                 Console.WriteLine(
                     $"STARFALL_CLIENT_PRESENTATION_START asset={content.Cooked.Descriptor.AssetId} " +
                     $"joints={content.Cooked.Asset.Mesh.Skin.Skeleton.JointCount} clip={content.IdleAnimation.Name}");
-                NativeClientPreview.Run(content);
+                NativeClientPreview.Run(
+                    content,
+                    developmentUiInitiallyVisible: developmentUi.InitiallyVisible);
                 Console.WriteLine("STARFALL_CLIENT_PRESENTATION_STOP");
                 return 0;
             }
@@ -49,14 +54,18 @@ internal static class ClientApplication
                 Console.WriteLine(
                     $"STARFALL_CLIENT_CONNECTED session={session.SessionId} " +
                     $"entity={session.Snapshot!.Value.Identity} tick={session.Snapshot.Value.Tick}");
-                NativeClientPreview.Run(content, session);
+                NativeClientPreview.Run(
+                    content,
+                    session,
+                    developmentUiInitiallyVisible: developmentUi.InitiallyVisible);
                 Console.WriteLine("STARFALL_CLIENT_CONNECTED_STOP");
                 return 0;
             }
 
             Console.Error.WriteLine(
                 $"Starfall.Client accepts no arguments for the native preview, {ValidateContentArgument}, " +
-                $"{CaptureGrayboxSuiteArgument} <directory>, or connected walking options.");
+                $"{CaptureGrayboxSuiteArgument} <directory>, or connected walking options; " +
+                $"interactive previews also accept {DevelopmentDebugLaunchOptions.HiddenArgument}.");
             return 2;
         }
         catch (Exception exception)
