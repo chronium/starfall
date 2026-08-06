@@ -10,6 +10,8 @@ public sealed class FoundationDependencyTests
 {
     private const string NetworkTransportAdapterReference =
         "$(ChronoFallFamilyRoot)src/ChronoFall.Network.Transport.LiteNetLib/ChronoFall.Network.Transport.LiteNetLib.csproj";
+    private const string EditorUiBackendReference =
+        "$(ChronoFallFamilyRoot)src/ChronoFall.EditorUi.SdlGpu/ChronoFall.EditorUi.SdlGpu.csproj";
 
     private static readonly IReadOnlyDictionary<string, string[]> ExpectedProductReferences =
         new Dictionary<string, string[]>(StringComparer.Ordinal)
@@ -56,6 +58,9 @@ public sealed class FoundationDependencyTests
         "Editor",
         "Gpu",
         "ImGui",
+        "Evergine",
+        "ChronoFall.EditorUi",
+        "chronofall_imgui",
         "Rendering",
         "Sdl",
     ];
@@ -66,6 +71,7 @@ public sealed class FoundationDependencyTests
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj",
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj",
             "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj",
+            EditorUiBackendReference,
             NetworkTransportAdapterReference,
         };
 
@@ -284,8 +290,11 @@ public sealed class FoundationDependencyTests
             "Starfall.Client",
             "Starfall.Editor",
             "ChronoFall.CharacterPresentation",
+            "ChronoFall.EditorUi",
             "SDL",
             "ImGui",
+            "Evergine",
+            "chronofall_imgui",
             "Blurg",
             "Rendering",
         ];
@@ -394,9 +403,12 @@ public sealed class FoundationDependencyTests
             "Starfall.Protocol",
             "Starfall.World",
             "ChronoFall.CharacterPresentation",
+            "ChronoFall.EditorUi",
             "SDL",
             "Gpu",
             "ImGui",
+            "Evergine",
+            "chronofall_imgui",
             "Blurg",
             "Rendering",
             "Shader",
@@ -642,6 +654,51 @@ public sealed class FoundationDependencyTests
     }
 
     [Fact]
+    public void Development_ui_runtime_is_emitted_only_by_client()
+    {
+        string[] expectedManagedAssemblies =
+        [
+            "ChronoFall.EditorUi.SdlGpu.dll",
+            "Evergine.Bindings.Imgui.dll",
+            "Evergine.Mathematics.dll",
+        ];
+        string clientOutput = GetProductOutputDirectory("Starfall.Client");
+        Assert.All(
+            expectedManagedAssemblies,
+            assembly => Assert.True(
+                File.Exists(Path.Combine(clientOutput, assembly)),
+                $"Starfall.Client output is missing approved development UI assembly {assembly}."));
+
+        if (OperatingSystem.IsMacOS() &&
+            RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64)
+        {
+            Assert.True(File.Exists(Path.Combine(
+                clientOutput,
+                "runtimes",
+                "osx-arm64",
+                "native",
+                "libchronofall_imgui.dylib")));
+        }
+
+        foreach (string projectName in ExpectedProductReferences.Keys.Where(
+                     projectName => !string.Equals(projectName, "Starfall.Client", StringComparison.Ordinal)))
+        {
+            string output = GetProductOutputDirectory(projectName);
+            Assert.All(
+                expectedManagedAssemblies,
+                assembly => Assert.False(
+                    File.Exists(Path.Combine(output, assembly)),
+                    $"{projectName} unexpectedly emits development UI assembly {assembly}."));
+            Assert.False(File.Exists(Path.Combine(
+                output,
+                "runtimes",
+                "osx-arm64",
+                "native",
+                "libchronofall_imgui.dylib")));
+        }
+    }
+
+    [Fact]
     public void Product_projects_have_no_external_packages()
     {
         foreach (string projectName in ExpectedProductReferences.Keys)
@@ -716,12 +773,14 @@ public sealed class FoundationDependencyTests
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", true)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.Cooking/ChronoFall.CharacterPresentation.Cooking.csproj", true)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation.SdlGpu/ChronoFall.CharacterPresentation.SdlGpu.csproj", true)]
+    [InlineData("Starfall.Client", EditorUiBackendReference, true)]
     [InlineData("Starfall.Client", NetworkTransportAdapterReference, true)]
     [InlineData("Starfall.World", NetworkTransportAdapterReference, true)]
     [InlineData("Starfall.Protocol", NetworkTransportAdapterReference, false)]
     [InlineData("Starfall.World", "$(ChronoFallFamilyRoot)src/ChronoFall.CharacterPresentation/ChronoFall.CharacterPresentation.csproj", false)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)royale/src/Royale.Client/Royale.Client.csproj", false)]
     [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)thirdparty/repos/SDL3-CS/SDL3-CS/SDL3-CS.csproj", false)]
+    [InlineData("Starfall.Client", "$(ChronoFallFamilyRoot)thirdparty/repos/ImGui.Net/Generator/Evergine.Bindings.Imgui/Evergine.Bindings.Imgui.csproj", false)]
     [InlineData("Starfall.Simulation", "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj", true)]
     [InlineData("Starfall.World", "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D/ChronoFall.Box3D.csproj", false)]
     [InlineData("Starfall.Simulation", "$(ChronoFallFamilyRoot)src/ChronoFall.Box3D.Bindings/ChronoFall.Box3D.Bindings.csproj", false)]

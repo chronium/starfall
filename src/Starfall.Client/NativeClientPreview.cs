@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using ChronoFall.CharacterPresentation;
 using ChronoFall.CharacterPresentation.SdlGpu;
+using ChronoFall.EditorUi.SdlGpu;
 using SDL;
 using Starfall.Client.Networking;
 using Starfall.Content.Monsters;
@@ -28,7 +29,10 @@ internal static unsafe class NativeClientPreview
     {
         ArgumentNullException.ThrowIfNull(content);
         ConfigureNativeSdl();
-        using var session = new PreviewSession(content.Cooked.Asset.Mesh, visible: true);
+        using var session = new PreviewSession(
+            content.Cooked.Asset.Mesh,
+            visible: true,
+            enableDevelopmentUi: true);
         session.Run(content.IdleAnimation, content.WalkAnimation, content.Cooked.Asset.Mesh.Skin, connectedSession);
     }
 
@@ -37,7 +41,10 @@ internal static unsafe class NativeClientPreview
         ArgumentNullException.ThrowIfNull(content);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
         ConfigureNativeSdl();
-        using var session = new PreviewSession(content.Cooked.Asset.Mesh, visible: false);
+        using var session = new PreviewSession(
+            content.Cooked.Asset.Mesh,
+            visible: false,
+            enableDevelopmentUi: false);
         session.CaptureSuite(content.IdleAnimation, content.Cooked.Asset.Mesh.Skin, outputDirectory);
     }
 
@@ -87,13 +94,17 @@ internal static unsafe class NativeClientPreview
         private SdlGpuStaticMeshRenderer? staticRenderer;
         private SdlGpuStaticMesh? staticMesh;
         private SdlGpuStaticMesh? monsterMesh;
+        private SdlGpuImGuiBackend? developmentUi;
         private SDL_GPUTexture* depth;
         private uint depthWidth;
         private uint depthHeight;
         private bool windowClaimed;
         private bool reportedConnectedMonsters;
 
-        internal PreviewSession(SkinnedMeshDefinition sourceMesh, bool visible)
+        internal PreviewSession(
+            SkinnedMeshDefinition sourceMesh,
+            bool visible,
+            bool enableDevelopmentUi)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
             Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
@@ -114,7 +125,9 @@ internal static unsafe class NativeClientPreview
                     CreateWindowTitle(null),
                     WindowWidth,
                     WindowHeight,
-                    visible ? (SDL_WindowFlags)0 : SDL_WindowFlags.SDL_WINDOW_HIDDEN);
+                    visible
+                        ? SDL_WindowFlags.SDL_WINDOW_RESIZABLE
+                        : SDL_WindowFlags.SDL_WINDOW_HIDDEN);
                 if (window is null)
                     throw new InvalidOperationException($"SDL window creation failed: {SDL_GetError()}");
 
@@ -130,6 +143,8 @@ internal static unsafe class NativeClientPreview
 
                 SDL_GPUShaderFormat shaderFormat = SelectShaderFormat(SDL_GetGPUShaderFormats(device));
                 colorFormat = SDL_GetGPUSwapchainTextureFormat(device, window);
+                if (enableDevelopmentUi)
+                    developmentUi = SdlGpuImGuiBackend.Create(window, device, colorFormat);
                 renderer = new SdlGpuSkinnedCharacterRenderer(
                     device,
                     colorFormat,
@@ -211,6 +226,7 @@ internal static unsafe class NativeClientPreview
                 SDL_Event sdlEvent;
                 while (SDL_PollEvent(&sdlEvent))
                 {
+                    _ = developmentUi?.ProcessEvent(&sdlEvent);
                     if (sdlEvent.Type is SDL_EventType.SDL_EVENT_QUIT or
                         SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED ||
                         sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
@@ -290,7 +306,8 @@ internal static unsafe class NativeClientPreview
                         skin,
                         presentation,
                         monsterPresentationSeconds,
-                        connectedSession is not null);
+                        connectedSession is not null,
+                        Math.Max(presentationElapsed, 1.0 / 1000.0));
                 }
                 catch (Exception exception)
                 {
@@ -382,6 +399,8 @@ internal static unsafe class NativeClientPreview
         {
             if (device is not null)
                 _ = SDL_WaitForGPUIdle(device);
+            developmentUi?.Dispose();
+            developmentUi = null;
             if (depth is not null && device is not null)
                 SDL_ReleaseGPUTexture(device, depth);
             depth = null;
@@ -416,7 +435,8 @@ internal static unsafe class NativeClientPreview
             SkinDefinition skin,
             TechnicalPlayerPresentationState presentation,
             double monsterPresentationSeconds,
-            bool connectedMonsters)
+            bool connectedMonsters,
+            double frameDeltaSeconds)
         {
             SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
 
@@ -444,6 +464,7 @@ internal static unsafe class NativeClientPreview
                 if (swapchain is not null)
                 {
                     EnsureDepth(swapchainWidth, swapchainHeight);
+                    BeginDevelopmentUiFrame(swapchainWidth, swapchainHeight, frameDeltaSeconds);
                     RecordFrame(
                         command,
                         swapchain,
@@ -454,7 +475,8 @@ internal static unsafe class NativeClientPreview
                         presentation,
                         cameras.CreateCamera(presentation.Snapshot.Position),
                         monsterPresentationSeconds,
-                        connectedMonsters);
+                        connectedMonsters,
+                        developmentUi);
                 }
             }
             catch (Exception exception)
@@ -503,7 +525,8 @@ internal static unsafe class NativeClientPreview
                     presentation,
                     cameras.CreateCamera(presentation.Snapshot.Position),
                     monsterPresentationSeconds,
-                    connectedMonsters: false);
+                    connectedMonsters: false,
+                    developmentUi: null);
             }
             catch (Exception exception)
             {
@@ -538,114 +561,191 @@ internal static unsafe class NativeClientPreview
             TechnicalPlayerPresentationState presentation,
             PerspectiveIsometricCamera camera,
             double monsterPresentationSeconds,
-            bool connectedMonsters)
+            bool connectedMonsters,
+            SdlGpuImGuiBackend? developmentUi)
         {
-            renderer!.UploadPalette(command, palette!, sourcePalette);
-            Matrix4x4 viewProjection = camera.CreateViewProjection(width, height);
-            var colorTarget = new SDL_GPUColorTargetInfo
-            {
-                texture = color,
-                clear_color = ClearColor,
-                load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
-            };
-            var depthTarget = new SDL_GPUDepthStencilTargetInfo
-            {
-                texture = frameDepth,
-                clear_depth = 1.0f,
-                load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
-                store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-                stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
-                stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
-            };
-            SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
-            if (pass is null)
-                throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
+            bool developmentUiBuilding = developmentUi is not null;
+            bool developmentUiPrepared = false;
             try
             {
-                for (var section = 0; section < graybox.Mesh.Sections.Count; section++)
+                renderer!.UploadPalette(command, palette!, sourcePalette);
+                Matrix4x4 viewProjection = camera.CreateViewProjection(width, height);
+                if (developmentUi is not null)
                 {
-                    staticRenderer!.DrawSection(
-                        command,
-                        pass,
-                        staticMesh!,
-                        section,
-                        new StaticMeshDraw(
-                            Matrix4x4.Identity,
-                            viewProjection,
-                            graybox.SectionColors[section],
-                            new Vector3(-0.35f, -0.70f, -0.62f)));
+                    developmentUi.PrepareDrawData(command);
+                    developmentUiBuilding = false;
+                    developmentUiPrepared = true;
                 }
 
-                if (connectedMonsters)
+                var colorTarget = new SDL_GPUColorTargetInfo
                 {
-                    foreach (Draft0MonsterPresentationState monster in
-                        connectedMonsterPresentation.CreateLiveStates(monsterPresentationSeconds))
+                    texture = color,
+                    clear_color = ClearColor,
+                    load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_STORE,
+                };
+                var depthTarget = new SDL_GPUDepthStencilTargetInfo
+                {
+                    texture = frameDepth,
+                    clear_depth = 1.0f,
+                    load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_CLEAR,
+                    store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
+                    stencil_load_op = SDL_GPULoadOp.SDL_GPU_LOADOP_DONT_CARE,
+                    stencil_store_op = SDL_GPUStoreOp.SDL_GPU_STOREOP_DONT_CARE,
+                };
+                SDL_GPURenderPass* pass = SDL_BeginGPURenderPass(command, &colorTarget, 1, &depthTarget);
+                if (pass is null)
+                    throw new InvalidOperationException($"SDL GPU render pass failed: {SDL_GetError()}");
+                try
+                {
+                    for (var section = 0; section < graybox.Mesh.Sections.Count; section++)
                     {
-                        staticRenderer!.Draw(
+                        staticRenderer!.DrawSection(
                             command,
                             pass,
-                            monsterMesh!,
+                            staticMesh!,
+                            section,
                             new StaticMeshDraw(
-                                monster.World,
+                                Matrix4x4.Identity,
                                 viewProjection,
-                                monster.BaseColor,
+                                graybox.SectionColors[section],
                                 new Vector3(-0.35f, -0.70f, -0.62f)));
                     }
 
-                    foreach (Draft0MonsterDefeatPresentationState monster in
-                        connectedMonsterPresentation.CreateDefeatStates(monsterPresentationSeconds))
+                    if (connectedMonsters)
                     {
-                        staticRenderer!.Draw(
-                            command,
-                            pass,
-                            monsterMesh!,
-                            new StaticMeshDraw(
-                                monster.World,
-                                viewProjection,
-                                monster.BaseColor,
-                                new Vector3(-0.35f, -0.70f, -0.62f)));
-                    }
-                }
-                else
-                {
-                    foreach (Draft0MonsterPresentationSnapshot snapshot in localMonsterSnapshots)
-                    {
-                        Draft0MonsterPresentationState monster =
-                            Draft0MonsterPresentationAdapter.Adapt(snapshot, monsterPresentationSeconds);
-                        staticRenderer!.Draw(
-                            command,
-                            pass,
-                            monsterMesh!,
-                            new StaticMeshDraw(
-                                monster.World,
-                                viewProjection,
-                                monster.BaseColor,
-                                new Vector3(-0.35f, -0.70f, -0.62f)));
-                    }
-                }
+                        foreach (Draft0MonsterPresentationState monster in
+                            connectedMonsterPresentation.CreateLiveStates(monsterPresentationSeconds))
+                        {
+                            staticRenderer!.Draw(
+                                command,
+                                pass,
+                                monsterMesh!,
+                                new StaticMeshDraw(
+                                    monster.World,
+                                    viewProjection,
+                                    monster.BaseColor,
+                                    new Vector3(-0.35f, -0.70f, -0.62f)));
+                        }
 
-                for (var section = 0; section < mesh!.SectionCount; section++)
+                        foreach (Draft0MonsterDefeatPresentationState monster in
+                            connectedMonsterPresentation.CreateDefeatStates(monsterPresentationSeconds))
+                        {
+                            staticRenderer!.Draw(
+                                command,
+                                pass,
+                                monsterMesh!,
+                                new StaticMeshDraw(
+                                    monster.World,
+                                    viewProjection,
+                                    monster.BaseColor,
+                                    new Vector3(-0.35f, -0.70f, -0.62f)));
+                        }
+                    }
+                    else
+                    {
+                        foreach (Draft0MonsterPresentationSnapshot snapshot in localMonsterSnapshots)
+                        {
+                            Draft0MonsterPresentationState monster =
+                                Draft0MonsterPresentationAdapter.Adapt(snapshot, monsterPresentationSeconds);
+                            staticRenderer!.Draw(
+                                command,
+                                pass,
+                                monsterMesh!,
+                                new StaticMeshDraw(
+                                    monster.World,
+                                    viewProjection,
+                                    monster.BaseColor,
+                                    new Vector3(-0.35f, -0.70f, -0.62f)));
+                        }
+                    }
+
+                    for (var section = 0; section < mesh!.SectionCount; section++)
+                    {
+                        Vector4 sectionColor = section % 2 == 0
+                            ? new Vector4(0.76f, 0.23f, 0.17f, 1.0f)
+                            : new Vector4(0.16f, 0.48f, 0.72f, 1.0f);
+                        renderer.DrawSection(
+                            command,
+                            pass,
+                            mesh,
+                            palette!,
+                            section,
+                            new SkinnedCharacterDraw(
+                                presentation.World,
+                                viewProjection,
+                                sectionColor,
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
+
+                    if (developmentUi is not null)
+                    {
+                        developmentUi.RecordDrawData(command, pass);
+                        developmentUiPrepared = false;
+                    }
+                }
+                finally
                 {
-                    Vector4 sectionColor = section % 2 == 0
-                        ? new Vector4(0.76f, 0.23f, 0.17f, 1.0f)
-                        : new Vector4(0.16f, 0.48f, 0.72f, 1.0f);
-                    renderer.DrawSection(
-                        command,
-                        pass,
-                        mesh,
-                        palette!,
-                        section,
-                        new SkinnedCharacterDraw(
-                            presentation.World,
-                            viewProjection,
-                            sectionColor,
-                            new Vector3(-0.35f, -0.70f, -0.62f)));
+                    SDL_EndGPURenderPass(pass);
                 }
             }
-            finally
+            catch (Exception exception)
             {
-                SDL_EndGPURenderPass(pass);
+                Exception? cleanupFailure = TryResolveDevelopmentUiFrame(
+                    developmentUi,
+                    developmentUiBuilding,
+                    developmentUiPrepared);
+                if (cleanupFailure is not null)
+                {
+                    throw new AggregateException(
+                        "Starfall scene rendering failed and the development UI frame could not be resolved.",
+                        exception,
+                        cleanupFailure);
+                }
+                throw;
+            }
+        }
+
+        private void BeginDevelopmentUiFrame(
+            uint pixelWidth,
+            uint pixelHeight,
+            double frameDeltaSeconds)
+        {
+            if (developmentUi is null)
+                return;
+
+            int logicalWidth;
+            int logicalHeight;
+            if (!SDL_GetWindowSize(window, &logicalWidth, &logicalHeight))
+                throw new InvalidOperationException($"SDL logical window size query failed: {SDL_GetError()}");
+
+            developmentUi.BeginFrame(new SdlGpuImGuiFrameMetrics(
+                logicalWidth,
+                logicalHeight,
+                checked((int)pixelWidth),
+                checked((int)pixelHeight),
+                frameDeltaSeconds));
+        }
+
+        private static Exception? TryResolveDevelopmentUiFrame(
+            SdlGpuImGuiBackend? developmentUi,
+            bool building,
+            bool prepared)
+        {
+            if (developmentUi is null)
+                return null;
+
+            try
+            {
+                if (prepared)
+                    developmentUi.DiscardPreparedDrawData();
+                else if (building)
+                    developmentUi.EndFrameWithoutRendering();
+                return null;
+            }
+            catch (Exception exception)
+            {
+                return exception;
             }
         }
 

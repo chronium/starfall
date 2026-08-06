@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-06T08:30:45.0790810Z
+modifiedAt: 2026-08-06T13:04:40.2809360Z
 ---
 
 ## Purpose
@@ -35,16 +35,18 @@ Starfall.Content
 Starfall.Protocol
 Starfall.Simulation -> Content + approved coordinator ChronoFall.Box3D source
 Starfall.World -> Content, Protocol, Simulation + approved coordinator network adapter source
-Starfall.Client -> Content, Protocol + approved coordinator character-presentation and network adapter source
+Starfall.Client -> Content, Protocol + approved coordinator character-presentation, network-adapter and caller-controlled ImGui-backend source
 Starfall.Editor -> Content
 Starfall.BalanceLab -> Content, Simulation
 ~~~
 
 Content and Protocol remain product-dependency-free. Simulation never depends on Protocol. Client never references World or Simulation. World is the composition boundary between protocol, content and simulation. Editor authoring stays separate from compact runtime data; Balance Lab remains headless.
 
-CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through ChronoFallFamilyRoot. BUILD-0006 adds only the coordinator network adapter to Client and World; its BCL contracts and pinned LiteNetLib source remain transitive. The local Starfall product graph does not change. Content, Protocol, Simulation, Editor and Balance Lab remain network-transport-free, and World remains presentation-free.
+CLIENT-0006 adds only the approved coordinator character-presentation source set to Client through `ChronoFallFamilyRoot`. BUILD-0006 adds only the coordinator network adapter to Client and World; its BCL contracts and pinned LiteNetLib source remain transitive. CLIENT-0029 adds only `$(ChronoFallFamilyRoot)src/ChronoFall.EditorUi.SdlGpu/ChronoFall.EditorUi.SdlGpu.csproj` to Client; its SDL3-CS, Evergine ImGui bindings and pinned native bridge remain transitive. The local Starfall product graph does not change. Content, Protocol, Simulation, Editor and Balance Lab remain network-transport- and development-UI-free, and World remains presentation-free.
 
-CLIENT-0009 activates those internal Client/World factories through narrow process-owned hosts. Starfall Protocol supplies exact admission/walking codecs and public channel constants without referencing transport. Client and World own polling, delivery assignments, peer/session binding, development public-key configuration and disconnect cleanup. No generic dispatcher, framing system or transport dependency enters another product project.
+CLIENT-0029 creates the caller-controlled ImGui backend only for the interactive local and connected native previews. Starfall still owns its SDL window, device, swapchain, command buffers, render pass, event loop and gameplay controls. The backend receives events and records an empty frame last in Starfall's existing pass; it does not yet suppress gameplay input or show windows, menus or overlays. `CLIENT-0030` owns the debug shell, `F12`, `--debug-ui-hidden`, visibility and capture-aware input routing. Character-content validation and the hidden deterministic graybox capture suite do not instantiate the backend, so their output and fingerprints remain stable.
+
+CLIENT-0009 activates the internal Client/World network factories through narrow process-owned hosts. Starfall Protocol supplies exact admission/walking codecs and public channel constants without referencing transport. Client and World own polling, delivery assignments, peer/session binding, development public-key configuration and disconnect cleanup. No generic dispatcher, framing system or transport dependency enters another product project.
 
 `tools/Starfall.DevelopmentAdmission` is a development executable outside the product graph. It references only Protocol and BCL cryptography. `tests/Starfall.ConnectedWalking.Tests` is the explicit cross-process integration-test boundary; it does not alter runtime dependency direction.
 

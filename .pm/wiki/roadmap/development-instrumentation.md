@@ -1,7 +1,7 @@
 ---
 title: Development Instrumentation
 createdAt: 2026-08-06T06:46:50.0961910Z
-modifiedAt: 2026-08-06T07:59:02.9793070Z
+modifiedAt: 2026-08-06T13:04:50.2311170Z
 ---
 
 ## Deliverable
@@ -27,7 +27,9 @@ CLIENT-0030 + PROTOCOL-0013 + SERVER-0015
   -> CLIENT-0031  console and typed Ping World proof
 ~~~
 
-Cycle 3 attached the canonical coordinator dependency to CLIENT-0029 and cleared its temporary priority override. CLIENT-0029 now inherits M4's medium priority, but the dependency is valid and waiting while SHARED-0026 remains todo. CLIENT-0029 must not activate or consume shared source until SHARED-0026 completes and CLIENT-0029 receives its own approved implementation plan.
+SHARED-0026 and CLIENT-0029 are complete. Starfall.Client now consumes the approved caller-controlled ImGui backend from coordinator source and instantiates it only in interactive local and connected native previews. The backend receives SDL events and records an intentionally empty frame last in Starfall's render pass; hidden deterministic captures and character-content validation remain backend-free.
+
+No debug surface is visible yet. CLIENT-0030 remains the focused owner of the menu, concern-specific windows, `F12`, `--debug-ui-hidden`, visibility state and input suppression from ImGui capture flags.
 
 ## Ownership
 
