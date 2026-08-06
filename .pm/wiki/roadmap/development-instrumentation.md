@@ -1,7 +1,7 @@
 ---
 title: Development Instrumentation
 createdAt: 2026-08-06T06:46:50.0961910Z
-modifiedAt: 2026-08-06T15:31:55.1269200Z
+modifiedAt: 2026-08-06T15:57:45.9403710Z
 ---
 
 ## Deliverable
@@ -31,7 +31,7 @@ SHARED-0026, CLIENT-0029, CLIENT-0030 and PROTOCOL-0013 are complete. Starfall.C
 
 The shell suppresses conflicting pointer, keyboard and text gameplay input from the backend's capture flags while leaving OS close and `F12` global. Starfall injects ImGui's bitmap default development font and records the UI last through a color-load pass after its depth-enabled scene pass. Character-content validation and the hidden deterministic graybox capture suite remain backend-free with unchanged fingerprints.
 
-PROTOCOL-0013 defines channels 7 and 8, immutable bounded token requests, explicit enabled/disabled availability and correlated success/rejection diagnostics. It defines no feature command and makes no compatibility promise. With that contract complete, SERVER-0015 is the next continuation: it owns the admitted-session development gate, sequencing, dispatcher and harmless Ping World handler. CLIENT-0031 later adds the typed and console frontends.
+PROTOCOL-0013 established channels 7 and 8 plus the bounded request/result envelope. SERVER-0015 then removed the unconsumed availability/disabled shapes, bound every request to its admitted transport session, added per-session monotonic sequencing, installed the focused feature-handler dispatcher and registered the zero-argument `ping_world` command. Every admitted connected player may currently invoke every registered development command; no gate, role or permission machinery exists. CLIENT-0031 remains the typed and console frontend proof.
 
 ## Ownership
 

@@ -1,24 +1,24 @@
 ---
 title: Development Commands
 createdAt: 2026-08-06T15:30:00.4857760Z
-modifiedAt: 2026-08-06T15:30:00.4857760Z
+modifiedAt: 2026-08-06T15:57:21.6472860Z
 ---
 
 ## Purpose
 
-Starfall uses one bounded development-only command envelope for typed ImGui controls and the text console. The World remains authoritative: the Client submits a request, the admitted-session dispatcher applies the development gate and selects a feature-owned handler, and the World returns one correlated success or rejection.
+Starfall uses one bounded development-only command envelope for typed ImGui controls and the text console. The World remains authoritative: a Client submits a request through an admitted transport peer, the session-bound dispatcher selects a feature-owned handler, and the World returns one correlated success or rejection.
 
 This is durable engineering instrumentation, not a production administration API or a stable gameplay feature protocol.
 
 ## Facts and bounds
 
-`DevelopmentCommandSequence` is a non-zero unsigned 64-bit correlation value. Per-session monotonic acceptance belongs to the World dispatcher.
+`DevelopmentCommandSequence` is a non-zero unsigned 64-bit correlation value. The World consumes fresh sequences monotonically per admitted gameplay session before lookup or handler execution. A duplicate or lower sequence is rejected, and one session's sequence does not affect another.
 
 `DevelopmentCommandId` contains 1-64 lowercase ASCII letters, digits or underscores and begins with a letter. A request carries zero to eight ordered argument tokens. Each token contains 1-64 printable non-whitespace ASCII bytes. Arguments are immutable defensive snapshots.
 
 A success or rejection repeats the sequence and command identity and carries 1-512 printable single-line ASCII diagnostic bytes. Diagnostic text is engineering output only; stable authoritative feature state uses its own feature protocol.
 
-Rejection reasons are `Disabled`, `UnknownCommand`, `InvalidArguments`, `StaleOrDuplicateSequence` and `HandlerRejected`. The availability state is explicitly `Disabled` or `Enabled`.
+Rejection reasons are `UnknownCommand`, `InvalidArguments`, `StaleOrDuplicateSequence` and `HandlerRejected`.
 
 ## Wire layouts
 
@@ -38,24 +38,31 @@ repeat argument-count times:
 
 The request is 11-594 bytes.
 
-Channel 8 carries reliable-ordered World facts:
+Channel 8 carries reliable-ordered World results:
 
 | Kind | Layout | Bound |
 | --- | --- | --- |
-| 1 Availability | kind:u8, state:u8 | exactly 2 bytes |
-| 2 Succeeded | kind:u8, sequence:u64, command identity, diagnostic-length:u16, diagnostic | at most 588 bytes |
-| 3 Rejected | kind:u8, sequence:u64, command identity, reason:u8, diagnostic-length:u16, diagnostic | at most 589 bytes |
+| 1 Succeeded | kind:u8, sequence:u64, command identity, diagnostic-length:u16, diagnostic | at most 588 bytes |
+| 2 Rejected | kind:u8, sequence:u64, command identity, reason:u8, diagnostic-length:u16, diagnostic | at most 589 bytes |
 
 Decoders reject unknown kinds, invalid enum values, zero sequences, malformed ASCII, impossible lengths/counts, truncation and trailing bytes without throwing. Encoders validate a complete canonical fact before returning a new exact-length payload.
 
-## Authority and enablement
+## Authority and dispatch
 
-Requests contain no account, session, player or actor identity. The World derives authority from the admitted transport peer and gameplay session. A later dispatcher task owns the explicit host development gate, publishes availability after admission, enforces per-session sequencing and returns `Disabled` when a valid request races a disabled gate.
+Requests contain no account, session, player or actor identity. The World derives authority from the admitted transport peer and gameplay session. Every admitted connected player may currently invoke every registered development command. There is no launch gate, availability packet, role, permission or per-command authorization policy.
 
-Availability is not a role, permission, account entitlement or remote-operations policy. Missing or disabled development commands never change gameplay-session availability.
+The dispatcher copies an ordinal handler registry, rejects duplicate command identities, consumes a fresh sequence before dispatch and returns bounded correlated results. Malformed payloads, wrong delivery and missing admitted-session ownership are protocol violations. Valid command rejections do not disconnect the gameplay session. Unexpected handler exceptions are logged by the World and become a generic `HandlerRejected` result without exposing implementation details.
+
+`ping_world` is the only registered command in SERVER-0015. It accepts no arguments and returns:
+
+~~~text
+pong world=<world> channel=<channel> tick=<tick> session=<session> player=<entity>
+~~~
+
+The fields are development diagnostics, not a stable machine-readable gameplay fact.
 
 ## Compatibility and exclusions
 
-The additive development channels do not increment gameplay protocol version 1. Current Client and World source are expected to move together, and no legacy development-command decoder or migration promise exists. Development-only incompatibility does not redefine the stable gameplay facts carried by the negotiated gameplay protocol.
+The additive development channels do not increment gameplay protocol version 1. Current Client and World source are expected to move together, and no legacy development-command decoder or migration promise exists. SERVER-0015 removes the earlier unconsumed availability and disabled shapes rather than retaining dormant compatibility.
 
-This contract defines no `ping_world`, Mana, inventory, player-life or other feature command. It also defines no parser, dispatcher, handler registry, console, scripting language, command discovery, filesystem access, shell execution, roles, administration, moderation or remote operations.
+A future roles or authorization design must be justified and reviewed when it has a concrete requirement. This contract defines no parser, console, command discovery, scripting language, filesystem access, shell execution, administration, moderation or remote operations. Feature-owned Mana, inventory and player-life commands remain later task scope.

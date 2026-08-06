@@ -8,6 +8,7 @@ using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Combat;
 using Starfall.Protocol.Compatibility;
+using Starfall.Protocol.Development;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -162,6 +163,44 @@ public sealed class ConnectedWalkingLoopbackTests
             monster => monster.EntityId.Value == target.EntityId.Value);
     }
 
+    [Fact]
+    public async Task Real_udp_dispatches_session_bound_ping_world_and_returns_its_correlation()
+    {
+        int port = ReserveUdpPort();
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var runtime = new WorldChannelRuntime(
+            new WorldId("world_1"),
+            new ChannelId("channel_1"),
+            new WorldInstanceId(Guid.NewGuid()),
+            Draft0GrayboxCatalog.FirstPlayable,
+            Draft0StarterMonsterCatalog.FirstPlayable,
+            Draft0CampPolicyCatalog.FirstPlayable);
+        runtime.Start();
+        using var host = new WorldGameplayNetworkHost(
+            WorldNetworkTransportFactory.Create(),
+            runtime,
+            new WorldJoinTicketVerificationKeyRing(
+            [
+                new WorldJoinTicketVerificationKey("test", key.ExportSubjectPublicKeyInfo()),
+            ]));
+        host.Start(port);
+        using var client = new BasicArrowLoopbackClient(
+            ClientNetworkTransportFactory.Create(),
+            IssueTicket(runtime, key));
+        client.Connect(port);
+
+        await PumpUntilAsync(host, client, runtime, () => client.IsReady);
+        client.SendDevelopmentCommand(42, DevelopmentCommandIds.PingWorld);
+        await PumpUntilAsync(host, client, runtime, () => client.DevelopmentResults.Count == 1);
+
+        DevelopmentCommandSucceeded succeeded = Assert.IsType<DevelopmentCommandSucceeded>(
+            client.DevelopmentResults[0]);
+        Assert.Equal(42UL, succeeded.Sequence.Value);
+        Assert.Equal(DevelopmentCommandIds.PingWorld, succeeded.CommandId);
+        Assert.Contains($"session={client.Admission!.SessionId}", succeeded.Diagnostic, StringComparison.Ordinal);
+        Assert.Contains("world=world_1 channel=channel_1", succeeded.Diagnostic, StringComparison.Ordinal);
+    }
+
     private static int ReserveUdpPort()
     {
         using UdpClient socket = new(new IPEndPoint(IPAddress.Loopback, 0));
@@ -278,6 +317,7 @@ public sealed class ConnectedWalkingLoopbackTests
             get; private set;
         }
         internal List<object> Outcomes { get; } = [];
+        internal List<object> DevelopmentResults { get; } = [];
 
         internal void Connect(int port)
         {
@@ -309,6 +349,21 @@ public sealed class ConnectedWalkingLoopbackTests
                 ConnectedBasicArrowCodec.EncodeCommand(command),
                 NetworkDelivery.ReliableSequenced,
                 StarfallNetworkChannels.BasicArrowCommands);
+        }
+
+        internal void SendDevelopmentCommand(
+            ulong sequence,
+            DevelopmentCommandId commandId,
+            params string[] arguments)
+        {
+            transport.Send(
+                peerId,
+                DevelopmentCommandCodec.EncodeRequest(new DevelopmentCommandRequest(
+                    new DevelopmentCommandSequence(sequence),
+                    commandId,
+                    arguments)),
+                NetworkDelivery.ReliableOrdered,
+                StarfallNetworkChannels.DevelopmentCommands);
         }
 
         public void Connected(NetworkPeerId connectedPeer, NetworkEndpoint endpoint)
@@ -360,6 +415,22 @@ public sealed class ConnectedWalkingLoopbackTests
                     BasicArrowPayloadKind.Canceled when ConnectedBasicArrowCodec.TryDecodeCanceled(packet.Span, out BasicArrowCanceled? canceled) => canceled,
                     BasicArrowPayloadKind.Resolved when ConnectedBasicArrowCodec.TryDecodeResolved(packet.Span, out BasicArrowResolved? resolved) => resolved,
                     _ => throw new InvalidOperationException("Malformed Basic Arrow outcome in loopback test."),
+                });
+                return;
+            }
+            if (channel == StarfallNetworkChannels.DevelopmentCommandResults)
+            {
+                Assert.Equal(NetworkDelivery.ReliableOrdered, delivery);
+                Assert.True(DevelopmentCommandCodec.TryReadResultPayloadKind(
+                    packet.Span,
+                    out DevelopmentCommandResultPayloadKind kind));
+                DevelopmentResults.Add(kind switch
+                {
+                    DevelopmentCommandResultPayloadKind.Succeeded when
+                        DevelopmentCommandCodec.TryDecodeSucceeded(packet.Span, out DevelopmentCommandSucceeded? succeeded) => succeeded,
+                    DevelopmentCommandResultPayloadKind.Rejected when
+                        DevelopmentCommandCodec.TryDecodeRejected(packet.Span, out DevelopmentCommandRejected? rejected) => rejected,
+                    _ => throw new InvalidOperationException("Malformed development command result in loopback test."),
                 });
             }
         }

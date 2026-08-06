@@ -33,6 +33,12 @@ public sealed class DevelopmentCommandContractTests
     }
 
     [Fact]
+    public void Ping_world_has_one_canonical_current_source_identity()
+    {
+        Assert.Equal("ping_world", DevelopmentCommandIds.PingWorld.Value);
+    }
+
+    [Fact]
     public void Request_defensively_copies_ordered_arguments()
     {
         var source = new List<string> { "alpha", "42" };
@@ -63,13 +69,8 @@ public sealed class DevelopmentCommandContractTests
     }
 
     [Fact]
-    public void Availability_rejection_and_diagnostics_are_bounded()
+    public void Rejection_and_diagnostics_are_bounded()
     {
-        _ = new DevelopmentCommandAvailability(DevelopmentCommandAvailabilityState.Disabled);
-        _ = new DevelopmentCommandAvailability(DevelopmentCommandAvailabilityState.Enabled);
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            new DevelopmentCommandAvailability((DevelopmentCommandAvailabilityState)2));
-
         DevelopmentCommandSequence sequence = new(1);
         DevelopmentCommandId commandId = new("ping_world");
         _ = new DevelopmentCommandSucceeded(sequence, commandId, new string('x', 512));

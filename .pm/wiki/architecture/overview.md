@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 createdAt: 2026-08-01T05:48:09.1031030Z
-modifiedAt: 2026-08-06T14:04:38.9524590Z
+modifiedAt: 2026-08-06T15:57:46.1697670Z
 ---
 
 ## Purpose
@@ -46,7 +46,9 @@ CLIENT-0006 adds only the approved coordinator character-presentation source set
 
 CLIENT-0029 creates the caller-controlled ImGui backend only for the interactive local and connected native previews. CLIENT-0030 adds Starfall's compact read-only debug shell, independent concern windows, non-repeated `F12` visibility, interactive-only `--debug-ui-hidden`, in-memory window state and capture-aware gameplay-input suppression. OS close and F12 remain global. Starfall injects the bitmap default development font and records ImGui last in a separate color-load pass after the depth-enabled scene pass, matching the shared backend's color-only pipeline while retaining ownership of its window, device, swapchain, command buffers, scene pass, event loop and gameplay controls. Character-content validation and the hidden deterministic graybox capture suite still do not instantiate the backend, so their output and fingerprints remain stable.
 
-CLIENT-0009 activates the internal Client/World network factories through narrow process-owned hosts. Starfall Protocol supplies exact admission/walking codecs and public channel constants without referencing transport. Client and World own polling, delivery assignments, peer/session binding, development public-key configuration and disconnect cleanup. No generic dispatcher, framing system or transport dependency enters another product project.
+CLIENT-0009 activates the internal Client/World network factories through narrow process-owned hosts. Starfall Protocol supplies exact admission/walking codecs and public channel constants without referencing transport. Client and World own polling, delivery assignments, peer/session binding, development public-key configuration and disconnect cleanup. No generic gameplay dispatcher, framing system or transport dependency enters another product project.
+
+SERVER-0015 adds one focused World-owned development-command dispatcher on channels 7 and 8. Requests derive authority from the admitted transport session, fresh sequences are consumed monotonically per session, valid rejections keep gameplay connected, and malformed traffic uses existing protocol-violation cleanup. Every admitted connected player may currently invoke every registered command; only zero-argument `ping_world` is registered. There is no availability packet, global gate, role or permission machinery.
 
 `tools/Starfall.DevelopmentAdmission` is a development executable outside the product graph. It references only Protocol and BCL cryptography. `tests/Starfall.ConnectedWalking.Tests` is the explicit cross-process integration-test boundary; it does not alter runtime dependency direction.
 

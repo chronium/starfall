@@ -49,6 +49,11 @@ public readonly record struct DevelopmentCommandId
     public override string ToString() => Value ?? string.Empty;
 }
 
+public static class DevelopmentCommandIds
+{
+    public static DevelopmentCommandId PingWorld { get; } = new("ping_world");
+}
+
 public sealed class DevelopmentCommandRequest
 {
     public const int MaximumArgumentCount = 8;
@@ -97,37 +102,12 @@ public sealed class DevelopmentCommandRequest
     }
 }
 
-public enum DevelopmentCommandAvailabilityState : byte
-{
-    Disabled = 0,
-    Enabled = 1,
-}
-
-public readonly record struct DevelopmentCommandAvailability
-{
-    public DevelopmentCommandAvailability(DevelopmentCommandAvailabilityState state)
-    {
-        if (!Enum.IsDefined(state))
-            throw new ArgumentOutOfRangeException(nameof(state));
-
-        State = state;
-    }
-
-    public DevelopmentCommandAvailabilityState State
-    {
-        get;
-    }
-
-    internal bool IsValid => Enum.IsDefined(State);
-}
-
 public enum DevelopmentCommandRejectionReason : byte
 {
-    Disabled = 1,
-    UnknownCommand = 2,
-    InvalidArguments = 3,
-    StaleOrDuplicateSequence = 4,
-    HandlerRejected = 5,
+    UnknownCommand = 1,
+    InvalidArguments = 2,
+    StaleOrDuplicateSequence = 3,
+    HandlerRejected = 4,
 }
 
 public sealed class DevelopmentCommandSucceeded

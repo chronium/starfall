@@ -5,6 +5,7 @@ using Starfall.Protocol.Admission;
 using Starfall.Protocol.Networking;
 using Starfall.World.Admission;
 using Starfall.World.Combat;
+using Starfall.World.Development;
 using Starfall.World.Lifecycle;
 using Starfall.World.Monsters;
 using Starfall.World.Movement;
@@ -20,6 +21,7 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
     private readonly WorldWalkingExchange walking;
     private readonly WorldMonsterExchange monsters;
     private readonly WorldBasicArrowExchange basicArrow;
+    private readonly WorldDevelopmentCommandDispatcher developmentCommands;
     private readonly TimeProvider timeProvider;
     private readonly Dictionary<NetworkPeerId, PeerState> peers = [];
     private readonly Dictionary<GameplaySessionId, NetworkPeerId> sessionPeers = [];
@@ -37,6 +39,9 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
         walking = new WorldWalkingExchange(runtime);
         monsters = new WorldMonsterExchange(runtime);
         basicArrow = new WorldBasicArrowExchange(runtime);
+        developmentCommands = new WorldDevelopmentCommandDispatcher(
+            runtime,
+            [new PingWorldDevelopmentCommandHandler()]);
         this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 
@@ -107,6 +112,7 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
         peers.Clear();
         sessionPeers.Clear();
         basicArrow.Clear();
+        developmentCommands.Clear();
         transport.Dispose();
         disposed = true;
     }
@@ -148,6 +154,11 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
             HandleBasicArrow(peerId, sessionId, packet);
             return;
         }
+        if (channel == StarfallNetworkChannels.DevelopmentCommands && delivery == NetworkDelivery.ReliableOrdered)
+        {
+            HandleDevelopmentCommand(peerId, sessionId, packet);
+            return;
+        }
 
         DisconnectProtocolViolation(peerId);
     }
@@ -176,6 +187,26 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
         }
         if (outcome.Payload is { } payload)
             _ = TrySend(peerId, payload, NetworkDelivery.ReliableOrdered, StarfallNetworkChannels.BasicArrowOutcomes);
+    }
+
+    private void HandleDevelopmentCommand(NetworkPeerId peerId, GameplaySessionId sessionId, ReadOnlySpan<byte> packet)
+    {
+        WorldDevelopmentCommandOutcome outcome = developmentCommands.Handle(sessionId, packet);
+        if (outcome.Disposition is WorldDevelopmentCommandDisposition.MalformedPayload or
+            WorldDevelopmentCommandDisposition.UnknownSession)
+        {
+            DisconnectProtocolViolation(peerId);
+            return;
+        }
+
+        if (outcome.Payload is not { } payload)
+            throw new InvalidOperationException("A handled development command must carry a result payload.");
+
+        _ = TrySend(
+            peerId,
+            payload,
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommandResults);
     }
 
     private void PublishBasicArrowOutcomes(IReadOnlyList<Starfall.Simulation.Combat.BasicArrowResolution> resolutions)
@@ -256,6 +287,7 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
             return;
         sessionPeers.Remove(sessionId);
         basicArrow.RemoveSession(sessionId);
+        developmentCommands.RemoveSession(sessionId);
         runtime.TerminateGameplaySession(sessionId);
     }
 

@@ -6,6 +6,7 @@ using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Combat;
 using Starfall.Protocol.Compatibility;
+using Starfall.Protocol.Development;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -311,6 +312,140 @@ public sealed class WorldGameplayNetworkHostTests
         Assert.Equal(0, runtime.PendingBasicArrowCount);
     }
 
+    [Fact]
+    public void Every_admitted_session_can_dispatch_correlated_ping_world_commands()
+    {
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var transport = new RecordingTransport();
+        WorldChannelRuntime runtime = CreateRuntime();
+        using var runtimeScope = new RuntimeScope(runtime);
+        using var host = new WorldGameplayNetworkHost(transport, runtime, Ring(key), new FixedTimeProvider(Now));
+        var firstPeer = new NetworkPeerId(16);
+        var secondPeer = new NetworkPeerId(17);
+        WorldJoinAccepted first = Admit(host, transport, runtime, key, firstPeer);
+        WorldJoinAccepted second = Admit(host, transport, runtime, key, secondPeer);
+        transport.Sent.Clear();
+
+        host.PacketReceived(
+            firstPeer,
+            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+        host.PacketReceived(
+            secondPeer,
+            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+
+        Assert.Equal(2, transport.Sent.Count);
+        AssertDevelopmentSuccess(transport.Sent[0], firstPeer, first.SessionId, 1);
+        AssertDevelopmentSuccess(transport.Sent[1], secondPeer, second.SessionId, 1);
+        Assert.Equal(2, runtime.ActiveSessionCount);
+    }
+
+    [Fact]
+    public void Valid_development_rejections_keep_the_gameplay_session_connected()
+    {
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var transport = new RecordingTransport();
+        WorldChannelRuntime runtime = CreateRuntime();
+        using var runtimeScope = new RuntimeScope(runtime);
+        using var host = new WorldGameplayNetworkHost(transport, runtime, Ring(key), new FixedTimeProvider(Now));
+        var peer = new NetworkPeerId(18);
+        _ = Admit(host, transport, runtime, key, peer);
+        transport.Sent.Clear();
+
+        host.PacketReceived(
+            peer,
+            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld, "extra"),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+        host.PacketReceived(
+            peer,
+            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+
+        Assert.Equal(2, transport.Sent.Count);
+        Assert.True(DevelopmentCommandCodec.TryDecodeRejected(
+            transport.Sent[0].Payload,
+            out DevelopmentCommandRejected? invalidArguments));
+        Assert.Equal(DevelopmentCommandRejectionReason.InvalidArguments, invalidArguments!.Reason);
+        Assert.True(DevelopmentCommandCodec.TryDecodeRejected(
+            transport.Sent[1].Payload,
+            out DevelopmentCommandRejected? stale));
+        Assert.Equal(DevelopmentCommandRejectionReason.StaleOrDuplicateSequence, stale!.Reason);
+        Assert.Empty(transport.Disconnected);
+        Assert.Equal(1, runtime.ActiveSessionCount);
+    }
+
+    [Theory]
+    [InlineData(NetworkDelivery.ReliableSequenced)]
+    [InlineData(NetworkDelivery.Sequenced)]
+    public void Wrong_delivery_development_command_is_a_protocol_violation(NetworkDelivery delivery)
+    {
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var transport = new RecordingTransport();
+        WorldChannelRuntime runtime = CreateRuntime();
+        using var runtimeScope = new RuntimeScope(runtime);
+        using var host = new WorldGameplayNetworkHost(transport, runtime, Ring(key), new FixedTimeProvider(Now));
+        var peer = new NetworkPeerId(19);
+        _ = Admit(host, transport, runtime, key, peer);
+
+        host.PacketReceived(
+            peer,
+            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            delivery,
+            StarfallNetworkChannels.DevelopmentCommands);
+
+        Assert.Contains(peer, transport.Disconnected);
+        Assert.Equal(0, runtime.ActiveSessionCount);
+    }
+
+    [Fact]
+    public void Malformed_development_command_and_result_send_failure_clean_up_the_session()
+    {
+        using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        WorldChannelRuntime malformedRuntime = CreateRuntime();
+        using var malformedScope = new RuntimeScope(malformedRuntime);
+        var malformedTransport = new RecordingTransport();
+        using var malformedHost = new WorldGameplayNetworkHost(
+            malformedTransport,
+            malformedRuntime,
+            Ring(key),
+            new FixedTimeProvider(Now));
+        var malformedPeer = new NetworkPeerId(20);
+        _ = Admit(malformedHost, malformedTransport, malformedRuntime, key, malformedPeer);
+
+        malformedHost.PacketReceived(
+            malformedPeer,
+            new byte[] { 1, 2, 3 },
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+        Assert.Contains(malformedPeer, malformedTransport.Disconnected);
+        Assert.Equal(0, malformedRuntime.ActiveSessionCount);
+
+        WorldChannelRuntime sendRuntime = CreateRuntime();
+        using var sendScope = new RuntimeScope(sendRuntime);
+        var sendTransport = new RecordingTransport();
+        using var sendHost = new WorldGameplayNetworkHost(
+            sendTransport,
+            sendRuntime,
+            Ring(key),
+            new FixedTimeProvider(Now));
+        var sendPeer = new NetworkPeerId(21);
+        _ = Admit(sendHost, sendTransport, sendRuntime, key, sendPeer);
+        sendTransport.ThrowOnChannel = StarfallNetworkChannels.DevelopmentCommandResults;
+
+        sendHost.PacketReceived(
+            sendPeer,
+            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+        Assert.Contains(sendPeer, sendTransport.Disconnected);
+        Assert.Equal(0, sendRuntime.ActiveSessionCount);
+    }
+
     private static WorldChannelRuntime CreateRuntime()
     {
         var runtime = new WorldChannelRuntime(
@@ -396,6 +531,32 @@ public sealed class WorldGameplayNetworkHostTests
         ConnectedBasicArrowCodec.EncodeCommand(new BasicArrowCommand(
             new CombatCommandSequence(sequence),
             new Starfall.Protocol.Movement.WorldEntityId(target)));
+
+    private static byte[] EncodeDevelopment(
+        ulong sequence,
+        DevelopmentCommandId commandId,
+        params string[] arguments) => DevelopmentCommandCodec.EncodeRequest(
+            new DevelopmentCommandRequest(
+                new DevelopmentCommandSequence(sequence),
+                commandId,
+                arguments));
+
+    private static void AssertDevelopmentSuccess(
+        SentPacket packet,
+        NetworkPeerId peerId,
+        GameplaySessionId sessionId,
+        ulong sequence)
+    {
+        Assert.Equal(peerId, packet.PeerId);
+        Assert.Equal(StarfallNetworkChannels.DevelopmentCommandResults, packet.Channel);
+        Assert.Equal(NetworkDelivery.ReliableOrdered, packet.Delivery);
+        Assert.True(DevelopmentCommandCodec.TryDecodeSucceeded(
+            packet.Payload,
+            out DevelopmentCommandSucceeded? succeeded));
+        Assert.Equal(sequence, succeeded!.Sequence.Value);
+        Assert.Equal(DevelopmentCommandIds.PingWorld, succeeded.CommandId);
+        Assert.Contains($"session={sessionId}", succeeded.Diagnostic, StringComparison.Ordinal);
+    }
 
     private sealed class FixedTimeProvider(DateTimeOffset now) : TimeProvider
     {

@@ -12,20 +12,18 @@ public sealed class DevelopmentCommandCodecTests
         "05616C706861" +
         "023432");
 
-    private static readonly byte[] AvailabilityGolden = [1, 1];
-
     private static readonly byte[] SucceededGolden = Convert.FromHexString(
-        "02" +
+        "01" +
         "0102030405060708" +
         "0A70696E675F776F726C64" +
         "0002" +
         "6F6B");
 
     private static readonly byte[] RejectedGolden = Convert.FromHexString(
-        "03" +
+        "02" +
         "0102030405060708" +
         "0A70696E675F776F726C64" +
-        "02" +
+        "01" +
         "0007" +
         "756E6B6E6F776E");
 
@@ -34,12 +32,10 @@ public sealed class DevelopmentCommandCodecTests
     {
         Assert.Equal(7, StarfallNetworkChannels.DevelopmentCommands);
         Assert.Equal(8, StarfallNetworkChannels.DevelopmentCommandResults);
-        Assert.Equal(1, (byte)DevelopmentCommandResultPayloadKind.Availability);
-        Assert.Equal(2, (byte)DevelopmentCommandResultPayloadKind.Succeeded);
-        Assert.Equal(3, (byte)DevelopmentCommandResultPayloadKind.Rejected);
+        Assert.Equal(1, (byte)DevelopmentCommandResultPayloadKind.Succeeded);
+        Assert.Equal(2, (byte)DevelopmentCommandResultPayloadKind.Rejected);
         Assert.Equal(11, DevelopmentCommandCodec.MinimumRequestPayloadLength);
         Assert.Equal(594, DevelopmentCommandCodec.MaximumRequestPayloadLength);
-        Assert.Equal(2, DevelopmentCommandCodec.AvailabilityPayloadLength);
         Assert.Equal(588, DevelopmentCommandCodec.MaximumSucceededPayloadLength);
         Assert.Equal(589, DevelopmentCommandCodec.MaximumRejectedPayloadLength);
         Assert.Equal(512, DevelopmentCommandCodec.MaximumDiagnosticByteLength);
@@ -75,23 +71,6 @@ public sealed class DevelopmentCommandCodecTests
         Assert.Equal(DevelopmentCommandCodec.MaximumRequestPayloadLength, payload.Length);
         Assert.True(DevelopmentCommandCodec.TryDecodeRequest(payload, out DevelopmentCommandRequest? decoded));
         Assert.Equal(request.Arguments.ToArray(), decoded!.Arguments.ToArray());
-    }
-
-    [Fact]
-    public void Availability_matches_golden_bytes_and_all_states_round_trip()
-    {
-        byte[] enabled = DevelopmentCommandCodec.EncodeAvailability(
-            new DevelopmentCommandAvailability(DevelopmentCommandAvailabilityState.Enabled));
-        Assert.Equal(AvailabilityGolden, enabled);
-        Assert.True(DevelopmentCommandCodec.TryReadResultPayloadKind(enabled, out DevelopmentCommandResultPayloadKind kind));
-        Assert.Equal(DevelopmentCommandResultPayloadKind.Availability, kind);
-
-        foreach (DevelopmentCommandAvailabilityState state in Enum.GetValues<DevelopmentCommandAvailabilityState>())
-        {
-            byte[] payload = DevelopmentCommandCodec.EncodeAvailability(new DevelopmentCommandAvailability(state));
-            Assert.True(DevelopmentCommandCodec.TryDecodeAvailability(payload, out DevelopmentCommandAvailability decoded));
-            Assert.Equal(state, decoded.State);
-        }
     }
 
     [Fact]
@@ -164,7 +143,6 @@ public sealed class DevelopmentCommandCodecTests
     public void Every_shorter_and_representative_extended_payload_is_rejected()
     {
         AssertWrongLengths(RequestGolden, payload => DevelopmentCommandCodec.TryDecodeRequest(payload, out _));
-        AssertWrongLengths(AvailabilityGolden, payload => DevelopmentCommandCodec.TryDecodeAvailability(payload, out _));
         AssertWrongLengths(SucceededGolden, payload => DevelopmentCommandCodec.TryDecodeSucceeded(payload, out _));
         AssertWrongLengths(RejectedGolden, payload => DevelopmentCommandCodec.TryDecodeRejected(payload, out _));
     }
@@ -189,7 +167,7 @@ public sealed class DevelopmentCommandCodecTests
     {
         Assert.False(DevelopmentCommandCodec.TryReadResultPayloadKind([], out _));
         Assert.False(DevelopmentCommandCodec.TryReadResultPayloadKind([0], out _));
-        Assert.False(DevelopmentCommandCodec.TryDecodeAvailability([1, 2], out _));
+        Assert.False(DevelopmentCommandCodec.TryReadResultPayloadKind([3], out _));
 
         byte[] zeroSequence = [.. SucceededGolden];
         zeroSequence.AsSpan(1, 8).Clear();
@@ -218,7 +196,6 @@ public sealed class DevelopmentCommandCodecTests
             random.NextBytes(payload);
 
             Assert.Null(Record.Exception(() => DevelopmentCommandCodec.TryDecodeRequest(payload, out _)));
-            Assert.Null(Record.Exception(() => DevelopmentCommandCodec.TryDecodeAvailability(payload, out _)));
             Assert.Null(Record.Exception(() => DevelopmentCommandCodec.TryDecodeSucceeded(payload, out _)));
             Assert.Null(Record.Exception(() => DevelopmentCommandCodec.TryDecodeRejected(payload, out _)));
         }

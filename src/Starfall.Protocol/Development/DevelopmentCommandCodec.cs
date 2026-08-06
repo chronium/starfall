@@ -7,16 +7,14 @@ namespace Starfall.Protocol.Development;
 
 public enum DevelopmentCommandResultPayloadKind : byte
 {
-    Availability = 1,
-    Succeeded = 2,
-    Rejected = 3,
+    Succeeded = 1,
+    Rejected = 2,
 }
 
 public static class DevelopmentCommandCodec
 {
     public const int MinimumRequestPayloadLength = 11;
     public const int MaximumRequestPayloadLength = 594;
-    public const int AvailabilityPayloadLength = 2;
     public const int MaximumSucceededPayloadLength = 588;
     public const int MaximumRejectedPayloadLength = 589;
     public const int MaximumDiagnosticByteLength = DevelopmentCommandText.MaximumDiagnosticByteLength;
@@ -90,34 +88,6 @@ public static class DevelopmentCommandCodec
             new DevelopmentCommandSequence(sequence),
             commandId,
             arguments.MoveToImmutable());
-        return true;
-    }
-
-    public static byte[] EncodeAvailability(DevelopmentCommandAvailability availability)
-    {
-        if (!availability.IsValid)
-            throw new ArgumentException("Development command availability must be valid.", nameof(availability));
-
-        return
-        [
-            (byte)DevelopmentCommandResultPayloadKind.Availability,
-            (byte)availability.State,
-        ];
-    }
-
-    public static bool TryDecodeAvailability(
-        ReadOnlySpan<byte> payload,
-        out DevelopmentCommandAvailability availability)
-    {
-        availability = default;
-        if (payload.Length != AvailabilityPayloadLength ||
-            payload[0] != (byte)DevelopmentCommandResultPayloadKind.Availability ||
-            !Enum.IsDefined((DevelopmentCommandAvailabilityState)payload[1]))
-        {
-            return false;
-        }
-
-        availability = new DevelopmentCommandAvailability((DevelopmentCommandAvailabilityState)payload[1]);
         return true;
     }
 
