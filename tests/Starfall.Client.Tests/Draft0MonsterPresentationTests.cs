@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Numerics;
 using ChronoFall.CharacterPresentation;
+using ChronoFall.CharacterPresentation.SdlGpu;
 using Starfall.Client;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
@@ -317,6 +318,14 @@ public sealed class Draft0MonsterPresentationTests
             [Defeated(2, 11)]), 1.2));
         Draft0MonsterDefeatPresentationState collapsed = Assert.Single(presentation.CreateDefeatStates(1.45));
         Assert.InRange(collapsed.World.M42, 0.039f, 0.041f);
+        Assert.True(Matrix4x4.Decompose(collapsed.World, out Vector3 scale, out _, out _));
+        Assert.Equal(scale.X, scale.Y);
+        Assert.Equal(scale.X, scale.Z);
+        _ = new StaticMeshDraw(
+            collapsed.World,
+            Matrix4x4.Identity,
+            collapsed.BaseColor,
+            -Vector3.UnitY);
         Assert.Equal(Draft0MonsterPresentationAdapter.DeathColor, collapsed.BaseColor);
         Assert.Empty(presentation.CreateDefeatStates(1.46));
 

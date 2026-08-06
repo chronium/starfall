@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-06T11:01:27.5578980Z
+modifiedAt: 2026-08-06T11:32:06.5437450Z
 ---
 
 ## Execution standard
@@ -100,7 +100,7 @@ SERVER-0005 + PROTOCOL-0004 + CLIENT-0021 + BUILD-0006
   -> CLIENT-0009
 ~~~
 
-CLIENT-0009 completes the second visible milestone: a signed loopback admission creates one world-owned player, left-click sends intent, World/Simulation decides movement and collision, and Client renders latest authoritative snapshots/corrections through CLIENT-0021's exact adapter.
+CLIENT-0009 completes the second visible milestone: a signed loopback admission creates one world-owned player, the movement click sends intent, World/Simulation decides movement and collision, and Client renders latest authoritative snapshots/corrections through CLIENT-0021's exact adapter. CLIENT-0012 later remaps the current movement action to right-click without changing that authority or adapter.
 
 The first exchange is deliberately bounded: channel-specific datagrams over the approved shared transport, plaintext literal loopback only, one-minute development tickets, no reconnect/resume, and immediate disconnect cleanup. Production key provisioning, protected non-loopback transport, smoothing, monsters and combat remain future task-owned work.
 
@@ -156,12 +156,12 @@ SERVER-0005 + SERVER-0007 + PROTOCOL-0007 + PROTOCOL-0015
   -> SERVER-0008  first connected-combat exchange
 
 CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
-  -> CLIENT-0012  right-click Basic Arrow intent
+  -> CLIENT-0012  left-click Basic Arrow intent
 ~~~
 
 PROTOCOL-0015 replaces the four packet-local schema bytes with one exact protocol version offered and accepted at admission. It blocks SERVER-0008 and every unfinished gameplay serializer; the `sfjt1` ticket and persisted formats remain independently versioned. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/gameplay-protocol-compatibility
 
-PROTOCOL-0006/0007, PROTOCOL-0015, SERVER-0008 and CLIENT-0012 have explicit high priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
+PROTOCOL-0006/0007, PROTOCOL-0015, SERVER-0008 and CLIENT-0012 have explicit high priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, left-click selects one live connected monster while right-click retains movement, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
 
 Mana is an independent prerequisite rather than Fire or Rain-owned state:
 

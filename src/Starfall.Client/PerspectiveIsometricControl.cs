@@ -166,6 +166,39 @@ internal sealed class PerspectiveIsometricCamera
         out GroundPoint point)
     {
         point = default;
+        if (!TryCreateWorldRay(
+                normalizedViewportPosition,
+                drawableWidth,
+                drawableHeight,
+                out PerspectiveWorldRay ray))
+            return false;
+
+        if (MathF.Abs(ray.Direction.Y) <= ParallelTolerance)
+            return false;
+
+        float distance = -ray.Origin.Y / ray.Direction.Y;
+        if (!float.IsFinite(distance) || distance < 0.0f)
+            return false;
+
+        Vector3 intersection = ray.Origin + ray.Direction * distance;
+        if (!IsFinite(intersection))
+            return false;
+
+        var candidate = new GroundPoint(intersection.X, intersection.Z);
+        if (!validGround.Contains(candidate))
+            return false;
+
+        point = candidate;
+        return true;
+    }
+
+    internal bool TryCreateWorldRay(
+        Vector2 normalizedViewportPosition,
+        uint drawableWidth,
+        uint drawableHeight,
+        out PerspectiveWorldRay ray)
+    {
+        ray = default;
         if (!float.IsFinite(normalizedViewportPosition.X) ||
             !float.IsFinite(normalizedViewportPosition.Y) ||
             normalizedViewportPosition.X < 0.0f ||
@@ -187,23 +220,12 @@ internal sealed class PerspectiveIsometricCamera
         if (!TryUnproject(new Vector4(ndcX, ndcY, 0.0f, 1.0f), inverseViewProjection, out Vector3 near))
             return false;
 
-        Vector3 ray = near - Position;
-        if (!IsFinite(ray) || MathF.Abs(ray.Y) <= ParallelTolerance)
+        Vector3 direction = near - Position;
+        float lengthSquared = direction.LengthSquared();
+        if (!IsFinite(direction) || !float.IsFinite(lengthSquared) || lengthSquared <= ParallelTolerance * ParallelTolerance)
             return false;
 
-        float distance = -near.Y / ray.Y;
-        if (!float.IsFinite(distance) || distance < 0.0f)
-            return false;
-
-        Vector3 intersection = near + ray * distance;
-        if (!IsFinite(intersection))
-            return false;
-
-        var candidate = new GroundPoint(intersection.X, intersection.Z);
-        if (!validGround.Contains(candidate))
-            return false;
-
-        point = candidate;
+        ray = new PerspectiveWorldRay(Position, Vector3.Normalize(direction));
         return true;
     }
 
@@ -232,6 +254,8 @@ internal sealed class PerspectiveIsometricCamera
 
     private static float DegreesToRadians(float degrees) => degrees * (MathF.PI / 180.0f);
 }
+
+internal readonly record struct PerspectiveWorldRay(Vector3 Origin, Vector3 Direction);
 
 internal readonly record struct GroundMovementIntent(GroundPoint Destination);
 

@@ -10,6 +10,9 @@ using SDL;
 using Starfall.Client.Networking;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
+using Starfall.Protocol.Combat;
+using Starfall.Protocol.Monsters;
+using Starfall.Protocol.Movement;
 using static SDL.SDL3;
 
 namespace Starfall.Client;
@@ -73,6 +76,7 @@ internal static unsafe class NativeClientPreview
         private readonly Draft0GrayboxPresentation graybox;
         private readonly IReadOnlyList<Draft0MonsterPresentationSnapshot> localMonsterSnapshots;
         private readonly Draft0ConnectedMonsterPresentation connectedMonsterPresentation = new();
+        private readonly ConnectedBasicArrowSelection basicArrowSelection = new();
         private readonly GroundBounds validGround;
         private readonly SDL_GPUTextureFormat colorFormat;
         private SDL_Window* window;
@@ -188,7 +192,8 @@ internal static unsafe class NativeClientPreview
 
             Console.WriteLine(
                 $"STARFALL_CLIENT_CONTROLS mode={(connectedSession is null ? "local" : "connected")} " +
-                "LeftClick=move-intent KPPlus/KPMinus=local-speed " +
+                "RightClick=move-intent LeftClick=basic-arrow-connected-only " +
+                "KPPlus/KPMinus=local-speed " +
                 "F1-F7=view Tab=next-view Up/Down=F1-distance Escape=close");
             if (connectedSession is null)
                 Console.WriteLine($"STARFALL_LOCAL_MONSTERS count={localMonsterSnapshots.Count} source=CONTENT-0007");
@@ -213,10 +218,22 @@ internal static unsafe class NativeClientPreview
                     {
                         running = false;
                     }
-                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN &&
-                        sdlEvent.button.Button == SDLButton.SDL_BUTTON_LEFT)
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN)
                     {
-                        SubmitMovementIntent(sdlEvent.button, connectedSession);
+                        Draft0PointerAction action = sdlEvent.button.Button switch
+                        {
+                            SDLButton.SDL_BUTTON_LEFT => Draft0PointerControls.Resolve(
+                                Draft0PointerButton.Primary,
+                                connectedSession is not null),
+                            SDLButton.SDL_BUTTON_RIGHT => Draft0PointerControls.Resolve(
+                                Draft0PointerButton.Secondary,
+                                connectedSession is not null),
+                            _ => Draft0PointerAction.None,
+                        };
+                        if (action == Draft0PointerAction.Move)
+                            SubmitMovementIntent(sdlEvent.button, connectedSession);
+                        else if (action == Draft0PointerAction.BasicArrow)
+                            SubmitBasicArrowIntent(sdlEvent.button, connectedSession!);
                     }
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
                         HandlePreviewKey(sdlEvent.key.key, sdlEvent.key.repeat, connectedSession is not null))
@@ -234,14 +251,21 @@ internal static unsafe class NativeClientPreview
                 {
                     SetWindowTitle(CreateWindowTitle(connectedSession));
                     if (connectedSession.MonsterSnapshot is { } monsterSnapshot &&
-                        connectedMonsterPresentation.Accept(monsterSnapshot, monsterPresentationSeconds) &&
-                        !reportedConnectedMonsters)
+                        connectedMonsterPresentation.Accept(monsterSnapshot, monsterPresentationSeconds))
                     {
-                        reportedConnectedMonsters = true;
-                        Console.WriteLine(
-                            $"STARFALL_CONNECTED_MONSTERS sequence={monsterSnapshot.Sequence} " +
-                            $"tick={monsterSnapshot.SimulationTick} live={monsterSnapshot.LiveMonsters.Length} " +
-                            $"defeated={monsterSnapshot.DefeatedMonsters.Length}");
+                        if (basicArrowSelection.Reconcile(monsterSnapshot))
+                        {
+                            Console.WriteLine("STARFALL_CLIENT_BASIC_ARROW_SELECTION_CLEARED reason=target-unavailable");
+                            SetWindowTitle(CreateWindowTitle(connectedSession));
+                        }
+                        if (!reportedConnectedMonsters)
+                        {
+                            reportedConnectedMonsters = true;
+                            Console.WriteLine(
+                                $"STARFALL_CONNECTED_MONSTERS sequence={monsterSnapshot.Sequence} " +
+                                $"tick={monsterSnapshot.SimulationTick} live={monsterSnapshot.LiveMonsters.Length} " +
+                                $"defeated={monsterSnapshot.DefeatedMonsters.Length}");
+                        }
                     }
                 }
 
@@ -680,6 +704,69 @@ internal static unsafe class NativeClientPreview
                 $"STARFALL_CLIENT_MOVE_INTENT x={intent.Destination.XMetres:F3} z={intent.Destination.ZMetres:F3}"));
         }
 
+        private void SubmitBasicArrowIntent(
+            SDL_MouseButtonEvent mouseButton,
+            ConnectedWalkingClientSession connectedSession)
+        {
+            int logicalWidth;
+            int logicalHeight;
+            if (!SDL_GetWindowSize(window, &logicalWidth, &logicalHeight))
+                throw new InvalidOperationException($"SDL logical window size query failed: {SDL_GetError()}");
+
+            int drawableWidth;
+            int drawableHeight;
+            if (!SDL_GetWindowSizeInPixels(window, &drawableWidth, &drawableHeight))
+                throw new InvalidOperationException($"SDL drawable window size query failed: {SDL_GetError()}");
+
+            BoundedMonsterSnapshot? snapshot = connectedSession.MonsterSnapshot;
+            if (snapshot is null ||
+                logicalWidth <= 0 ||
+                logicalHeight <= 0 ||
+                drawableWidth <= 0 ||
+                drawableHeight <= 0 ||
+                !float.IsFinite(mouseButton.x) ||
+                !float.IsFinite(mouseButton.y) ||
+                mouseButton.x < 0.0f ||
+                mouseButton.x > logicalWidth ||
+                mouseButton.y < 0.0f ||
+                mouseButton.y > logicalHeight)
+            {
+                ClearBasicArrowSelection("no-live-target", connectedSession);
+                return;
+            }
+
+            TechnicalPlayerSnapshot player = connectedSession.Snapshot!.Value;
+            PerspectiveIsometricCamera camera = cameras.CreateCamera(player.Position);
+            var normalized = new Vector2(mouseButton.x / logicalWidth, mouseButton.y / logicalHeight);
+            if (!camera.TryCreateWorldRay(
+                    normalized,
+                    (uint)drawableWidth,
+                    (uint)drawableHeight,
+                    out PerspectiveWorldRay ray) ||
+                !basicArrowSelection.SelectOrClear(ray, snapshot))
+            {
+                ClearBasicArrowSelection("miss", connectedSession);
+                return;
+            }
+
+            WorldEntityId target = basicArrowSelection.SelectedTarget!.Value;
+            CombatCommandSequence sequence = connectedSession.SendBasicArrowIntent(target);
+            Console.WriteLine(
+                $"STARFALL_CLIENT_BASIC_ARROW_COMMAND sequence={sequence} target={target} " +
+                $"snapshot={snapshot.Sequence} tick={snapshot.SimulationTick}");
+            SetWindowTitle(CreateWindowTitle(connectedSession));
+        }
+
+        private void ClearBasicArrowSelection(
+            string reason,
+            ConnectedWalkingClientSession connectedSession)
+        {
+            if (!basicArrowSelection.Clear())
+                return;
+            Console.WriteLine($"STARFALL_CLIENT_BASIC_ARROW_SELECTION_CLEARED reason={reason}");
+            SetWindowTitle(CreateWindowTitle(connectedSession));
+        }
+
         private bool HandlePreviewKey(SDL_Keycode key, bool repeated, bool connected)
         {
             if (cameras.HandleKey(key, repeated))
@@ -795,8 +882,9 @@ internal static unsafe class NativeClientPreview
                     cameras.CurrentDistanceMetres)
                 : string.Create(
                     CultureInfo.InvariantCulture,
-                    $"Starfall - Connected Walking [{cameras.CurrentPreset.Name}] " +
+                    $"Starfall - Connected Basic Arrow [{cameras.CurrentPreset.Name}] " +
                     $"[entity {connectedSession.Snapshot?.Identity ?? "pending"}] " +
+                    $"[target {basicArrowSelection.SelectedTarget?.Value.ToString(CultureInfo.InvariantCulture) ?? "none"}] " +
                     $"[tick {connectedSession.Snapshot?.Tick ?? 0}] " +
                     $"[camera {cameras.CurrentDistanceMetres:F1} m]");
 

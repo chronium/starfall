@@ -3,6 +3,7 @@ using ChronoFall.Network.Transport;
 using Starfall.Client.Networking;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Combat;
 using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
@@ -336,6 +337,188 @@ public sealed class ConnectedWalkingClientSessionTests
                 TimeSpan.FromMilliseconds(10)));
         Assert.Contains("timed out", timeout.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(1, timeoutTransport.ConnectCount);
+    }
+
+    [Fact]
+    public void Session_sends_basic_arrow_commands_and_accepts_authoritative_resolution()
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+
+        CombatCommandSequence sequence = session.SendBasicArrowIntent(new WorldEntityId(10));
+        SentPacket commandPacket = Assert.Single(
+            transport.Sent,
+            static packet => packet.Channel == StarfallNetworkChannels.BasicArrowCommands);
+        Assert.Equal(NetworkDelivery.ReliableSequenced, commandPacket.Delivery);
+        Assert.True(ConnectedBasicArrowCodec.TryDecodeCommand(commandPacket.Payload, out BasicArrowCommand? command));
+        Assert.Equal(sequence, command.Sequence);
+        Assert.Equal(10UL, command.TargetEntityId.Value);
+
+        session.PacketReceived(
+            transport.Peer,
+            MonsterSnapshot(1, 1),
+            NetworkDelivery.Sequenced,
+            StarfallNetworkChannels.MonsterSnapshots);
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeAccepted(new BasicArrowAccepted(
+                sequence, new WorldEntityId(1), new WorldEntityId(10), 5, 17)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Accepted, session.LastBasicArrowOutcome!.Kind);
+
+        session.PacketReceived(
+            transport.Peer,
+            MonsterSnapshot(2, 2),
+            NetworkDelivery.Sequenced,
+            StarfallNetworkChannels.MonsterSnapshots);
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeResolved(new BasicArrowResolved(
+                sequence,
+                new WorldEntityId(1),
+                new WorldEntityId(10),
+                5,
+                17,
+                requestedDamageUnits: 300,
+                effectiveDamageUnits: 300,
+                targetDefeated: false)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+
+        ConnectedBasicArrowOutcome resolved = Assert.IsType<ConnectedBasicArrowOutcome>(session.LastBasicArrowOutcome);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Resolved, resolved.Kind);
+        Assert.Equal(300, resolved.EffectiveDamageUnits);
+        Assert.False(resolved.TargetDefeated);
+        Assert.False(session.IsDisconnected);
+    }
+
+    [Fact]
+    public void Session_handles_rejection_and_cancellation_with_separate_monotonic_combat_sequences()
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+        CombatCommandSequence acceptedSequence = session.SendBasicArrowIntent(new WorldEntityId(10));
+        CombatCommandSequence rejectedSequence = session.SendBasicArrowIntent(new WorldEntityId(11));
+        Assert.Equal(1UL, acceptedSequence.Value);
+        Assert.Equal(2UL, rejectedSequence.Value);
+
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeAccepted(new BasicArrowAccepted(
+                acceptedSequence, new WorldEntityId(1), new WorldEntityId(10), 5, 17)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeRejected(new BasicArrowRejected(
+                rejectedSequence,
+                new WorldEntityId(1),
+                new WorldEntityId(11),
+                6,
+                BasicArrowRejectionReason.ActionAlreadyPending)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Rejected, session.LastBasicArrowOutcome!.Kind);
+
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeCanceled(new BasicArrowCanceled(
+                acceptedSequence,
+                new WorldEntityId(1),
+                new WorldEntityId(10),
+                5,
+                17,
+                8,
+                BasicArrowCancellationReason.CanceledByMovement)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Canceled, session.LastBasicArrowOutcome!.Kind);
+        Assert.Equal(BasicArrowCancellationReason.CanceledByMovement, session.LastBasicArrowOutcome.CancellationReason);
+    }
+
+    [Fact]
+    public void Session_rejects_inconsistent_or_misrouted_basic_arrow_outcomes()
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+        CombatCommandSequence sequence = session.SendBasicArrowIntent(new WorldEntityId(10));
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeAccepted(new BasicArrowAccepted(
+                sequence, new WorldEntityId(99), new WorldEntityId(10), 5, 17)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        InvalidOperationException mismatch = Assert.Throws<InvalidOperationException>(session.Poll);
+        Assert.Contains("Basic Arrow", mismatch.Message, StringComparison.Ordinal);
+
+        ConnectedWalkingClientSession misrouted = CreateReadySession(out ScriptedTransport otherTransport);
+        CombatCommandSequence otherSequence = misrouted.SendBasicArrowIntent(new WorldEntityId(10));
+        misrouted.PacketReceived(
+            otherTransport.Peer,
+            ConnectedBasicArrowCodec.EncodeRejected(new BasicArrowRejected(
+                otherSequence,
+                new WorldEntityId(1),
+                new WorldEntityId(10),
+                5,
+                BasicArrowRejectionReason.TargetOutOfRange)),
+            NetworkDelivery.Sequenced,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        Assert.Throws<InvalidOperationException>(misrouted.Poll);
+    }
+
+    [Fact]
+    public void Session_handles_sequenced_command_gaps_and_fails_explicitly_at_sequence_exhaustion()
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+        _ = session.SendBasicArrowIntent(new WorldEntityId(10));
+        CombatCommandSequence latest = session.SendBasicArrowIntent(new WorldEntityId(11));
+        session.PacketReceived(
+            transport.Peer,
+            ConnectedBasicArrowCodec.EncodeRejected(new BasicArrowRejected(
+                latest,
+                new WorldEntityId(1),
+                new WorldEntityId(11),
+                5,
+                BasicArrowRejectionReason.TargetOutOfRange)),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.BasicArrowOutcomes);
+        Assert.False(session.IsDisconnected);
+
+        ConnectedWalkingClientSession exhausted = CreateReadySession(out _, ulong.MaxValue);
+        Assert.Equal(ulong.MaxValue, exhausted.SendBasicArrowIntent(new WorldEntityId(10)).Value);
+        Assert.Throws<InvalidOperationException>(() => exhausted.SendBasicArrowIntent(new WorldEntityId(11)));
+
+        ConnectedWalkingClientSession bounded = CreateReadySession(out _);
+        for (ulong identity = 10; identity < 10 + ConnectedWalkingClientSession.MaximumOutstandingBasicArrowCommands; identity++)
+            _ = bounded.SendBasicArrowIntent(new WorldEntityId(identity));
+        Assert.Throws<InvalidOperationException>(() => bounded.SendBasicArrowIntent(new WorldEntityId(1000)));
+    }
+
+    private static ConnectedWalkingClientSession CreateReadySession(
+        out ScriptedTransport transport,
+        ulong initialCombatSequence = 1)
+    {
+        transport = new ScriptedTransport();
+        var session = new ConnectedWalkingClientSession(transport, "ticket", initialCombatSequence);
+        ScriptedTransport captured = transport;
+        captured.OnPoll = handler =>
+        {
+            if (captured.PollCount != 1)
+                return;
+            handler.Connected(captured.Peer, new NetworkEndpoint("127.0.0.1", 7777));
+            handler.PacketReceived(
+                captured.Peer,
+                WorldJoinAdmissionCodec.EncodeAccepted(new WorldJoinAccepted(
+                    StarfallGameplayProtocol.CurrentVersion,
+                    new GameplaySessionId(Guid.NewGuid()))),
+                NetworkDelivery.ReliableOrdered,
+                StarfallNetworkChannels.Admission);
+            handler.PacketReceived(
+                captured.Peer,
+                Snapshot(1, 0, acknowledged: null),
+                NetworkDelivery.Sequenced,
+                StarfallNetworkChannels.MovementSnapshots);
+        };
+        session.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, 7777, "unused"));
+        return session;
     }
 
     private static byte[] Snapshot(ulong sequence, ulong tick, MovementIntentSequence? acknowledged) =>

@@ -229,7 +229,7 @@ internal static class Draft0MonsterPresentationAdapter
     internal const float AttackLungeDistanceMetres = 0.18f;
     internal const float HitFlashDurationSeconds = 0.12f;
     internal const double DeathDurationSeconds = 0.45;
-    internal const float DeathFinalVerticalScale = 0.08f;
+    internal const float DeathFinalScale = 0.08f;
     internal const float ReturningDesaturation = 0.20f;
 
     internal static readonly Vector3 LightColor = new(0.20f, 0.72f, 0.90f);
@@ -282,6 +282,9 @@ internal static class Draft0MonsterPresentationAdapter
         return new(snapshot, world, color, scale);
     }
 
+    internal static float GetUniformScaleMetres(string archetypeId) =>
+        GetArchetypePresentation(archetypeId).Scale;
+
     internal static Draft0MonsterDefeatPresentationState AdaptDefeat(
         Draft0MonsterDefeatPresentationSnapshot snapshot,
         double presentationSeconds,
@@ -294,12 +297,12 @@ internal static class Draft0MonsterPresentationAdapter
 
         (float scale, Vector3 color) = GetArchetypePresentation(snapshot.ArchetypeId);
         float progress = EffectProgress(presentationSeconds, startedAtSeconds, DeathDurationSeconds);
-        float verticalScale = scale * float.Lerp(1.0f, DeathFinalVerticalScale, progress);
+        float collapsedScale = scale * float.Lerp(1.0f, DeathFinalScale, progress);
         float clearance = GroundClearanceMetres * (1.0f - progress);
-        float centreY = clearance + (verticalScale * 0.5f);
+        float centreY = clearance + (collapsedScale * 0.5f);
         float yaw = MathF.Atan2(snapshot.LastFacing.X, snapshot.LastFacing.Y);
         Matrix4x4 world =
-            Matrix4x4.CreateScale(scale, verticalScale, scale) *
+            Matrix4x4.CreateScale(collapsedScale) *
             Matrix4x4.CreateRotationY(yaw) *
             Matrix4x4.CreateTranslation(
                 snapshot.LastPosition.XMetres,

@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using ChronoFall.Network.Transport;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
+using Starfall.Protocol.Combat;
 using Starfall.Protocol.Compatibility;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
@@ -13,6 +14,7 @@ namespace Starfall.Client.Networking;
 internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDisposable
 {
     internal static readonly TimeSpan ConnectionTimeout = TimeSpan.FromSeconds(10);
+    internal const int MaximumOutstandingBasicArrowCommands = 64;
     private readonly INetworkTransport transport;
     private readonly WorldJoinRequest request;
     private NetworkPeerId peerId;
@@ -22,17 +24,25 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
     private bool disposed;
     private string? failure;
     private ulong nextIntentSequence = 1;
+    private ulong nextCombatSequence;
     private ulong lastSentIntentSequence;
     private ulong lastSnapshotSequence;
     private ulong lastTick;
     private ulong lastMonsterSnapshotSequence;
     private ulong lastMonsterTick;
     private ulong? entityId;
+    private readonly Dictionary<ulong, SentBasicArrowCommand> basicArrowCommands = [];
 
-    internal ConnectedWalkingClientSession(INetworkTransport transport, string ticket)
+    internal ConnectedWalkingClientSession(
+        INetworkTransport transport,
+        string ticket,
+        ulong initialCombatSequence = 1)
     {
         this.transport = transport ?? throw new ArgumentNullException(nameof(transport));
+        if (initialCombatSequence == 0)
+            throw new ArgumentOutOfRangeException(nameof(initialCombatSequence));
         request = new WorldJoinRequest(StarfallGameplayProtocol.CurrentVersion, ticket);
+        nextCombatSequence = initialCombatSequence;
     }
 
     internal GameplaySessionId? SessionId
@@ -48,6 +58,10 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         get; private set;
     }
     internal BoundedMonsterSnapshot? MonsterSnapshot
+    {
+        get; private set;
+    }
+    internal ConnectedBasicArrowOutcome? LastBasicArrowOutcome
     {
         get; private set;
     }
@@ -96,6 +110,30 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         lastSentIntentSequence = sequence;
     }
 
+    internal CombatCommandSequence SendBasicArrowIntent(WorldEntityId targetEntityId)
+    {
+        if (!IsReady)
+            throw new InvalidOperationException("Connected gameplay session is not ready.");
+        if (targetEntityId.Value == 0)
+            throw new ArgumentException("Basic Arrow target identity must be valid.", nameof(targetEntityId));
+        if (nextCombatSequence == 0)
+            throw new InvalidOperationException("Basic Arrow command sequence space is exhausted.");
+        if (basicArrowCommands.Count >= MaximumOutstandingBasicArrowCommands)
+            throw new InvalidOperationException("Too many Basic Arrow commands are awaiting authoritative correlation.");
+
+        ulong sequenceValue = nextCombatSequence;
+        nextCombatSequence = sequenceValue == ulong.MaxValue ? 0 : sequenceValue + 1;
+        var sequence = new CombatCommandSequence(sequenceValue);
+        var command = new BasicArrowCommand(sequence, targetEntityId);
+        transport.Send(
+            peerId,
+            ConnectedBasicArrowCodec.EncodeCommand(command),
+            NetworkDelivery.ReliableSequenced,
+            StarfallNetworkChannels.BasicArrowCommands);
+        basicArrowCommands.Add(sequenceValue, new SentBasicArrowCommand(targetEntityId));
+        return sequence;
+    }
+
     public void Connected(NetworkPeerId connectedPeer, NetworkEndpoint endpoint)
     {
         if (!peerAssigned || connectedPeer != peerId)
@@ -133,6 +171,15 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
             }
 
             failure = "World sent malformed or misrouted monster snapshot data.";
+            return;
+        }
+        if (channel == StarfallNetworkChannels.BasicArrowOutcomes)
+        {
+            if (!admissionAccepted || delivery != NetworkDelivery.ReliableOrdered ||
+                !TryAcceptBasicArrowOutcome(packet.Span))
+            {
+                failure = "World sent malformed, misrouted or inconsistent Basic Arrow outcome data.";
+            }
             return;
         }
         if (!admissionAccepted)
@@ -259,4 +306,225 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         lastMonsterTick = snapshot.SimulationTick;
         MonsterSnapshot = snapshot;
     }
+
+    private bool TryAcceptBasicArrowOutcome(ReadOnlySpan<byte> payload)
+    {
+        if (!ConnectedBasicArrowCodec.TryReadPayloadKind(payload, out BasicArrowPayloadKind kind))
+            return false;
+
+        return kind switch
+        {
+            BasicArrowPayloadKind.Accepted =>
+                ConnectedBasicArrowCodec.TryDecodeAccepted(payload, out BasicArrowAccepted? accepted) &&
+                TryAccept(accepted),
+            BasicArrowPayloadKind.Rejected =>
+                ConnectedBasicArrowCodec.TryDecodeRejected(payload, out BasicArrowRejected? rejected) &&
+                TryAccept(rejected),
+            BasicArrowPayloadKind.Canceled =>
+                ConnectedBasicArrowCodec.TryDecodeCanceled(payload, out BasicArrowCanceled? canceled) &&
+                TryAccept(canceled),
+            BasicArrowPayloadKind.Resolved =>
+                ConnectedBasicArrowCodec.TryDecodeResolved(payload, out BasicArrowResolved? resolved) &&
+                TryAccept(resolved),
+            _ => false,
+        };
+    }
+
+    private bool TryAccept(BasicArrowAccepted accepted)
+    {
+        if (!TryGetMatchingCommand(accepted.Sequence, accepted.ActorEntityId, accepted.TargetEntityId, out SentBasicArrowCommand? command) ||
+            command is null ||
+            command.Accepted)
+        {
+            return false;
+        }
+
+        DiscardSupersededUnaccepted(accepted.Sequence.Value);
+        command.Accepted = true;
+        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Accepted(accepted);
+        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        return true;
+    }
+
+    private bool TryAccept(BasicArrowRejected rejected)
+    {
+        if (!TryGetMatchingCommand(rejected.Sequence, rejected.ActorEntityId, rejected.TargetEntityId, out SentBasicArrowCommand? command) ||
+            command is null ||
+            command.Accepted)
+        {
+            return false;
+        }
+
+        DiscardSupersededUnaccepted(rejected.Sequence.Value);
+        basicArrowCommands.Remove(rejected.Sequence.Value);
+        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Rejected(rejected);
+        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        return true;
+    }
+
+    private bool TryAccept(BasicArrowCanceled canceled)
+    {
+        if (!TryGetMatchingCommand(canceled.Sequence, canceled.ActorEntityId, canceled.TargetEntityId, out SentBasicArrowCommand? command) ||
+            command is null ||
+            !command.Accepted)
+        {
+            return false;
+        }
+
+        basicArrowCommands.Remove(canceled.Sequence.Value);
+        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Canceled(canceled);
+        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        return true;
+    }
+
+    private bool TryAccept(BasicArrowResolved resolved)
+    {
+        if (!TryGetMatchingCommand(resolved.Sequence, resolved.ActorEntityId, resolved.TargetEntityId, out SentBasicArrowCommand? command) ||
+            command is null ||
+            !command.Accepted)
+        {
+            return false;
+        }
+
+        basicArrowCommands.Remove(resolved.Sequence.Value);
+        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Resolved(resolved);
+        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        return true;
+    }
+
+    private bool TryGetMatchingCommand(
+        CombatCommandSequence sequence,
+        WorldEntityId actorEntityId,
+        WorldEntityId targetEntityId,
+        out SentBasicArrowCommand? command)
+    {
+        command = null;
+        return entityId is { } expectedActor &&
+            actorEntityId.Value == expectedActor &&
+            basicArrowCommands.TryGetValue(sequence.Value, out command) &&
+            command.TargetEntityId == targetEntityId;
+    }
+
+    private void DiscardSupersededUnaccepted(ulong processedSequence)
+    {
+        foreach (ulong sequence in basicArrowCommands
+                     .Where(entry => entry.Key < processedSequence && !entry.Value.Accepted)
+                     .Select(static entry => entry.Key)
+                     .ToArray())
+        {
+            basicArrowCommands.Remove(sequence);
+        }
+    }
+
+    private static void WriteBasicArrowOutcomeDiagnostic(ConnectedBasicArrowOutcome outcome)
+    {
+        string details = outcome.Kind switch
+        {
+            ConnectedBasicArrowOutcomeKind.Accepted =>
+                $"startTick={outcome.StartTick} resolveTick={outcome.ResolveTick}",
+            ConnectedBasicArrowOutcomeKind.Rejected =>
+                $"decisionTick={outcome.OutcomeTick} reason={outcome.RejectionReason}",
+            ConnectedBasicArrowOutcomeKind.Canceled =>
+                $"cancelTick={outcome.OutcomeTick} reason={outcome.CancellationReason}",
+            ConnectedBasicArrowOutcomeKind.Resolved =>
+                $"resolveTick={outcome.OutcomeTick} requested={outcome.RequestedDamageUnits} " +
+                $"effective={outcome.EffectiveDamageUnits} defeated={outcome.TargetDefeated}",
+            _ => throw new ArgumentOutOfRangeException(nameof(outcome)),
+        };
+        Console.WriteLine(
+            $"STARFALL_CLIENT_BASIC_ARROW_OUTCOME kind={outcome.Kind} sequence={outcome.Sequence} " +
+            $"actor={outcome.ActorEntityId} target={outcome.TargetEntityId} {details}");
+    }
+
+    private sealed class SentBasicArrowCommand(WorldEntityId targetEntityId)
+    {
+        internal WorldEntityId TargetEntityId
+        {
+            get;
+        } = targetEntityId;
+
+        internal bool Accepted
+        {
+            get; set;
+        }
+    }
+}
+
+internal enum ConnectedBasicArrowOutcomeKind
+{
+    Accepted,
+    Rejected,
+    Canceled,
+    Resolved,
+}
+
+internal sealed record ConnectedBasicArrowOutcome(
+    ConnectedBasicArrowOutcomeKind Kind,
+    CombatCommandSequence Sequence,
+    WorldEntityId ActorEntityId,
+    WorldEntityId TargetEntityId,
+    ulong StartTick,
+    ulong ResolveTick,
+    ulong OutcomeTick,
+    BasicArrowRejectionReason? RejectionReason,
+    BasicArrowCancellationReason? CancellationReason,
+    int? RequestedDamageUnits,
+    int? EffectiveDamageUnits,
+    bool? TargetDefeated)
+{
+    internal static ConnectedBasicArrowOutcome Accepted(BasicArrowAccepted value) => new(
+        ConnectedBasicArrowOutcomeKind.Accepted,
+        value.Sequence,
+        value.ActorEntityId,
+        value.TargetEntityId,
+        value.StartTick,
+        value.ResolveTick,
+        value.StartTick,
+        null,
+        null,
+        null,
+        null,
+        null);
+
+    internal static ConnectedBasicArrowOutcome Rejected(BasicArrowRejected value) => new(
+        ConnectedBasicArrowOutcomeKind.Rejected,
+        value.Sequence,
+        value.ActorEntityId,
+        value.TargetEntityId,
+        value.DecisionTick,
+        value.DecisionTick,
+        value.DecisionTick,
+        value.Reason,
+        null,
+        null,
+        null,
+        null);
+
+    internal static ConnectedBasicArrowOutcome Canceled(BasicArrowCanceled value) => new(
+        ConnectedBasicArrowOutcomeKind.Canceled,
+        value.Sequence,
+        value.ActorEntityId,
+        value.TargetEntityId,
+        value.StartTick,
+        value.ResolveTick,
+        value.CancellationTick,
+        null,
+        value.Reason,
+        null,
+        null,
+        null);
+
+    internal static ConnectedBasicArrowOutcome Resolved(BasicArrowResolved value) => new(
+        ConnectedBasicArrowOutcomeKind.Resolved,
+        value.Sequence,
+        value.ActorEntityId,
+        value.TargetEntityId,
+        value.StartTick,
+        value.ResolveTick,
+        value.ResolveTick,
+        null,
+        null,
+        value.RequestedDamageUnits,
+        value.EffectiveDamageUnits,
+        value.TargetDefeated);
 }

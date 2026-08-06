@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-06T07:12:01.0590000Z
+modifiedAt: 2026-08-06T11:31:55.9135620Z
 ---
 
 ## Status and purpose
@@ -21,7 +21,7 @@ The first visible milestone requires:
 - a generated provisional graybox;
 - isometric camera and deterministic ground picking;
 - the already-proven technical humanoid;
-- left-click movement intent;
+- a finite ground movement intent (originally left-click during this historical proof);
 - a deterministic authoritative-style movement fixture;
 - one Client-owned snapshot/fact-to-presentation adapter.
 
@@ -35,7 +35,7 @@ CLIENT-0020 consumes `Draft0GrayboxCatalog.FirstPlayable` and renders one determ
 
 Presentation-only layers prevent z-fighting without changing Content or authority: walkable ground stays at Y = 0, town/camps use Y = 0.01, routes use Y = 0.02, and markers begin at Y = 0.03. Boundary and proxy boxes begin at Y = 0; proxies retain their exact Content footprints and heights. Round route caps and the long-route corner are the deterministic union of one quad per centreline segment and one 16-wedge disc per centreline point. The disposable flat-colour palette distinguishes ground, town, routes, camps, boundaries, proxies, anchors and spawns without selecting final materials or assets.
 
-CLIENT-0021 completes the local walking milestone without adding gameplay authority. `local_technical_player` begins at the catalog respawn anchor `(100,0,25)`, facing `+Z`. Left-click remains an intent; a deterministic Client-local stand-in consumes the newest destination on later 60 Hz ticks and feeds one stateless snapshot/fact-to-presentation adapter. It moves directly without collision, navigation, pathfinding, town enforcement or gameplay acceptance.
+CLIENT-0021 completes the local walking milestone without adding gameplay authority. `local_technical_player` begins at the catalog respawn anchor `(100,0,25)`, facing `+Z`. Its historical proof used left-click as intent; CLIENT-0012 later remaps the current movement action to right-click without changing the picker or fixture. A deterministic Client-local stand-in consumes the newest destination on later 60 Hz ticks and feeds one stateless snapshot/fact-to-presentation adapter. It moves directly without collision, navigation, pathfinding, town enforcement or gameplay acceptance.
 
 The provisional speed is stored as integer tenths: `40` means 4.0 m/s and the session-local range is `1` through `120`. Numpad `+`/`-` change exactly one tenth and ignore repeat events. At the default speed one tick advances at most 1/15 metre before destination clamping.
 
@@ -100,7 +100,7 @@ The provisional class identity is `dark_elf_archer`. It begins with 2,500 author
 | Fire Arrow | One selected enemy | 7 | 700 | yes |
 | Arrow Rain | Ground circle, each valid victim | 5 | 500 | yes |
 
-Connected Basic Arrow is milestone M5. PROTOCOL-0006/0007 define and serialize Basic-only intent/outcomes; the admitted World session derives the acting entity. SIM-0011 remains a prerequisite only for defeated-player and protected-town action rejection. SERVER-0008 exchanges Basic only, and CLIENT-0012 right-clicks a live connected monster and sends intent. Existing connected monster snapshots present authoritative health loss, hit flash and defeat.
+Connected Basic Arrow is milestone M5. PROTOCOL-0006/0007 define and serialize Basic-only intent/outcomes; the admitted World session derives the acting entity. SIM-0011 remains a prerequisite only for defeated-player and protected-town action rejection. SERVER-0008 exchanges Basic only, and CLIENT-0012 left-clicks a live connected monster and sends intent. Existing connected monster snapshots present authoritative health loss, hit flash and defeat.
 
 The terminal proof converges connected intent, authoritative outcome, bow-body animation, one provisional socketed bow, one client-only visual arrow and impact, exact ImGui Combat diagnostics, monster damage/death and one owner-validated native run. It does not establish floating combat text, a target HUD, Mana, player-life presentation or equipment.
 
@@ -126,7 +126,7 @@ Basic Arrow resolves through the authoritative `SIM-0004` rule. It uses an inclu
 
 The rule requests 300 integer damage units. A light monster reaches zero on the third hit and a heavy monster on the seventh; effective overkill is clamped while defeat occurs only once. World applies nonlethal immutable health replacement, then routes first defeat into the existing camp vacancy/replenishment lifecycle at the exact resolve tick.
 
-The first connected proof is intentionally end to end rather than presentation-complete. CLIENT-0012 selects the nearest ray-hit live monster from the latest authoritative snapshot, with entity identity breaking equal-distance ties, and sends only a sequenced target command. The admitted World session supplies the actor. PROTOCOL-0006/0007 and SERVER-0008 carry authoritative Basic start, resolve, rejection, cancellation, damage and monster-defeat facts. Player health, defeat, restoration and respawn remain outside the Basic transport contract. CLIENT-0023 already presents authoritative monster health changes, hit flash and defeat tombstones.
+The first connected proof is intentionally end to end rather than presentation-complete. On left-click, CLIENT-0012 selects the nearest positive ray-hit live monster from the latest authoritative snapshot using bounded vertical presentation cylinders based on authoritative collision radii, with entity identity breaking equal-distance ties, and sends only a sequenced target command. A miss clears selection and sends nothing; right-click retains movement. The admitted World session supplies the actor. PROTOCOL-0006/0007 and SERVER-0008 carry authoritative Basic start, resolve, rejection, cancellation, damage and monster-defeat facts. Player health, defeat, restoration and respawn remain outside the Basic transport contract. CLIENT-0023 already presents authoritative monster health changes, hit flash and defeat tombstones.
 
 Basic Arrow and Fire Arrow create no authoritative spatial projectile, server-side travel, projectile collision or line-of-sight query. Arrow Rain likewise resolves an explicitly ordered victim set and damage at an authoritative tick. PROTOCOL-0011/SERVER-0013/CLIENT-0027 later add Fire Arrow; PROTOCOL-0012/SERVER-0014/CLIENT-0028 separately add Arrow Rain. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
 
