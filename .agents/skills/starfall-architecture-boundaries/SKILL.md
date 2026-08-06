@@ -37,3 +37,5 @@ Starfall owns game-specific code and may consume approved coordinator projects f
 Independent repository and product ownership does not imply an isolated full-client build. Headless projects must remain buildable without coordinator presentation, SDL, GPU, or generated client content dependencies.
 
 Keep authoring models separate from compact runtime data. Reject speculative generic engines, reflective runtime component systems, distributed transactions, and abstractions without a concrete task need.
+
+Do not preserve backward compatibility merely because an older path exists. After an approved replacement is complete, remove obsolete readers, writers, shims, fallbacks, dual paths and speculative migrations. Keep or migrate an old contract only for a demonstrated current consumer, stored data, staged deployment or explicit owner decision, with a named owner and removal condition.

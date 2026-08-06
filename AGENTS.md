@@ -37,6 +37,8 @@ Change this graph only through an approved task that updates architecture tests 
 
 Keep authoring representations separate from compact runtime data. Do not introduce a reflective Unity-style runtime component system, generic service framework, distributed transactions, or speculative abstractions.
 
+Do not preserve backward compatibility merely because an older path exists. Once an approved replacement is complete, remove obsolete readers, writers, shims, fallbacks, dual paths and speculative migrations. Retain or migrate an older contract only when a current consumer, stored data, staged deployment or explicit owner decision proves it is required, and give that compatibility a clear owner and removal condition.
+
 ## Code Quality
 
 - Keep project folders and namespaces aligned.
