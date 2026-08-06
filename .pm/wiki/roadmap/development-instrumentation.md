@@ -1,7 +1,7 @@
 ---
 title: Development Instrumentation
 createdAt: 2026-08-06T06:46:50.0961910Z
-modifiedAt: 2026-08-06T14:04:25.4911740Z
+modifiedAt: 2026-08-06T15:31:55.1269200Z
 ---
 
 ## Deliverable
@@ -17,7 +17,7 @@ pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0026
   -> CLIENT-0029  adopt shared ImGui backend in Starfall.Client
   -> CLIENT-0030  Starfall debug shell
 
-PROTOCOL-0004
+PROTOCOL-0004 + PROTOCOL-0015
   -> PROTOCOL-0013  development-only command/result envelope
 
 SERVER-0005 + PROTOCOL-0013
@@ -27,9 +27,11 @@ CLIENT-0030 + PROTOCOL-0013 + SERVER-0015
   -> CLIENT-0031  console and typed Ping World proof
 ~~~
 
-SHARED-0026, CLIENT-0029 and CLIENT-0030 are complete. Starfall.Client consumes the approved caller-controlled ImGui backend only in interactive local and connected native previews. The Starfall-owned shell adds a compact `Debug` menu, independent read-only `World / Session` and `Presentation / Rendering` windows, non-repeated `F12` whole-shell visibility, and the interactive-only `--debug-ui-hidden` launch modifier. Window choices persist only in memory for the process.
+SHARED-0026, CLIENT-0029, CLIENT-0030 and PROTOCOL-0013 are complete. Starfall.Client consumes the approved caller-controlled ImGui backend only in interactive local and connected native previews. The Starfall-owned shell adds a compact `Debug` menu, independent read-only `World / Session` and `Presentation / Rendering` windows, non-repeated `F12` whole-shell visibility, and the interactive-only `--debug-ui-hidden` launch modifier. Window choices persist only in memory for the process.
 
-The shell suppresses conflicting pointer, keyboard and text gameplay input from the backend's capture flags while leaving OS close and `F12` global. Starfall injects ImGui's bitmap default development font and records the UI last through a color-load pass after its depth-enabled scene pass. Character-content validation and the hidden deterministic graybox capture suite remain backend-free with unchanged fingerprints. Development commands, feature actions and the console remain later task-owned work.
+The shell suppresses conflicting pointer, keyboard and text gameplay input from the backend's capture flags while leaving OS close and `F12` global. Starfall injects ImGui's bitmap default development font and records the UI last through a color-load pass after its depth-enabled scene pass. Character-content validation and the hidden deterministic graybox capture suite remain backend-free with unchanged fingerprints.
+
+PROTOCOL-0013 defines channels 7 and 8, immutable bounded token requests, explicit enabled/disabled availability and correlated success/rejection diagnostics. It defines no feature command and makes no compatibility promise. With that contract complete, SERVER-0015 is the next continuation: it owns the admitted-session development gate, sequencing, dispatcher and harmless Ping World handler. CLIENT-0031 later adds the typed and console frontends.
 
 ## Ownership
 

@@ -1,7 +1,7 @@
 ---
 title: Gameplay Protocol Compatibility
 createdAt: 2026-08-06T10:28:11.1704800Z
-modifiedAt: 2026-08-06T11:01:27.3484820Z
+modifiedAt: 2026-08-06T15:30:18.0160340Z
 ---
 
 ## Purpose
@@ -53,8 +53,12 @@ Current gameplay codecs contain no packet-local version:
 | Monster snapshot | channel 4 | sequenced |
 | Basic Arrow command | channel 5 plus its fixed action/kind header | reliable sequenced |
 | Basic Arrow outcomes | channel 6 plus accepted/rejected/canceled/resolved kind | reliable ordered |
+| Development command request | channel 7 | reliable ordered |
+| Development availability/result | channel 8 plus availability/succeeded/rejected kind | reliable ordered |
 
-The accepted connection protocol version plus channel and message kind selects the exact layout. Basic Arrow facts are returned only to the requesting admitted session; authoritative monster health and defeat continue through channel 4. Movement and Basic Arrow channels have arrival-order semantics, and a Basic Arrow terminal outcome may arrive before or after the corresponding monster snapshot.
+The accepted connection protocol version plus channel and message kind selects the exact gameplay layout. Basic Arrow facts are returned only to the requesting admitted session; authoritative monster health and defeat continue through channel 4. Movement and Basic Arrow channels have arrival-order semantics, and a Basic Arrow terminal outcome may arrive before or after the corresponding monster snapshot.
+
+Channels 7 and 8 are an additive development-only extension. They use the accepted session and contain no packet-local version, but they carry no compatibility promise between mismatched development builds and do not increment gameplay protocol version 1. Their authoritative contract is pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/development-commands.
 
 ## Cross-channel admission ordering
 
