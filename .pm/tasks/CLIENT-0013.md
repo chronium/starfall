@@ -8,8 +8,9 @@ dependsOn:
 - GAME-0004
 - PROTOCOL-0009
 - SERVER-0010
+- CLIENT-0014
 createdAt: 2026-08-02T07:52:11.4311620Z
-modifiedAt: 2026-08-06T06:44:38.0011480Z
+modifiedAt: 2026-08-06T07:11:23.1856270Z
 ---
 
 Present authoritative physical-drop state and bounded pickup interaction after the completed Inventory Client proof exists.

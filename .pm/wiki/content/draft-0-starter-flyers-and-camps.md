@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-06T06:48:58.8791910Z
+modifiedAt: 2026-08-06T07:12:01.0775860Z
 ---
 
 ## Purpose and ownership
@@ -77,7 +77,7 @@ The monster pursues on the ground plane, stops in inclusive attack range and res
 
 Leaving the camp, entering `town_safe`, becoming defeated or disappearing starts deterministic return. Returning monsters cannot reacquire until they reach their exact home point and become idle on a completed tick. Camp footprints and homes must not intersect the protected town, and movement fails before entering it. Monster centres remain inside their radius-inset camp footprint and use the same World-owned static boundary/proxy collision environment as players.
 
-Defeated players retain entity/session identity, receive connected movement corrections during lockout and respawn at the exact town anchor tick with restored health, zero velocity and `+Z` facing. The full-health three-second values remain configurable EDITOR-0005 inputs. Mana remains SIM-0009 scope. There is no pathfinding, dynamic-body avoidance, sliding, altitude, airborne authority or general sanctuary framework.
+Defeated players retain entity/session identity, receive connected movement corrections during lockout and respawn at the exact town anchor tick with restored health, zero velocity and `+Z` facing. The full-health three-second values remain configurable EDITOR-0005 inputs. Mana is independently owned by M6 through CONTENT-0016, SIM-0012, PROTOCOL-0014, SERVER-0016 and CLIENT-0032. This completed player-life contract intentionally does not decide Mana restoration. There is no pathfinding, dynamic-body avoidance, sliding, altitude, airborne authority or general sanctuary framework.
 
 ## Downstream ownership
 

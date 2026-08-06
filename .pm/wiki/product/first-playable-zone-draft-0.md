@@ -1,12 +1,12 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-06T06:49:55.5825000Z
+modifiedAt: 2026-08-06T07:12:01.0590000Z
 ---
 
 ## Status and purpose
 
-Draft 0 is Starfall M2's provisional technical vertical slice. Its layout, numbers, identities, timing and presentation choices are deterministic Content and Balance Lab inputs rather than final balance, final art or a public first-wings release.
+Draft 0 is Starfall's provisional umbrella roadmap outcome. M2 is its completed legacy planning bucket; new work proceeds through focused deliverable milestones. Draft 0's layout, numbers, identities, timing and presentation choices are deterministic Content and Balance Lab inputs rather than final balance, final art or a public first-wings release.
 
 Development deliberately grows through visible evidence instead of implementing an entire backend before a client can exercise it. Native presentation and authoritative simulation evolve separately, then converge through protocol contracts derived from proven behavior.
 
@@ -151,7 +151,7 @@ Monsters acquire the nearest active, unprotected player inside their own camp an
 
 Defeat preserves world entity and gameplay-session identity, clears movement authority and pending Basic Arrow, and locks movement and hostile actions. New connected movement sequences are consumed and corrected rather than breaking the session. At exact tick `T + 180`, World restores 2,500 health, re-registers the same entity stationary at `(100,0,25)` facing `+Z`, and emits an immutable respawn outcome. The 180-tick / 3-second delay and full-health restoration are provisional configurable inputs for EDITOR-0005 rather than final balance.
 
-The inclusive `town_safe` boundary rejects Basic Arrow and remains traversable by active players. Mana is deliberately absent from this lifecycle contract; SIM-0009 owns mana capacity/current state and any later mana-restoration extension.
+The inclusive `town_safe` boundary rejects Basic Arrow and remains traversable by active players. Mana is deliberately absent from this completed lifecycle contract. M6 independently owns Mana through CONTENT-0016, SIM-0012, PROTOCOL-0014, SERVER-0016 and CLIENT-0032. A later Player Life integration task decides how same-entity respawn restores or preserves Mana.
 
 Authoritative monster removal at tick `T` still vacates one slot only after checked scheduling. Replenishment at `T + 600` uses a fresh identity with the same camp, archetype, exact point and full health. Running and Draining use the same deterministic behavior, player-life and replenishment rules; Stopping clears their state and last-tick outputs.
 

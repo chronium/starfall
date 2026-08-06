@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-06T06:49:18.0032050Z
+modifiedAt: 2026-08-06T07:12:01.0686450Z
 ---
 
 ## Purpose
@@ -55,7 +55,7 @@ Successful admission atomically creates a distinct generic player at the same co
 
 Draft 0 players begin active at 2,500 of 2,500 health. Ordered monster attack requests reduce only active targets. The first lethal application clamps health to zero, creates one defeat transition, clears movement eligibility and pending Basic Arrow state, and schedules respawn at the checked current tick plus 180. The defeated player and admitted session keep the same identity. Connected movement intents during lockout are consumed and receive authoritative corrections rather than moving the entity.
 
-At the exact respawn tick, World restores the same entity to `town_safe`'s configured respawn anchor with 2,500 health, zero velocity, `+Z` facing and active movement registration. Hostile player actions are rejected while the actor is inside the inclusive protected-town footprint. Mana capacity, restoration and regeneration remain `SIM-0009` scope; this lifecycle adds no placeholder mana state.
+At the exact respawn tick, World restores the same entity to `town_safe`'s configured respawn anchor with 2,500 health, zero velocity, `+Z` facing and active movement registration. Hostile player actions are rejected while the actor is inside the inclusive protected-town footprint. This completed lifecycle adds no placeholder Mana state. M6 independently owns Mana through CONTENT-0016, SIM-0012, PROTOCOL-0014, SERVER-0016 and CLIENT-0032; a later Player Life integration freezes the same-entity respawn policy for Mana.
 
 Standalone technical-player creation is allowed only in `Running`; removal is allowed in `Running` and `Draining`, but the technical removal seam rejects any session-bound player. Draining retains admitted players. Stopping clears them. Distinct runtime instances own independent opaque identity sequences; tests verify repeatability for identical creation order without promising a literal player ID.
 

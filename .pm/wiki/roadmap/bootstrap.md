@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-06T06:47:23.2071960Z
+modifiedAt: 2026-08-06T07:12:01.0469360Z
 ---
 
 ## Execution standard
@@ -131,7 +131,7 @@ CLIENT-0022 deliberately preceded authoritative behavior: generated shapes first
 
 PROTOCOL-0005 defines the bounded full-state monster snapshot seam without inventing behavior: ordered live entries carry authoritative transform/behavior/target/health, while bounded defeat tombstones repeat until the corresponding placement slot replenishes. SERVER-0007 now maps and exchanges those facts per admitted session on sequenced channel 4 from the same gameplay host. CLIENT-0023 now retains the latest valid stream and renders ordered live/tombstone facts through the existing placeholder adapter; connected mode no longer uses local monster fixtures. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/protocol/bounded-monster-snapshots
 
-EDITOR-0005 remains the later owner for comparing monster, sustain and respawn inputs. The selected 180-tick/full-health respawn is provisional evidence, and SIM-0009 still owns the first mana state. Exact source-asset presentation remains evidence-gated to CONTENT-0013, parent ASSET-0008 and CLIENT-0017.
+EDITOR-0005 remains the later owner for comparing monster, sustain and respawn inputs. The selected 180-tick/full-health respawn is provisional evidence. Mana is independently owned by M6 through CONTENT-0016, SIM-0012, PROTOCOL-0014, SERVER-0016 and CLIENT-0032; a later Player Life integration decides how respawn affects Mana. Exact source-asset presentation remains evidence-gated to CONTENT-0013, parent ASSET-0008 and CLIENT-0017.
 
 ### Combat contract and exchange
 
@@ -158,33 +158,47 @@ CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
 
 PROTOCOL-0006/0007, SERVER-0008 and CLIENT-0012 have explicit high priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
 
-Fire Arrow and Arrow Rain extend that proven path independently:
+Mana is an independent prerequisite rather than Fire or Rain-owned state:
 
 ~~~text
-SIM-0004 + CONTENT-0003
-  -> SIM-0009  Fire Arrow
-  -> SIM-0007  Arrow Rain
+CONTENT-0003
+  -> CONTENT-0016  provisional Mana inputs
+  -> SIM-0012      authoritative Mana behavior
+  -> PROTOCOL-0014 Mana facts + serialization
 
-PROTOCOL-0007 + SIM-0009
+SERVER-0005 + SIM-0012 + PROTOCOL-0014 + SERVER-0015
+  -> SERVER-0016  authoritative Mana exchange
+CLIENT-0031 + PROTOCOL-0014 + SERVER-0016
+  -> CLIENT-0032  Resource diagnostics and native Mana proof
+~~~
+
+Fire Arrow and Arrow Rain remain separately deferred consumers:
+
+~~~text
+SIM-0004 + CONTENT-0003 + SIM-0012
+  -> SIM-0009  Fire-specific behavior
+PROTOCOL-0007 + PROTOCOL-0014 + SIM-0009
   -> PROTOCOL-0011  Fire facts + serialization
-SERVER-0008 + PROTOCOL-0011 + SIM-0009
+SERVER-0008 + SERVER-0016 + PROTOCOL-0011 + SIM-0009
   -> SERVER-0013  Fire exchange
 CLIENT-0012 + PROTOCOL-0011 + SERVER-0013
   -> CLIENT-0027  key-1 Fire intent
 
+SIM-0004 + CONTENT-0003 + SIM-0012 + SIM-0009
+  -> SIM-0007  Rain-specific behavior
 PROTOCOL-0007 + SIM-0007
-  -> PROTOCOL-0012  Arrow Rain facts + serialization
-SERVER-0008 + PROTOCOL-0012 + SIM-0007
-  -> SERVER-0014  Arrow Rain exchange
+  -> PROTOCOL-0012  Rain facts + serialization
+SERVER-0008 + SERVER-0016 + PROTOCOL-0012 + SIM-0007
+  -> SERVER-0014  Rain exchange
 CLIENT-0012 + PROTOCOL-0012 + SERVER-0014
   -> CLIENT-0028  key-2 ground-target intent
 ~~~
 
-CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. SIM-0004 owns Basic Arrow range/facing/cadence/interruption/ticks; SIM-0011 owns player damage, defeat and respawn; SIM-0009 owns mana and Fire inputs; SIM-0007 owns Arrow Rain cost/range/radius/cadence/interruption/timing/order. EDITOR-0005 remains later combined Balance Lab evidence rather than a prerequisite for the already-proven Basic slice.
+CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. SIM-0004 owns Basic Arrow; SIM-0012 owns Mana; SIM-0009 owns only Fire-specific cost/range/facing/cadence/interruption/timing; SIM-0007 owns only Rain-specific cost/target/radius/cadence/interruption/timing/order.
 
-CLIENT-0007 retains focused Basic action presentation. CLIENT-0018 consumes the Fire extension for Basic/Fire projectile presentation; CLIENT-0010 consumes the Arrow Rain extension; CLIENT-0019 waits for both extensions before presenting the complete three-action resource and targeting state. CLIENT-0011 owns equipped bow/aim/IK, while CLIENT-0025/0026 remain separately deferred cursor and movement-marker work.
+For M5 presentation, CLIENT-0007 owns Basic bow-body animation, CLIENT-0011 owns one provisional semantic hand socket and rendered bow, CLIENT-0018 owns the Basic-only visual arrow and impact, and CLIENT-0019 owns Combat diagnostics plus terminal native Basic validation. Fire presentation is allocated only when Fire activates. CLIENT-0010 remains the later terminal Rain targeting/effects task. CLIENT-0025/0026 remain separately deferred cursor and movement-marker work.
 
-No authoritative spatial projectile exists. Basic/Fire arrows and Arrow Rain effects remain presentation; World decides action validity, timing, resource expenditure, victims, damage and defeat.
+No authoritative spatial projectile exists. Basic/Fire arrows and Rain effects remain presentation; World decides action validity, timing, resource expenditure, victims, damage and defeat.
 
 Durable catalog: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
@@ -240,7 +254,7 @@ Durable design language: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/developm
 
 ### Scheduling gate
 
-Completion of `SHARED-0024` makes the native UI foundation technically available; it does not make editor work the next product priority. `EDITOR-0008` remains in M2 but is intentionally priority none while the generated Draft 0 graybox is sufficient.
+Completion of `SHARED-0024` makes the native UI foundation technically available; it does not make editor work the next product priority. `EDITOR-0008` is milestone-free with `priority: none` while the generated Draft 0 graybox is sufficient.
 
 Reconsider `EDITOR-0008` after the connected Basic Arrow loop is natively playable and owner-validated through `CLIENT-0007`, unless the owner explicitly reprioritizes it earlier. This is an evidence and scheduling gate rather than a source dependency: canonical `SHARED-0024` remains the task's only dependency.
 
