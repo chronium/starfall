@@ -1,7 +1,7 @@
 ---
 title: Starfall Editor Design Language
 createdAt: 2026-08-05T07:41:56.3992770Z
-modifiedAt: 2026-08-05T10:47:23.3109750Z
+modifiedAt: 2026-08-06T06:49:30.8227000Z
 ---
 
 ## Purpose
@@ -22,26 +22,19 @@ The governing principle is:
 
 Coordinator roadmap: pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/roadmap/starfall-editor-ui-foundation
 
-## Ownership and sequence
+## Ownership and future decomposition
 
-~~~text
-parent SHARED-0024
-  -> EDITOR-0008  native UI foundation and synthetic showcase
-  -> EDITOR-0009  interaction state and generic command history
-  -> EDITOR-0007  real Draft 0 document, commands and compilation
-     ├── SERVER-0012 / CLIENT-0016
-     └── EDITOR-0010 auxiliary Assets / Validation / Log / status polish
-~~~
+ChronoFall owns the completed caller-controlled SDL GPU ImGui/ImGuizmo backend. Starfall owns its editor executable, application loop, window/device scheduling, design tokens, fonts, layout, UI vocabulary, interaction state, documents, inspectors and workflows. Royale remains unchanged.
 
-ChronoFall owns the caller-controlled SDL GPU ImGui/ImGuizmo backend. Starfall owns its editor executable, application loop, window/device scheduling, design tokens, fonts, layout, UI vocabulary, interaction state, documents, inspectors and workflows. Royale remains unchanged.
+EDITOR-0008 through EDITOR-0010 and EDITOR-0007 preserve useful focused planning handles, but Cycle 1 deliberately removes each from M2 and sets each to `priority: none`. They are not pre-grouped into one proper-scene deliverable. Future owner-directed planning must inspect the actual editor need and independently decide which task or tasks form the next demonstrable outcome.
 
-EDITOR-0008 depends only on canonical SHARED-0024. Completed Starfall EDITOR-0003 and CLIENT-0020 and completed Royale editor work are architectural evidence, not PM dependencies.
+Completed Starfall EDITOR-0003 and CLIENT-0020 plus completed Royale editor work remain architectural evidence, not PM dependencies.
 
 ### Scheduling gate
 
-Completion of `SHARED-0024` makes the native UI foundation technically available; it does not make editor work the next product priority. `EDITOR-0008` remains in M2 but is intentionally priority none while the generated Draft 0 graybox is sufficient.
+The completed SHARED-0024 backend makes native UI technically available; it does not make editor work the current product priority. The generated and rendered Draft 0 graybox remains sufficient while the connected gameplay loop is being proven.
 
-Reconsider `EDITOR-0008` after the connected Basic Arrow loop is natively playable and owner-validated through `CLIENT-0007`, unless the owner explicitly reprioritizes it earlier. This is an evidence and scheduling gate rather than a source dependency: canonical `SHARED-0024` remains the task's only dependency.
+Reconsider editor work only after connected gameplay evidence or concrete authoring friction justifies it, unless the owner explicitly reprioritizes it earlier. This is an evidence and scheduling gate, not a source dependency. When work resumes, re-read the real document, interaction and auxiliary-surface needs rather than assuming all four existing tasks constitute one milestone.
 
 ## Proposed v0.1 theme tokens
 

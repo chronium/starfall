@@ -2,13 +2,13 @@
 id: CLIENT-0010
 title: Present Arrow Rain targeting and effects
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0007
 - PROTOCOL-0012
 - CLIENT-0028
 createdAt: 2026-08-02T07:33:29.1280240Z
-modifiedAt: 2026-08-05T19:47:22.1487460Z
+modifiedAt: 2026-08-06T06:43:25.9236490Z
 ---
 
 Present the authoritative Draft 0 Arrow Rain action.

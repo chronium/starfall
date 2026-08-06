@@ -2,8 +2,8 @@
 id: SERVER-0008
 title: Exchange first connected combat commands and outcomes
 track: SERVER
-milestone: M2
-priority: medium
+milestone: M5
+priority: high
 dependsOn:
 - SERVER-0005
 - SERVER-0007
@@ -11,15 +11,16 @@ dependsOn:
 - SIM-0004
 - SIM-0011
 createdAt: 2026-08-03T07:29:07.3311690Z
-modifiedAt: 2026-08-05T19:47:21.3470960Z
+modifiedAt: 2026-08-06T06:42:59.5427760Z
 ---
 
-Route the first connected Basic Arrow command and publish authoritative combat and player-life outcomes through admitted World sessions.
+Route connected Basic Arrow requests and publish authoritative Basic outcomes through admitted World sessions.
 
 Acceptance criteria:
-- Decode Basic Arrow commands, bind the actor to the admitted gameplay session and validate the target against World-owned monster state.
-- Route valid commands into the proven SIM-0004 behavior and publish authoritative timing, rejection, cancellation, 300-unit damage and target defeat facts.
-- Publish bounded authoritative player-health, defeat and protected-town respawn facts from SIM-0011.
+- Decode Basic Arrow requests, derive the actor from the admitted gameplay session and validate the target against World-owned monster state.
+- Route valid requests into the proven SIM-0004 behavior and publish authoritative timing, rejection, cancellation, 300-unit damage and monster-defeat facts.
 - Continue publishing monster health and defeat through the existing SERVER-0007 snapshot contract.
+- Consume SIM-0011 only for defeated-player and protected-town action rejection.
+- Do not publish player health, defeat, restoration or respawn as part of this task.
 - Preserve presentational arrows and server-authoritative fixed-tick outcomes.
-- Do not add Fire Arrow, Arrow Rain, projectile entities, persistence, chat or a generic messaging/ability framework.
+- Do not add Fire Arrow, Arrow Rain, projectile entities, persistence, chat or a generic messaging or ability framework.

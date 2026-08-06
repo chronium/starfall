@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Starter Flyers and Camp Compositions
 createdAt: 2026-08-05T06:49:56.3861690Z
-modifiedAt: 2026-08-05T18:54:49.8177340Z
+modifiedAt: 2026-08-06T06:48:58.8791910Z
 ---
 
 ## Purpose and ownership
@@ -83,12 +83,12 @@ Defeated players retain entity/session identity, receive connected movement corr
 
 - Completed `SIM-0003` owns the immutable camp-policy inputs and pure replenishment schedule.
 - Completed `SIM-0006` owns authoritative World runtime occupancy, immutable monster records, shared identity allocation, validated removal handling and fixed-tick spawn application.
-- Completed `SIM-0004` owns Basic Arrow integer damage/death and applies first monster defeat through the existing validated removal seam.
+- Completed `SIM-0004` owns Basic Arrow integer damage/death and applies first monster defeat through the existing validated removal seam. M5 Connected Basic Arrow consumes that death outcome, but monster replenishment remains the separately completed camp-lifecycle responsibility of SIM-0003/SIM-0006 rather than part of the attack deliverable.
 - Completed `SIM-0010` owns evidence-backed body/collision radius, movement speed, deterministic target selection and tie-breaking, awareness, pursuit/leash, attack range/damage/cadence, disengagement and return behavior.
 - Completed `SIM-0011` owns ordered player damage application, the inclusive protected-town boundary, deterministic disengagement, one defeat transition, movement/action lockout and exact 180-tick respawn of the same player/session identity.
 - `CLIENT-0022` owns the generated local placeholder proof at these exact ten ordered spawn assignments.
 - `CLIENT-0023` replaces connected local fixtures with bounded world snapshots and presents behavior, target, health, disengage/return and retained death facts through the existing placeholder adapter.
-- `CONTENT-0013` owns exact monster presentation selection.
+- `CONTENT-0013` owns exact selected monster presentation inputs. It remains milestone-free and `priority: none` until that visual deliverable activates.
 - Client presentation may hover, bob, lunge, pulse, flash on hit or present death without changing authoritative ground-plane state; only the gentle hover belongs to CLIENT-0022.
 
 Running and Draining use the same deterministic camp and player-lifecycle rules; draining blocks new admission/technical creation but continues retained gameplay until its separately owned deadline policy. Stopping clears entities, occupancy, pending replenishments and pending respawns without reusing identities.

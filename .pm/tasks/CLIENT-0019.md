@@ -1,22 +1,24 @@
 ---
 id: CLIENT-0019
-title: Present combat resources and targeting feedback
+title: Validate connected Basic Arrow with Combat diagnostics
 track: CLIENT
-milestone: M2
+milestone: M5
 dependsOn:
 - CLIENT-0012
-- CLIENT-0027
-- CLIENT-0028
-- CONTENT-0003
-- PROTOCOL-0007
-- PROTOCOL-0011
-- PROTOCOL-0012
-- SERVER-0008
-- SIM-0011
+- CLIENT-0007
+- CLIENT-0011
+- CLIENT-0018
+- CLIENT-0031
 createdAt: 2026-08-02T15:49:18.8424300Z
-modifiedAt: 2026-08-05T19:47:22.3470000Z
+modifiedAt: 2026-08-06T06:43:00.2345700Z
 ---
 
-Present authoritative integer player health/mana, selected-target state, skill readiness, Arrow Rain targeting/cancellation, action rejection, damage, defeat, protected-town respawn, and correction feedback for the connected Draft 0 client.
+Close the Connected Basic Arrow milestone through one ImGui Combat diagnostic and an owner-validated native end-to-end run.
 
-One displayed health or mana point equals 100 authoritative internal units. Consume protocol state/events only; never predict authoritative costs, hits, victims, death, or respawn. Keep experience/level presentation in CLIENT-0015. Do not create a general UI, notification, persistence, or account framework.
+Acceptance criteria:
+- Show authoritative target health, 300 internal units / 3 displayed damage, accepted/rejected/cancelled result, and monster-death outcome.
+- Use the completed Development Instrumentation shell and console infrastructure without defining a second debug protocol.
+- Prove a connected player selects a real connected placeholder monster, sends Basic intent, receives World authority, presents bow-body animation, renders one socketed bow and visual arrow, shows hit feedback, reduces monster health and presents death.
+- The game view needs the arrow, hit flash and death; this task does not establish floating combat text or a permanent target HUD.
+- Obtain explicit macOS ARM64 owner validation.
+- Do not add Mana, Fire Arrow, Arrow Rain, player-life presentation, permanent HUD, equipment, drops or progression.

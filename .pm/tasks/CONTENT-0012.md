@@ -2,11 +2,11 @@
 id: CONTENT-0012
 title: Select Draft 0 zone presentation assets
 track: CONTENT
-milestone: M2
+priority: none
 dependsOn:
 - CONTENT-0006
 createdAt: 2026-08-02T15:48:39.9545900Z
-modifiedAt: 2026-08-03T07:30:50.8115440Z
+modifiedAt: 2026-08-06T06:44:47.1861630Z
 ---
 
 Select the exact Starfall-owned visual inputs for the proper Editor-authored Draft 0 scene while preserving a purchase-independent generated graybox.

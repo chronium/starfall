@@ -2,13 +2,13 @@
 id: CLIENT-0028
 title: Send Arrow Rain intent from connected controls
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0012
 - PROTOCOL-0012
 - SERVER-0014
 createdAt: 2026-08-05T19:46:45.9800640Z
-modifiedAt: 2026-08-05T19:47:22.0506320Z
+modifiedAt: 2026-08-06T06:43:25.8224860Z
 ---
 
 Add the focused connected Arrow Rain ground-targeting control after Basic Arrow input is proven.

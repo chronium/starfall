@@ -1,15 +1,21 @@
 ---
 id: CONTENT-0011
-title: Select provisional dark-elf archer presentation inputs
+title: Select provisional Basic archer presentation inputs
 track: CONTENT
-milestone: M2
+milestone: M5
 dependsOn:
 - CONTENT-0003
 - CLIENT-0006
 createdAt: 2026-08-02T15:48:39.7060610Z
-modifiedAt: 2026-08-02T15:49:33.1483250Z
+modifiedAt: 2026-08-06T06:42:59.7488720Z
 ---
 
-Select the exact Starfall-owned presentation inputs for the Draft 0 archer: one base/underlayer, the first Ranger outfit pieces, one wooden bow, one arrow, and the minimum compatible idle, locomotion, notch, release, and aim clips. Record exact coordinator pack-relative paths, formats, scale, skeleton/rest-transform compatibility, limitations, and owner visual-review needs.
+Select the exact Starfall-owned presentation inputs for the connected Basic Arrow proof: one humanoid base and non-equipment underlayer, one bow, one arrow, and the minimum compatible idle, locomotion, notch, release and aim clips.
 
-Universal Animation Library 2 Full/Source is a prospective likely bow-animation source only. If physically supplied, require coordinator provenance/inventory evidence before selection and select only the minimum compatible bow clips. Preserve the historical UAL1 cook unchanged; Sword_Attack is not an acceptable bow placeholder. Do not copy, cook, convert, retarget, render, or integrate assets.
+Acceptance criteria:
+- Record exact coordinator pack-relative paths, formats, scale, skeleton and rest-transform compatibility, limitations and owner visual-review needs.
+- Treat completed EXPERIMENT-0014 as architectural and visual evidence; do not add it as a dependency unless planning identifies a concrete artifact consumed by this task.
+- Universal Animation Library 2 Full/Source is the likely supplied bow-animation source, but select only verified compatible minimum clips.
+- Preserve the historical UAL1 cook unchanged; Sword_Attack is not an acceptable bow placeholder.
+- Do not select Ranger armour or a starter loadout.
+- Do not copy, cook, convert, retarget, render, attach or integrate assets.

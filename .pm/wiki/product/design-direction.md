@@ -1,7 +1,7 @@
 ---
 title: Product Design Direction
 createdAt: 2026-08-01T05:48:09.1092000Z
-modifiedAt: 2026-08-02T18:32:50.6991550Z
+modifiedAt: 2026-08-06T06:47:53.6845120Z
 ---
 
 ## Approved direction
@@ -18,13 +18,24 @@ The coordinator design document remains the current full product-design source o
 - server authority is never delegated to animation or client presentation;
 - first wings conclude the eventual first end-to-end public arc.
 
-## Kickoff scope
+## Deliverable roadmap
 
-M0 establishes repository and architecture boundaries. M1 integrates proven shared character presentation. M2 proves one connected technical vertical slice defined by the provisional Draft 0 brief: a protected-town zone, three camp geometries, a dark-elf archer with Basic Arrow, Fire Arrow, and Arrow Rain, bounded hostile behavior, deterministic progression and drops, truthful Ranger/leather equipment, and Balance Lab evidence from the same authoritative rules.
+M0 and M1 preserve completed foundation history. M2 remains a completed legacy planning bucket whose contents proved the graybox, connected walking, camps, bounded monsters, Basic simulation and player-life simulation. M2 is not renamed or reused; unfinished work has moved out.
 
-Draft 0 remains experimental rather than final content or balance. Authoritative spatial and physics state uses finite Box3D-native single-precision metres, while discrete resources use integer arithmetic and time uses fixed ticks. Stable identities and explicit ordering—not native query order—determine gameplay outcomes. Initial networking preserves finite IEEE-754 spatial values; quantization remains a future measured protocol decision. Client arrows, hovering, animation, effects, cameras, smoothing, and reconciliation present server outcomes but never decide them. Starfall selects game-specific characters, equipment, monsters, and zone composition; ChronoFall owns only genuinely reusable presentation/cooking contracts, supplied-source provenance, and stable-ID staging.
+New milestones describe independently demonstrable outcomes rather than project phases:
 
-M3 records deferred content, authority, and presentation contracts for transformations, wings, mounts, and companions; it has no milestone priority and is outside the technical-slice critical path. First wings still conclude the distinct eventual first end-to-end public arc. Broader economy, stands, reputation/PvP, persistence, crafting, multiple zones, final service topology, prestige class, transformations, events, and territory remain later design inputs.
+- M4 Development Instrumentation proves the Starfall debug shell, one development-command envelope/dispatcher and Ping World through typed and console frontends.
+- M5 Connected Basic Arrow proves connected intent through authoritative outcome, bow-body animation, one equipment-free rendered bow and visual arrow, hit feedback, monster damage/death, Combat diagnostics and a native end-to-end run.
+- M6 Authoritative Mana proves integer Mana configuration, simulation, serialization, exchange, development diagnostics and regeneration independently of spells.
+- M7 Connected Movement Quality v1 proves bounded remote interpolation and local correction diagnostics under deterministic network fixtures.
+
+Fire Arrow and Arrow Rain later consume Basic and Mana without depending on a permanent HUD. Progression, Resource HUD, Player Life integration, Inventory, Equipment, Physical Drops, Ranger presentation, proper Editor scene work and Balance Lab scenarios remain milestone-free planning handles until the owner activates each concrete deliverable.
+
+Draft 0 remains experimental rather than final content or balance. Authoritative spatial and physics state uses finite Box3D-native single-precision metres, while discrete resources use integer arithmetic and time uses fixed ticks. Stable identities and explicit ordering—not native query order—determine gameplay outcomes. Initial networking preserves finite IEEE-754 spatial values; quantization remains a future measured protocol decision. Client arrows, hovering, animation, effects, cameras and presentation smoothing never decide authoritative outcomes.
+
+Starfall selects game-specific characters, equipment, monsters and zone composition. ChronoFall owns only genuinely reusable presentation/cooking contracts, supplied-source provenance and stable-ID staging. The first Basic bow proof is deliberately independent of Inventory, Equipment, starter loadouts and Ranger content.
+
+M3 remains legacy deferred content for transformations, wings, mounts and companions and has no milestone priority. First wings still conclude the distinct eventual public arc. Economy, stands, reputation/PvP, persistence, crafting, multiple zones, final service topology, prestige class, transformations, events and territory remain later design inputs.
 
 Draft 0: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`.
 

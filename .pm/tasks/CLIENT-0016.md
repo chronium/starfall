@@ -2,7 +2,7 @@
 id: CLIENT-0016
 title: Render the editor-authored Draft 0 scene
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0020
 - EDITOR-0007
@@ -10,7 +10,7 @@ dependsOn:
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0019
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0007
 createdAt: 2026-08-02T15:49:18.0890200Z
-modifiedAt: 2026-08-03T07:30:50.7068690Z
+modifiedAt: 2026-08-06T06:44:47.3878430Z
 ---
 
 Render the proper Draft 0 scene from the focused Editor task's compiled client-presentation output.

@@ -2,21 +2,21 @@
 id: CLIENT-0015
 title: Present experience and level-up feedback
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0012
 - GAME-0002
 - PROTOCOL-0008
 - SERVER-0009
 createdAt: 2026-08-02T07:52:11.9212650Z
-modifiedAt: 2026-08-03T07:30:50.7926770Z
+modifiedAt: 2026-08-06T06:43:45.2876840Z
 ---
 
-Present deterministic Draft 0 experience and level progression from authoritative facts.
+Present authoritative Draft 0 progression after its permanent player-HUD rendering foundation exists.
 
 Acceptance criteria:
-- Display current level, accumulated progress, the accepted level 2-20 XP requirements, awards, level-up feedback, and authoritative corrections.
-- Preserve integer XP and the nearest-integer half-up requirement sequence.
-- Never award XP or level locally.
-- Keep health, mana, targeting, defeat, and respawn feedback in CLIENT-0019.
-- Do not add final HUD art, economy, persistence, or unrelated progression systems.
+- Show current XP, the next requirement, authoritative awards, corrections and level-up feedback.
+- Consume progression facts only; never predict awards, level changes or pacing.
+- Use the future permanent HUD rendering foundation without making Progression a prerequisite of Fire Arrow, Arrow Rain, Equipment or Physical Drops.
+- Own the terminal native kill-to-progression proof when this deliverable activates.
+- Do not implement final art, persistence, inventory, equipment, physical drops, economy or final pacing.

@@ -1,20 +1,18 @@
 ---
 id: PROTOCOL-0010
-title: Add inventory and equipment facts and serialization
+title: Add inventory facts and serialization
 track: PROTOCOL
-milestone: M2
+priority: none
 dependsOn:
 - GAME-0003
-- GAME-0005
-- PROTOCOL-0009
 createdAt: 2026-08-03T07:29:09.8915960Z
-modifiedAt: 2026-08-03T07:29:43.4563090Z
+modifiedAt: 2026-08-06T06:44:37.2679700Z
 ---
 
-Add the focused Draft 0 inventory/equipment protocol extension after authoritative item behavior exists.
+Define and deterministically serialize the bounded provisional Inventory contract.
 
 Acceptance criteria:
-- Define and deterministically encode bounded inventory/equipped state, select/equip/unequip intent, replacement, stat-change and rejection facts.
-- Preserve stable identity, integer quantities/stats, explicit ordering and malformed-input rejection.
-- Combine facts and serialization as one cohesive extension of the established envelope.
-- Do not implement item rules, presentation, persistence, trade, crafting or a generic item protocol.
+- Carry inventory state, stable item and slot identity, move/swap intent, correction, full/invalid rejection and deterministic ordering.
+- Reject malformed, unsupported, ambiguous and out-of-bound payloads.
+- Combine facts and serialization as one focused extension of the established connected envelope.
+- Do not include equipment, physical-drop state, item rules, presentation, persistence, trade, crafting or a generic item protocol.

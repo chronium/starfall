@@ -2,7 +2,7 @@
 id: EDITOR-0007
 title: Author and compile the proper Draft 0 scene
 track: EDITOR
-milestone: M2
+priority: none
 dependsOn:
 - EDITOR-0003
 - CONTENT-0006
@@ -13,7 +13,7 @@ dependsOn:
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0019
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0007
 createdAt: 2026-08-03T07:29:10.1430770Z
-modifiedAt: 2026-08-05T07:40:35.3052380Z
+modifiedAt: 2026-08-06T06:44:47.8310180Z
 ---
 
 Create the first real Starfall Editor workflow for the proper Draft 0 scene after the generated graybox and editor interaction foundation have provided evidence.

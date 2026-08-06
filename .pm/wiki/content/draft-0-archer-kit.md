@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Archer Kit
 createdAt: 2026-08-05T06:16:02.6168200Z
-modifiedAt: 2026-08-05T19:48:52.8114060Z
+modifiedAt: 2026-08-06T06:48:49.5453210Z
 ---
 
 ## Status
@@ -42,27 +42,23 @@ World resolves same-tick actions in ascending actor identity order. Nonlethal hi
 
 ## Downstream ownership
 
-- SIM-0004 owns Basic Arrow range, facing requirement, cadence, movement interruption, windup/start tick and resolve tick.
-- SIM-0011 owns authoritative player health, defeat, protected-town lockout and respawn.
-- PROTOCOL-0006/0007 own the first connected Basic Arrow and player-life facts plus deterministic serialization.
-- SERVER-0008 binds Basic Arrow commands to admitted actors and publishes authoritative first-slice outcomes.
-- CLIENT-0012 owns deterministic right-click live-monster selection and Basic Arrow intent only; CLIENT-0023 already presents authoritative monster health/death snapshots.
-- SIM-0009 owns authoritative mana capacity/current state, fixed-tick regeneration, Fire Arrow cost, range, cadence, interruption and timing.
-- PROTOCOL-0011, SERVER-0013 and CLIENT-0027 extend the proven path with Fire facts/serialization, World exchange and key-1 intent respectively.
-- SIM-0007 owns Arrow Rain cost, cast range, radius, cadence, interruption, resolve timing and deterministic victim ordering.
-- PROTOCOL-0012, SERVER-0014 and CLIENT-0028 separately extend the path with Arrow Rain facts/serialization, World exchange and key-2 ground targeting.
-- EDITOR-0005 supplies and compares exact candidate values in deterministic Balance Lab scenarios without silently promoting them to defaults.
-- CLIENT-0018 owns Basic/Fire notch, release, client-only travel, impact timing and reconciliation after the Fire extension.
-- CLIENT-0010 owns Arrow Rain targeting visuals and presentational falling-arrow/effect timing after the Arrow Rain extension.
-- CLIENT-0019 waits for both action extensions before presenting the complete three-action resource and targeting state.
-- CLIENT-0011 owns the later equipped bow, nocked arrow, socket, aim and IK presentation.
-- CLIENT-0025/0026 retain separately deferred semantic cursor and movement-target marker ownership.
+- SIM-0004 owns completed authoritative Basic Arrow range, facing, cadence, movement interruption, windup/start tick, resolve tick, integer monster damage and monster death.
+- PROTOCOL-0006/0007 own Basic-only connected facts and deterministic serialization. The client request carries command sequence and target only; World derives the acting entity from the admitted session.
+- SERVER-0008 exchanges Basic only. SIM-0011 is retained for defeated-player/protected-town action rejection, not player-life transport.
+- CLIENT-0012 owns deterministic connected target selection and Basic intent plus the first native connected authority proof. CLIENT-0023 already presents authoritative monster health, hit flash and death.
+- CONTENT-0011 selects one base/underlayer, one bow, one arrow and the minimum compatible idle/locomotion/notch/release/aim clips. Ranger armour is excluded.
+- CLIENT-0007 owns Basic bow-body animation. CLIENT-0011 owns Starfall's provisional semantic hand socket, local bow transform, rendering and native placement. CLIENT-0018 owns the client-only visual arrow and impact.
+- CLIENT-0019 owns the ImGui Combat diagnostic and terminal M5 proof: target health, 300 internal / 3 displayed damage, accepted/rejected/cancelled result and monster death. It does not establish floating combat text or a permanent target HUD.
+- CONTENT-0016, SIM-0012, PROTOCOL-0014, SERVER-0016 and CLIENT-0032 own independent M6 Mana from inputs through diagnostics. Death/respawn policy is a later lifecycle integration decision.
+- SIM-0009 later owns Fire-specific cost, range, cadence, interruption and timing while consuming completed Mana and the Basic action lifecycle. Its protocol/server/client tasks do not own Mana or depend on the permanent HUD.
+- SIM-0007 later owns Rain-specific cost, target/radius/cadence/interruption/timing/order while consuming completed Mana and the action contract proven reusable by Fire.
+- Equipment, Ranger mapping, permanent HUD, cursor/target-marker feedback and player-life presentation remain separate later deliverables.
 
 ## Explicit gaps
 
-The completed SIM-0004 and SIM-0011 values are sufficient to execute the first connected Basic Arrow/player-life slice; combined three-action Balance Lab convergence does not block PROTOCOL-0006 or SERVER-0008.
+The completed SIM-0004 and connected monster/player-life evidence are sufficient for M5 Connected Basic Arrow. M5 owns monster death only; it neither transports nor presents player defeat/respawn.
 
-Fire Arrow and Arrow Rain remain independently evidence-gated through SIM-0009 and SIM-0007. EDITOR-0005 later compares the combined kit, sustain and respawn experience before any tuning is promoted beyond those task-owned provisional inputs.
+M6 Authoritative Mana is independently demonstrable before spells. Fire Arrow and Arrow Rain remain milestone-free and evidence-gated until each deliverable activates. Their later planning may compare combined action, sustain and interruption behavior, but no combined Balance Lab mega-scenario blocks Basic or Mana.
 
 Primary-attribute taxonomy and starting values remain unresolved. They are nonblocking for the current Basic Arrow proof and require later task-owned design before progression rules consume them.
 

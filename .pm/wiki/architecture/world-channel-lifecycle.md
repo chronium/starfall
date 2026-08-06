@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-05T18:52:36.2266100Z
+modifiedAt: 2026-08-06T06:49:18.0032050Z
 ---
 
 ## Purpose
@@ -91,7 +91,9 @@ World replaces each immutable monster record with the new behavior state while p
 
 At an accepted start tick `T`, World stops the actor's current destination, zeroes velocity, faces the target, records resolution at `T + 12` and reserves the next start at `T + 48`. Accepted movement before resolution cancels the shot while preserving cadence. After movement advances and the world tick increments, due shots resolve in ascending actor identity order before camp replenishment. Nonlethal damage replaces monster health; first defeat validates and creates the vacancy at the resolve tick. Running and Draining share these rules. Player/session removal clears that actor's combat state, and Stop clears all pending combat state.
 
-The current seam is intentionally local and headless. It creates no Protocol encoding, network exchange, Client presentation, projectile entity, generic ability runtime, monster behavior, protected-town rule, drop, XP or respawn behavior.
+The completed SIM-0004 seam remains local and headless. M5 Connected Basic Arrow now owns the bounded continuation: Basic-only facts/serialization, admitted-session actor derivation, World exchange, connected intent and presentation convergence. SIM-0011 participates only in defeated-player and protected-town rejection. Player health, defeat, restoration and same-entity town respawn are not Basic transport or presentation scope.
+
+The Basic action creates no authoritative projectile entity. Client bow animation and the visual arrow/impact present authoritative timing and outcomes. Camp replenishment remains the independently completed camp-lifecycle behavior and is not part of the attack deliverable.
 
 ## Fixed-step scheduling
 
@@ -137,6 +139,12 @@ dotnet run --project src/Starfall.World/Starfall.World.csproj --no-restore --no-
 ```
 
 Stop the second command with Ctrl+C and verify the same instance identity appears in all lifecycle lines and the final tick is positive.
+
+## Deliverable continuations
+
+M4 Development Instrumentation adds one explicitly gated, development-only admitted-session command dispatcher. Its Ping World handler and later feature-owned Mana handlers are engineering instrumentation with no stable gameplay-protocol compatibility promise.
+
+M6 Authoritative Mana adds per-session checked integer Mana, fixed-tick regeneration, separate Mana facts/serialization, World exchange and feature-owned development commands. Mana exposes a lifecycle seam; a later Player Life integration task defines how the already-established same-entity respawn affects Mana.
 
 ## Ownership and next seams
 

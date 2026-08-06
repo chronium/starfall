@@ -2,13 +2,13 @@
 id: CLIENT-0027
 title: Send Fire Arrow intent from connected controls
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0012
 - PROTOCOL-0011
 - SERVER-0013
 createdAt: 2026-08-05T19:46:45.6872510Z
-modifiedAt: 2026-08-05T19:47:21.9477630Z
+modifiedAt: 2026-08-06T06:43:25.4132370Z
 ---
 
 Add the focused connected Fire Arrow control after Basic Arrow target selection is proven.

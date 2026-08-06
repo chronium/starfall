@@ -2,7 +2,6 @@
 id: EDITOR-0008
 title: Establish the Starfall editor UI foundation
 track: EDITOR
-milestone: M2
 priority: none
 dependsOn:
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0024

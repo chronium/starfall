@@ -2,13 +2,13 @@
 id: CLIENT-0017
 title: Present selected starter flyer assets
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0023
 - CONTENT-0013
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0008
 createdAt: 2026-08-02T15:49:18.3357340Z
-modifiedAt: 2026-08-03T07:30:50.7164930Z
+modifiedAt: 2026-08-06T06:44:47.0597090Z
 ---
 
 Replace connected placeholder monsters with the exact selected and coordinator-staged starter-flyer presentation inputs.

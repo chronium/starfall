@@ -1,24 +1,20 @@
 ---
 id: CLIENT-0011
-title: Present the starter bow, aim, and IK
+title: Render one provisional socketed Basic bow
 track: CLIENT
-milestone: M2
+milestone: M5
 dependsOn:
-- CLIENT-0007
-- CLIENT-0012
-- CONTENT-0009
-- GAME-0005
-- pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0010
-- pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0011
-- pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0012
+- pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0020
 createdAt: 2026-08-02T07:33:29.3670540Z
-modifiedAt: 2026-08-02T15:52:42.7460010Z
+modifiedAt: 2026-08-06T06:43:00.0081990Z
 ---
 
-Present the selected starter wooden bow and nocked arrow from authoritative equipment state.
+Render one selected bow through a deliberately narrow Starfall-owned Basic Arrow attachment boundary.
 
 Acceptance criteria:
-- Consume the exact Starfall bow/arrow attachment definitions and shared socket, grip, aim-reference, and IK contracts.
-- Render the equipped bow and presented arrows with bounded aiming and off-hand support appropriate to the selected assets.
-- Keep equipment authority, action success, and combat timing server-owned.
-- Do not implement projectile outcomes, armour mapping, generic attachment categories, final animation graphs, or new asset acquisition.
+- Own one provisional semantic hand-socket identity and the local bow transform required by Starfall.
+- Consume the exact selected and staged bow input plus canonical SHARED-0020, whose shared harness proof uses only a harness-local technical transform.
+- Render the bow on the technical or selected humanoid and obtain native placement validation from the owner.
+- Keep authoritative combat outcomes and action timing outside the attachment.
+- Do not depend on equipment state, starter loadouts, CONTENT-0009 or GAME-0005.
+- Do not implement aiming, off-hand IK, generalized grip definitions, arbitrary attachment categories, arrow projectiles, armour mapping or final art.

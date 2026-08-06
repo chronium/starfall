@@ -2,12 +2,11 @@
 id: EDITOR-0009
 title: Establish Starfall editor interaction state
 track: EDITOR
-milestone: M2
-priority: high
+priority: none
 dependsOn:
 - EDITOR-0008
 createdAt: 2026-08-05T07:39:58.1645660Z
-modifiedAt: 2026-08-05T07:39:58.1805530Z
+modifiedAt: 2026-08-06T06:44:48.0823660Z
 ---
 
 Establish Starfall's editor interaction state and generic command-history foundation over the styled UI shell.

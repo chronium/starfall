@@ -2,13 +2,13 @@
 id: SERVER-0010
 title: Exchange physical drop commands and facts
 track: SERVER
-milestone: M2
+priority: none
 dependsOn:
 - SERVER-0008
 - PROTOCOL-0009
 - GAME-0004
 createdAt: 2026-08-03T07:29:07.8496800Z
-modifiedAt: 2026-08-03T07:29:43.3693760Z
+modifiedAt: 2026-08-06T06:44:37.8991320Z
 ---
 
 Route physical-drop collection intent and publish authoritative drop state and outcomes.

@@ -1,24 +1,22 @@
 ---
 id: CLIENT-0007
-title: Present locomotion, Basic Arrow, and player reactions
+title: Present Basic Arrow bow-body animation
 track: CLIENT
-milestone: M2
+milestone: M5
 dependsOn:
-- CLIENT-0009
 - CLIENT-0012
-- SIM-0004
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0008
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0009
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0004
 createdAt: 2026-08-01T05:46:49.7988710Z
-modifiedAt: 2026-08-02T16:32:42.2431940Z
+modifiedAt: 2026-08-06T06:42:59.8582850Z
 ---
 
-Present authoritative player locomotion, Basic Arrow action timing, hit reactions, and death through the shared character boundary.
+Present connected locomotion and Basic Arrow bow-body animation through the shared character boundary.
 
 Acceptance criteria:
 - Consume the exact coordinator-acquired archer and compatible bow-animation inputs through canonical ASSET-0004; Sword_Attack is not an acceptable bow placeholder.
-- Present locomotion and the authoritative Basic Arrow action/reaction facts without deciding combat outcomes.
-- Preserve coherent notch/release timing inputs for later native validation and visual-arrow work.
-- Keep selection, cooking/provenance, and gameplay/presentation ownership boundaries explicit.
-- Do not implement Fire Arrow visuals, Arrow Rain, projectile entities, equipment sockets, weapon IK, retargeting, or a general animation graph.
+- Drive locomotion and notch, aim, release and recovery from authoritative Basic Arrow timing facts without deciding combat outcomes.
+- Preserve coherent release timing evidence for the separately owned bow, visual-arrow and impact tasks.
+- Reuse established blending and layering contracts while keeping selection, cooking/provenance and product presentation ownership explicit.
+- Do not own player hit/death reactions, monster hit/death presentation, Fire Arrow visuals, Arrow Rain, projectile entities, equipment sockets, weapon IK, retargeting or a general animation graph.

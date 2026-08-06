@@ -2,65 +2,28 @@ orders:
 - track: CONTENT
   state: todo
   milestone: M2
-  taskIds:
-  - CONTENT-0008
-  - CONTENT-0011
-  - CONTENT-0013
-  - CONTENT-0012
-  - CONTENT-0009
-  - CONTENT-0004
+  taskIds: []
 - track: CLIENT
   state: todo
   milestone: M2
-  taskIds:
-  - CLIENT-0017
-  - CLIENT-0012
-  - CLIENT-0007
-  - CLIENT-0011
-  - CLIENT-0018
-  - CLIENT-0010
-  - CLIENT-0019
-  - CLIENT-0013
-  - CLIENT-0014
-  - CLIENT-0015
-  - CLIENT-0016
+  taskIds: []
 - track: SERVER
   state: todo
   milestone: M2
-  taskIds:
-  - SERVER-0008
-  - SERVER-0009
-  - SERVER-0010
-  - SERVER-0011
-  - SERVER-0012
+  taskIds: []
 - track: SIM
   state: todo
   milestone: M2
-  taskIds:
-  - SIM-0009
-  - SIM-0007
+  taskIds: []
 - track: PROTOCOL
   state: todo
   milestone: M2
-  taskIds:
-  - PROTOCOL-0006
-  - PROTOCOL-0007
-  - PROTOCOL-0008
-  - PROTOCOL-0009
-  - PROTOCOL-0010
+  taskIds: []
 - track: GAME
   state: todo
   milestone: M2
-  taskIds:
-  - GAME-0003
-  - GAME-0002
-  - GAME-0004
-  - GAME-0005
+  taskIds: []
 - track: EDITOR
   state: todo
   milestone: M2
-  taskIds:
-  - EDITOR-0004
-  - EDITOR-0005
-  - EDITOR-0006
-  - EDITOR-0007
+  taskIds: []

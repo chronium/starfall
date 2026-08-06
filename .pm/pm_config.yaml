@@ -23,7 +23,15 @@ milestones:
   M1: Shared character presentation
   M2: First playable zone
   M3: Deferred transformations and companions
+  M4: Development Instrumentation
+  M5: Connected Basic Arrow
+  M6: Authoritative Mana
+  M7: Connected Movement Quality v1
 milestonePriorities:
   M0: low
   M1: medium
   M2: low
+  M4: medium
+  M5: medium
+  M6: medium
+  M7: low

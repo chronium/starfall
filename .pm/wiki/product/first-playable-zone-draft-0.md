@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-05T19:48:27.2096590Z
+modifiedAt: 2026-08-06T06:49:55.5825000Z
 ---
 
 ## Status and purpose
@@ -12,7 +12,7 @@ Development deliberately grows through visible evidence instead of implementing 
 
 Trade stands, crafting, economy, persistence, PvP, multiple zones, wings, final service topology and general world/terrain/ability/AI frameworks remain outside Draft 0.
 
-## Two visible milestones
+## Completed walking evidence
 
 ### Local walking graybox
 
@@ -100,11 +100,13 @@ The provisional class identity is `dark_elf_archer`. It begins with 2,500 author
 | Fire Arrow | One selected enemy | 7 | 700 | yes |
 | Arrow Rain | Ground circle, each valid victim | 5 | 500 | yes |
 
-The first connected combat milestone is Basic Arrow only. PROTOCOL-0006/0007 define and serialize its lifecycle plus the already-proven player-life facts; SERVER-0008 exchanges it; CLIENT-0012 right-clicks a live connected monster and sends intent. Existing connected monster snapshots visibly present authoritative health loss, hit flash and defeat.
+Connected Basic Arrow is milestone M5. PROTOCOL-0006/0007 define and serialize Basic-only intent/outcomes; the admitted World session derives the acting entity. SIM-0011 remains a prerequisite only for defeated-player and protected-town action rejection. SERVER-0008 exchanges Basic only, and CLIENT-0012 right-clicks a live connected monster and sends intent. Existing connected monster snapshots present authoritative health loss, hit flash and defeat.
 
-Fire Arrow extends that path through PROTOCOL-0011, SERVER-0013 and CLIENT-0027. Arrow Rain extends it separately through PROTOCOL-0012, SERVER-0014 and CLIENT-0028. Key 1 and key 2 remain reserved for those later controls.
+The terminal proof converges connected intent, authoritative outcome, bow-body animation, one provisional socketed bow, one client-only visual arrow and impact, exact ImGui Combat diagnostics, monster damage/death and one owner-validated native run. It does not establish floating combat text, a target HUD, Mana, player-life presentation or equipment.
 
-The intended presentation still begins in a non-equipment underlayer with a basic wooden bow and visually presented arrows. The first armour family remains a visibly meaningful Ranger/leather set. Bow animation, attachments, projectile/effect presentation, cursor affordances and movement markers retain separate task ownership.
+Mana is independent milestone M6. It owns integer capacity/current state, consumption, regeneration, serialization, World exchange and Resource diagnostics before any spell consumes it. Fire Arrow later extends Basic plus completed Mana through SIM-0009, PROTOCOL-0011, SERVER-0013 and CLIENT-0027. Arrow Rain later consumes the same established seams through SIM-0007, PROTOCOL-0012, SERVER-0014 and CLIENT-0028. Neither spell depends on the permanent Resource HUD. Key 1 and key 2 remain reserved for those later controls.
+
+The first bow proof uses one selected asset, a Starfall-owned provisional semantic hand socket and local transform. It does not depend on Inventory, Equipment, a starter loadout or Ranger content. Bow-body animation, socketed rendering, visual projectile/impact, cursor affordances and movement markers retain separate ownership. Ranger/leather presentation follows later Inventory, Equipment and exact asset selection.
 
 Input is intent only. Simulation decides validity, range, facing, victims, damage, mana, cadence, death and success.
 
@@ -116,13 +118,7 @@ Integer authoritative state includes HP, mana, damage, XP, levels, currency, ite
 
 Authoritative spatial/physics state uses finite Box3D-native single-precision metres. Starfall.Content uses BCL-only immutable System.Numerics-backed authoring values with the same units and precision, rejecting NaN, infinity and out-of-zone data. Simulation converts components one-to-one and does not maintain a parallel integer-millimetre coordinate model. Stable identity and explicit ordering isolate gameplay outcomes from native query order.
 
-Level 2 requires 40 XP. Later requirements use nearest-integer half-up arithmetic:
-
-next = (previous * 115 + 50) / 100
-
-Accepted level 2-20 requirements:
-
-40, 46, 53, 61, 70, 81, 93, 107, 123, 141, 162, 186, 214, 246, 283, 325, 374, 430, 495
+Level 2 requires 40 XP. The existing nearest-integer half-up rule and sequence remain Draft 0 evidence, not an implementation decision for the refocused progression task. CONTENT-0008 must obtain explicit owner approval between that evidence and the proposed checked integer-ceiling rule before implementation; task, wiki and tests must change together. No rounding rule changes silently during grooming.
 
 ## Authority and arrow presentation
 
@@ -130,7 +126,7 @@ Basic Arrow resolves through the authoritative `SIM-0004` rule. It uses an inclu
 
 The rule requests 300 integer damage units. A light monster reaches zero on the third hit and a heavy monster on the seventh; effective overkill is clamped while defeat occurs only once. World applies nonlethal immutable health replacement, then routes first defeat into the existing camp vacancy/replenishment lifecycle at the exact resolve tick.
 
-The first connected proof is intentionally end to end rather than presentation-complete. CLIENT-0012 selects the nearest ray-hit live monster from the latest authoritative snapshot, with entity identity breaking equal-distance ties, and sends only a sequenced target command. The admitted World session supplies the actor. PROTOCOL-0006/0007 and SERVER-0008 carry authoritative start, resolve, rejection, cancellation, damage, defeat and player-life facts. CLIENT-0023 already presents authoritative monster health changes, hit flash and defeat tombstones.
+The first connected proof is intentionally end to end rather than presentation-complete. CLIENT-0012 selects the nearest ray-hit live monster from the latest authoritative snapshot, with entity identity breaking equal-distance ties, and sends only a sequenced target command. The admitted World session supplies the actor. PROTOCOL-0006/0007 and SERVER-0008 carry authoritative Basic start, resolve, rejection, cancellation, damage and monster-defeat facts. Player health, defeat, restoration and respawn remain outside the Basic transport contract. CLIENT-0023 already presents authoritative monster health changes, hit flash and defeat tombstones.
 
 Basic Arrow and Fire Arrow create no authoritative spatial projectile, server-side travel, projectile collision or line-of-sight query. Arrow Rain likewise resolves an explicitly ordered victim set and damage at an authoritative tick. PROTOCOL-0011/SERVER-0013/CLIENT-0027 later add Fire Arrow; PROTOCOL-0012/SERVER-0014/CLIENT-0028 separately add Arrow Rain. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
 
@@ -175,7 +171,7 @@ Prospective packs remain non-dependencies until supplied and inspected: Universa
 
 ## Balance Lab evidence
 
-Balance Lab eventually exercises the same authoritative content/rules: movement, three camp geometries, three actions, deterministic timing/order/rewards, monster pursuit/attack/return, protected-town disengagement, damage/death/respawn, progression, drops and equipment.
+Balance Lab eventually exercises focused scenarios over the same authoritative content and rules. Its previous combined movement/combat/progression/drop/equipment scope is not one active deliverable: EDITOR-0004 through EDITOR-0006 are milestone-free placeholders to be split immediately before the first real scenario.
 
 Tuning inputs remain configurable: mana/regeneration/costs, cadence/range/interruption, Arrow Rain radius, monster behavior/damage, drops/modifiers, level gains, respawn resources, visual projectile timing and pacing.
 

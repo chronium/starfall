@@ -2,14 +2,21 @@
 id: CLIENT-0013
 title: Present and collect physical world drops
 track: CLIENT
-milestone: M2
+priority: none
 dependsOn:
 - CLIENT-0012
 - GAME-0004
 - PROTOCOL-0009
 - SERVER-0010
 createdAt: 2026-08-02T07:52:11.4311620Z
-modifiedAt: 2026-08-03T07:30:50.7679960Z
+modifiedAt: 2026-08-06T06:44:38.0011480Z
 ---
 
-Present authoritative physical drop state in the connected first zone, expose bounded selection and pickup interaction, send collection intent, and reconcile ownership, reservation, expiry, success, and rejection events. Do not grant items locally, implement inventory/equipment UI, persistence, trading, economy, or general interaction frameworks.
+Present authoritative physical-drop state and bounded pickup interaction after the completed Inventory Client proof exists.
+
+Acceptance criteria:
+- Show authoritative drop placement, ownership or reservation, expiry and collection state in the connected first zone.
+- Provide the exact placeholder selection/pickup gesture approved during Plan mode, send collection intent and reconcile success or rejection.
+- The terminal native proof must show the collected item appearing through the completed Inventory surface.
+- Never grant items locally.
+- Do not implement Equipment, persistence, trading, economy or a general interaction framework.

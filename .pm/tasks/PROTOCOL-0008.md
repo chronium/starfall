@@ -2,12 +2,12 @@
 id: PROTOCOL-0008
 title: Add progression facts and serialization
 track: PROTOCOL
-milestone: M2
+priority: none
 dependsOn:
 - GAME-0002
 - PROTOCOL-0007
 createdAt: 2026-08-03T07:29:09.3853040Z
-modifiedAt: 2026-08-03T07:29:43.4377770Z
+modifiedAt: 2026-08-06T06:43:45.0787110Z
 ---
 
 Add the focused one-way Draft 0 progression extension to the connected protocol.

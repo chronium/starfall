@@ -2,7 +2,6 @@
 id: EDITOR-0010
 title: Polish Starfall editor auxiliary surfaces
 track: EDITOR
-milestone: M2
 priority: none
 dependsOn:
 - EDITOR-0007

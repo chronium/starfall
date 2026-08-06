@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-05T19:48:00.7057560Z
+modifiedAt: 2026-08-06T06:47:23.2071960Z
 ---
 
 ## Execution standard
@@ -22,7 +22,9 @@ CLIENT-0006 remains the sole M1 implementation. It proves coordinator-source cha
 
 ## M2 — First playable zone
 
-Draft 0 develops through native-presentation and authoritative-simulation lanes that converge only after their concepts exist.
+M2 is a completed historical planning bucket. It preserves evidence from the graybox, walking, connected monsters, camp lifecycle, Basic simulation and player-life simulation, but it is not a deliverable-shaped milestone and receives no new work. All unfinished tasks have moved out without rewriting completed history.
+
+Draft 0 now advances through independently demonstrable deliverable milestones. A milestone may depend on earlier work, but it must close with its own observable outcome. Native-presentation and authoritative-simulation lanes converge only after their concepts exist.
 
 ### Content ownership
 
@@ -30,7 +32,7 @@ Draft 0 develops through native-presentation and authoritative-simulation lanes 
 - CONTENT-0014: provisional executable graybox coordinates, regions, proxies, coarse collision/navigation and neutral sample spawns; depends explicitly on CONTENT-0006.
 - CONTENT-0003: completed dark-elf archer and ordered three-action catalog; it does not gate the generic technical walking player.
 - CONTENT-0007: exact provisional starter-flyer identities, integer health and ten ordered graybox spawn assignments. It consumes CONTENT-0014 but owns no runtime spawning or behavior values.
-- CONTENT-0008: progression/item inputs.
+- CONTENT-0008: deferred XP-curve and reward inputs only; it no longer owns equipment, Ranger presentation, bows or physical-drop tables.
 - CONTENT-0011/0012/0013: exact archer, proper-scene and monster presentation selection.
 
 The generated graybox never depends on selected assets. Exact selection-to-coordinator-acquisition paths remain canonical and evidence-gated. Durable monster catalog: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-starter-flyers-and-camps`.
@@ -133,7 +135,7 @@ EDITOR-0005 remains the later owner for comparing monster, sustain and respawn i
 
 ### Combat contract and exchange
 
-The first connected combat proof follows the already-completed Basic Arrow, player-life and connected-monster behavior instead of waiting for every Draft 0 skill:
+The first connected combat proof follows the already-completed Basic Arrow, player-life and connected-monster behavior instead of waiting for every Draft 0 skill. Its protocol and exchange carry Basic Arrow only; SIM-0011 remains a real prerequisite for defeated-player and protected-town rejection, not player-life transport ownership:
 
 ~~~text
 CONTENT-0003 + SIM-0006 + SIM-0008
@@ -154,7 +156,7 @@ CLIENT-0009 + CLIENT-0023 + PROTOCOL-0007 + SERVER-0008
   -> CLIENT-0012  right-click Basic Arrow intent
 ~~~
 
-PROTOCOL-0006/0007, SERVER-0008 and CLIENT-0012 have explicit medium priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
+PROTOCOL-0006/0007, SERVER-0008 and CLIENT-0012 have explicit high priority. They form the first dependency-ready end-to-end path: the admitted session supplies the actor, right-click selects one live connected monster, World validates and resolves Basic Arrow at fixed ticks, and the existing connected monster stream presents health loss, hit flash and defeat. Three accepted resolved hits defeat `starter_flyer_light`; seven defeat `starter_flyer_heavy`.
 
 Fire Arrow and Arrow Rain extend that proven path independently:
 
@@ -186,27 +188,24 @@ No authoritative spatial projectile exists. Basic/Fire arrows and Arrow Rain eff
 
 Durable catalog: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
-### Progression, drops and equipment transport
+### Deferred progression, inventory, equipment and drops
 
-~~~text
-GAME-0002 + PROTOCOL-0007 -> PROTOCOL-0008
-SERVER-0008 + PROTOCOL-0008 + GAME-0002 -> SERVER-0009
-SERVER-0009 -> CLIENT-0015
+These are valid later deliverables, not one transport chain and not M2 work.
 
-GAME-0004 + PROTOCOL-0004 + PROTOCOL-0007 -> PROTOCOL-0009
-SERVER-0008 + PROTOCOL-0009 + GAME-0004 -> SERVER-0010
-SERVER-0010 -> CLIENT-0013
+- Progression owns XP/level behavior and later permanent progression feedback. It does not own equipment or physical drops.
+- Inventory is proven first with exact provisional development items and one fixed-slot player inventory.
+- Equipment is a later sibling consumer of completed Inventory and initially proves state changes only, without stats or character rendering.
+- Physical Drops is another sibling consumer of Inventory and later proves kill, drop, collect and visible inventory insertion.
+- Development injection may validate Inventory, but the domain, protocol, exchange and permanent GUI do not depend architecturally on the console.
+- Ranger mapping follows Inventory, Equipment and exact asset selection. The first Basic bow remains equipment-free.
 
-GAME-0003 + GAME-0005 + PROTOCOL-0009 -> PROTOCOL-0010
-SERVER-0010 + PROTOCOL-0010 + GAME-0003 + GAME-0005 -> SERVER-0011
-SERVER-0011 -> CLIENT-0014
-~~~
-
-Combat separates facts, serialization and World exchange because the action lifecycle is broad and reused by several consumers. The smaller feature extensions combine facts/serialization deliberately while retaining separate Server exchange ownership.
+All current future tasks in these lanes are milestone-free with `priority: none`. Their focused milestone/task graphs are allocated only when the owner activates the deliverable.
 
 ### Proper Editor-authored map
 
-The proper editor path now has an explicit UI and interaction foundation without making auxiliary polish block runtime adoption:
+EDITOR-0007 through EDITOR-0010, SERVER-0012, CLIENT-0016 and their selection work are individually deferred, milestone-free and `priority: none`. They are not pre-grouped into a deliverable; each future planning pass must use actual authoring needs rather than this historical sketch.
+
+The proper editor path retains an explicit UI and interaction foundation without making auxiliary polish block runtime adoption:
 
 ~~~text
 parent SHARED-0024
@@ -251,9 +250,33 @@ Integer authoritative values: HP, mana, damage, XP, levels, currency, item count
 
 Spatial/physics authority: finite Box3D-native single-precision metres. Content authoring: BCL-only immutable System.Numerics-backed single-precision metre values. Simulation conversion is one-to-one with no integer-millimetre model. Stable identities and explicit ordering protect gameplay from unordered native queries.
 
+## Deliverable milestones after M2
+
+### M4 — Development Instrumentation
+
+M4 proves one shared ImGui-backed Starfall debug shell, one development-only command envelope and dispatcher, and one harmless Ping World available from typed UI and console frontends.
+
+Durable roadmap: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/roadmap/development-instrumentation
+
+### M5 — Connected Basic Arrow
+
+M5 converges the already-proven Basic simulation with connected intent/outcomes, bow-body animation, one provisional socketed bow, one client-only visual arrow and impact, exact Combat diagnostics, connected monster damage/death and native owner validation. It excludes Mana, Fire Arrow, Arrow Rain, equipment, Ranger loadouts, player respawn presentation and permanent combat UI.
+
+### M6 — Authoritative Mana
+
+M6 establishes integer Mana end to end before any spell owns it: content inputs, authoritative consumption/regeneration, facts/serialization, World exchange, feature-owned development commands, Resource diagnostics and native proof.
+
+Durable roadmap: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/roadmap/authoritative-mana
+
+### M7 — Connected Movement Quality v1
+
+M7 independently proves buffered remote interpolation and local correction diagnostics under deterministic network fixtures. Prediction and reconciliation remain evidence-gated for a later version.
+
+Durable roadmap: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/roadmap/connected-movement-quality-v1
+
 ## Balance Lab and later work
 
-EDITOR-0003 establishes Editor/Balance Lab separation in M2. EDITOR-0004 through EDITOR-0006 retain headless deterministic scenario ownership.
+EDITOR-0003 preserves the completed Editor/Balance Lab separation as M2 history. EDITOR-0004 through EDITOR-0006 remain individually milestone-free, priority-none placeholders. The harness is planned immediately before its first real scenario; the previous combined combat/progression/drop/equipment scope must be split from actual evidence at activation.
 
 CONTENT-0010 remains deferred outside Draft 0. First-wings/public release, trade, crafting, economy, persistence, PvP, multiple zones and final topology remain outside this walking-slice restructuring.
 

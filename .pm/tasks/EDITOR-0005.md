@@ -2,7 +2,7 @@
 id: EDITOR-0005
 title: Simulate camp and combat scenarios headlessly
 track: EDITOR
-milestone: M2
+priority: none
 dependsOn:
 - EDITOR-0004
 - SIM-0004
@@ -12,7 +12,7 @@ dependsOn:
 - SIM-0010
 - SIM-0011
 createdAt: 2026-08-02T07:29:14.3266250Z
-modifiedAt: 2026-08-05T06:15:21.9682200Z
+modifiedAt: 2026-08-06T06:44:47.6231390Z
 ---
 
 Run deterministic headless Draft 0 camp, combat, sustain, defeat and return scenarios.

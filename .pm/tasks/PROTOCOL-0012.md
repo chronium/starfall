@@ -2,12 +2,12 @@
 id: PROTOCOL-0012
 title: Add Arrow Rain facts and serialization
 track: PROTOCOL
-milestone: M2
+priority: none
 dependsOn:
 - SIM-0007
 - PROTOCOL-0007
 createdAt: 2026-08-05T19:46:44.8390510Z
-modifiedAt: 2026-08-05T19:47:21.6458620Z
+modifiedAt: 2026-08-06T06:43:25.6214780Z
 ---
 
 Extend the proven first connected-combat contract with focused Arrow Rain facts and deterministic serialization.

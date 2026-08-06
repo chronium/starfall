@@ -2,14 +2,14 @@
 id: EDITOR-0006
 title: Report progression, drop, and equipment metrics
 track: EDITOR
-milestone: M2
+priority: none
 dependsOn:
 - EDITOR-0005
 - GAME-0002
 - GAME-0004
 - GAME-0005
 createdAt: 2026-08-02T07:29:14.5660230Z
-modifiedAt: 2026-08-02T15:52:42.7967540Z
+modifiedAt: 2026-08-06T06:44:47.7304580Z
 ---
 
 Report deterministic Draft 0 progression, drop, equipment, and sustain metrics.

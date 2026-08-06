@@ -2,12 +2,12 @@
 id: SERVER-0012
 title: Adopt the editor-authored Draft 0 authoritative map
 track: SERVER
-milestone: M2
+priority: none
 dependsOn:
 - EDITOR-0007
 - SERVER-0004
 createdAt: 2026-08-03T07:29:08.3531020Z
-modifiedAt: 2026-08-03T07:29:43.3932300Z
+modifiedAt: 2026-08-06T06:44:47.2866100Z
 ---
 
 Replace provisional graybox inputs with the focused Editor task's compiled authoritative Draft 0 layout.
