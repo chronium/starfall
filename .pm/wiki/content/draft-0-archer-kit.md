@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Archer Kit
 createdAt: 2026-08-05T06:16:02.6168200Z
-modifiedAt: 2026-08-06T08:30:45.0890660Z
+modifiedAt: 2026-08-06T17:15:40.1420730Z
 ---
 
 ## Status
@@ -46,8 +46,8 @@ World resolves same-tick actions in ascending actor identity order. Nonlethal hi
 - PROTOCOL-0006/0007 own Basic-only connected facts and deterministic serialization. The client request carries command sequence and target only; World derives the acting entity from the admitted session.
 - SERVER-0008 exchanges Basic only. SIM-0011 is retained for defeated-player/protected-town action rejection, not player-life transport.
 - CLIENT-0012 owns deterministic connected target selection and Basic intent plus the first native connected authority proof. CLIENT-0023 already presents authoritative monster health, hit flash and death.
-- CONTENT-0011 selects one base/underlayer, one bow, one arrow and the minimum compatible idle/locomotion/notch/release/aim clips. Ranger armour is excluded.
-- CLIENT-0007 owns Basic bow-body animation. CLIENT-0011 owns Starfall's provisional semantic hand socket, local bow transform, rendering and native placement. CLIENT-0018 owns the client-only visual arrow and impact.
+- CONTENT-0011 selects the existing technical UAL1 mannequin as the complete temporary body, UAL1 `Idle_Loop`/`Walk_Loop`, UAL2 `Bow_Notch`/`Bow_Aim_Neutral`/`Bow_Shoot`, and the Quaternius `Bow_Wooden` and `Arrow` OBJ/MTL sources. No separate underlayer or Ranger armour is selected. Exact paths, evidence and limitations are at pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/basic-arrow-presentation-inputs.
+- CLIENT-0007 owns Basic bow-body animation and the later policy for fitting the authored clips to authoritative timing. CLIENT-0011 owns Starfall's provisional semantic hand socket, local bow transform, rendering and native placement. CLIENT-0018 owns the client-only visual arrow and impact.
 - CLIENT-0019 owns the ImGui Combat diagnostic and terminal M5 proof: target health, 300 internal / 3 displayed damage, accepted/rejected/cancelled result and monster death. It does not establish floating combat text or a permanent target HUD.
 - CONTENT-0016, SIM-0012, PROTOCOL-0014, SERVER-0016 and CLIENT-0032 own independent M6 Mana from inputs through diagnostics. Death/respawn policy is a later lifecycle integration decision.
 - SIM-0009 later owns Fire-specific cost, range, cadence, interruption and timing while consuming completed Mana and the Basic action lifecycle. Its protocol/server/client tasks do not own Mana or depend on the permanent HUD.
