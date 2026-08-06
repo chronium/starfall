@@ -4,5 +4,6 @@ Curated visual checkpoints record meaningful changes in Starfall's development. 
 
 ## Timeline
 
+- [2026-08-06 — Connected development command console](2026-08-06-connected-development-console/README.md)
 - [2026-08-05 — First visible Draft 0 monsters](2026-08-05-visible-placeholder-monsters/README.md)
 - [2026-08-03 — Deterministic Draft 0 graybox capture](2026-08-03-draft-0-graybox-capture/README.md)

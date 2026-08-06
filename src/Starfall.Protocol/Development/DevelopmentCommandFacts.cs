@@ -51,7 +51,7 @@ public readonly record struct DevelopmentCommandId
 
 public static class DevelopmentCommandIds
 {
-    public static DevelopmentCommandId PingWorld { get; } = new("ping_world");
+    public static DevelopmentCommandId Ping { get; } = new("ping");
 }
 
 public sealed class DevelopmentCommandRequest

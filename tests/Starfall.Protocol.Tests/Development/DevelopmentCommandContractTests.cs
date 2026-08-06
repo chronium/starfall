@@ -33,9 +33,9 @@ public sealed class DevelopmentCommandContractTests
     }
 
     [Fact]
-    public void Ping_world_has_one_canonical_current_source_identity()
+    public void Ping_has_one_canonical_current_source_identity()
     {
-        Assert.Equal("ping_world", DevelopmentCommandIds.PingWorld.Value);
+        Assert.Equal("ping", DevelopmentCommandIds.Ping.Value);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class DevelopmentCommandContractTests
         var source = new List<string> { "alpha", "42" };
         var request = new DevelopmentCommandRequest(
             new DevelopmentCommandSequence(1),
-            new DevelopmentCommandId("ping_world"),
+            new DevelopmentCommandId("test_alpha"),
             source);
 
         source[0] = "changed";
@@ -58,7 +58,7 @@ public sealed class DevelopmentCommandContractTests
     public void Request_accepts_zero_arguments_and_rejects_invalid_collections_or_tokens()
     {
         DevelopmentCommandSequence sequence = new(1);
-        DevelopmentCommandId commandId = new("ping_world");
+        DevelopmentCommandId commandId = new("test_alpha");
 
         Assert.Empty(new DevelopmentCommandRequest(sequence, commandId, []).Arguments);
         Assert.Throws<ArgumentException>(() => new DevelopmentCommandRequest(sequence, commandId, default(ImmutableArray<string>)));
@@ -72,7 +72,7 @@ public sealed class DevelopmentCommandContractTests
     public void Rejection_and_diagnostics_are_bounded()
     {
         DevelopmentCommandSequence sequence = new(1);
-        DevelopmentCommandId commandId = new("ping_world");
+        DevelopmentCommandId commandId = new("test_alpha");
         _ = new DevelopmentCommandSucceeded(sequence, commandId, new string('x', 512));
         Assert.Throws<ArgumentException>(() => new DevelopmentCommandSucceeded(sequence, commandId, ""));
         Assert.Throws<ArgumentException>(() => new DevelopmentCommandSucceeded(sequence, commandId, "two\nlines"));

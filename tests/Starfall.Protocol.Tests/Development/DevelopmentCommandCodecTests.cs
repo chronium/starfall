@@ -7,7 +7,7 @@ public sealed class DevelopmentCommandCodecTests
 {
     private static readonly byte[] RequestGolden = Convert.FromHexString(
         "0102030405060708" +
-        "0A70696E675F776F726C64" +
+        "0A746573745F616C706861" +
         "02" +
         "05616C706861" +
         "023432");
@@ -15,14 +15,14 @@ public sealed class DevelopmentCommandCodecTests
     private static readonly byte[] SucceededGolden = Convert.FromHexString(
         "01" +
         "0102030405060708" +
-        "0A70696E675F776F726C64" +
+        "0A746573745F616C706861" +
         "0002" +
         "6F6B");
 
     private static readonly byte[] RejectedGolden = Convert.FromHexString(
         "02" +
         "0102030405060708" +
-        "0A70696E675F776F726C64" +
+        "0A746573745F616C706861" +
         "01" +
         "0007" +
         "756E6B6E6F776E");
@@ -78,7 +78,7 @@ public sealed class DevelopmentCommandCodecTests
     {
         var succeeded = new DevelopmentCommandSucceeded(
             new DevelopmentCommandSequence(0x0102030405060708),
-            new DevelopmentCommandId("ping_world"),
+            new DevelopmentCommandId("test_alpha"),
             "ok");
 
         byte[] first = DevelopmentCommandCodec.EncodeSucceeded(succeeded);
@@ -98,7 +98,7 @@ public sealed class DevelopmentCommandCodecTests
     {
         var rejected = new DevelopmentCommandRejected(
             new DevelopmentCommandSequence(0x0102030405060708),
-            new DevelopmentCommandId("ping_world"),
+            new DevelopmentCommandId("test_alpha"),
             DevelopmentCommandRejectionReason.UnknownCommand,
             "unknown");
         Assert.Equal(RejectedGolden, DevelopmentCommandCodec.EncodeRejected(rejected));
@@ -211,7 +211,7 @@ public sealed class DevelopmentCommandCodecTests
 
     private static DevelopmentCommandRequest CreateRequest() => new(
         new DevelopmentCommandSequence(0x0102030405060708),
-        new DevelopmentCommandId("ping_world"),
+        new DevelopmentCommandId("test_alpha"),
         ["alpha", "42"]);
 
     private static void AssertWrongLengths(byte[] valid, Func<byte[], bool> decode)

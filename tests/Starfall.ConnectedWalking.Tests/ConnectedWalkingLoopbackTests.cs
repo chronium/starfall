@@ -164,7 +164,7 @@ public sealed class ConnectedWalkingLoopbackTests
     }
 
     [Fact]
-    public async Task Real_udp_dispatches_session_bound_ping_world_and_returns_its_correlation()
+    public async Task Real_udp_dispatches_session_bound_ping_and_returns_its_correlation()
     {
         int port = ReserveUdpPort();
         using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
@@ -184,21 +184,45 @@ public sealed class ConnectedWalkingLoopbackTests
                 new WorldJoinTicketVerificationKey("test", key.ExportSubjectPublicKeyInfo()),
             ]));
         host.Start(port);
-        using var client = new BasicArrowLoopbackClient(
+        using var client = new ConnectedWalkingClientSession(
             ClientNetworkTransportFactory.Create(),
-            IssueTicket(runtime, key));
-        client.Connect(port);
+            IssueTicket(runtime, key),
+            initialCombatSequence: 1,
+            initialDevelopmentSequence: 42);
+        using var pumping = new CancellationTokenSource();
+        Task serverPump = Task.Run(async () =>
+        {
+            while (!pumping.IsCancellationRequested)
+            {
+                host.Pump();
+                await Task.Delay(2, pumping.Token).ConfigureAwait(false);
+            }
+        });
 
-        await PumpUntilAsync(host, client, runtime, () => client.IsReady);
-        client.SendDevelopmentCommand(42, DevelopmentCommandIds.PingWorld);
-        await PumpUntilAsync(host, client, runtime, () => client.DevelopmentResults.Count == 1);
+        client.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, port, "unused"));
+        DevelopmentCommandSequence sequence = client.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []);
+        ConnectedDevelopmentCommandResult? capturedResult = null;
+        await PumpUntilAsync(client, () =>
+        {
+            if (!client.TryDequeueDevelopmentCommandResult(out ConnectedDevelopmentCommandResult? result))
+                return false;
+            capturedResult = result;
+            return true;
+        });
 
-        DevelopmentCommandSucceeded succeeded = Assert.IsType<DevelopmentCommandSucceeded>(
-            client.DevelopmentResults[0]);
-        Assert.Equal(42UL, succeeded.Sequence.Value);
-        Assert.Equal(DevelopmentCommandIds.PingWorld, succeeded.CommandId);
-        Assert.Contains($"session={client.Admission!.SessionId}", succeeded.Diagnostic, StringComparison.Ordinal);
-        Assert.Contains("world=world_1 channel=channel_1", succeeded.Diagnostic, StringComparison.Ordinal);
+        Assert.Equal(42UL, sequence.Value);
+        Assert.NotNull(capturedResult);
+        Assert.Equal(ConnectedDevelopmentCommandResultKind.Succeeded, capturedResult.Kind);
+        Assert.Equal(DevelopmentCommandIds.Ping, capturedResult.CommandId);
+        Assert.Contains($"session={client.SessionId}", capturedResult.Diagnostic, StringComparison.Ordinal);
+        Assert.Contains("world=world_1 channel=channel_1", capturedResult.Diagnostic, StringComparison.Ordinal);
+
+        pumping.Cancel();
+        try
+        {
+            await serverPump;
+        }
+        catch (OperationCanceledException) { }
     }
 
     private static int ReserveUdpPort()

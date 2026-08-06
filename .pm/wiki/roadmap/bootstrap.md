@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-06T11:32:06.5437450Z
+modifiedAt: 2026-08-06T16:32:50.0565230Z
 ---
 
 ## Execution standard
@@ -277,7 +277,7 @@ Spatial/physics authority: finite Box3D-native single-precision metres. Content 
 
 ### M4 — Development Instrumentation
 
-M4 proves one shared ImGui-backed Starfall debug shell, one development-only command envelope and dispatcher, and one harmless Ping World available from typed UI and console frontends.
+M4 proves one shared ImGui-backed Starfall debug shell, one development-only command envelope and dispatcher, and one harmless `ping` command available from the development console.
 
 Durable roadmap: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/roadmap/development-instrumentation
 

@@ -19,6 +19,8 @@ internal sealed class DevelopmentDebugShellState
         private set;
     }
 
+    internal DevelopmentConsoleState Console { get; } = new();
+
     internal bool WorldSessionVisible
     {
         get;
@@ -36,10 +38,24 @@ internal sealed class DevelopmentDebugShellState
         if (repeated)
             return false;
         IsVisible = !IsVisible;
+        if (!IsVisible)
+            Console.CloseInput();
         return true;
     }
 
-    internal void Hide() => IsVisible = false;
+    internal void Hide()
+    {
+        IsVisible = false;
+        Console.CloseInput();
+    }
+
+    internal bool TryOpenConsole(bool repeated, bool keyboardOwned)
+    {
+        if (repeated || keyboardOwned || !IsVisible || Console.IsInputOpen)
+            return false;
+        Console.OpenInput();
+        return true;
+    }
 
     internal bool IsWindowVisible(DevelopmentDebugWindow window) => window switch
     {
@@ -70,12 +86,13 @@ internal readonly record struct DevelopmentDebugInputOwnership(
 {
     internal static DevelopmentDebugInputOwnership Resolve(
         bool shellVisible,
+        bool consoleInputOpen,
         bool wantsMouse,
         bool wantsKeyboard,
         bool wantsTextInput) =>
         shellVisible
             ? new DevelopmentDebugInputOwnership(
-                SuppressMouseGameplay: wantsMouse,
-                SuppressKeyboardGameplay: wantsKeyboard || wantsTextInput)
+                SuppressMouseGameplay: consoleInputOpen || wantsMouse,
+                SuppressKeyboardGameplay: consoleInputOpen || wantsKeyboard || wantsTextInput)
             : default;
 }

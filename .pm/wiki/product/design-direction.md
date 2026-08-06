@@ -1,7 +1,7 @@
 ---
 title: Product Design Direction
 createdAt: 2026-08-01T05:48:09.1092000Z
-modifiedAt: 2026-08-06T06:47:53.6845120Z
+modifiedAt: 2026-08-06T16:32:50.1627730Z
 ---
 
 ## Approved direction
@@ -24,7 +24,7 @@ M0 and M1 preserve completed foundation history. M2 remains a completed legacy p
 
 New milestones describe independently demonstrable outcomes rather than project phases:
 
-- M4 Development Instrumentation proves the Starfall debug shell, one development-command envelope/dispatcher and Ping World through typed and console frontends.
+- M4 Development Instrumentation proves the Starfall debug shell, one development-command envelope/dispatcher and `ping` through the development console.
 - M5 Connected Basic Arrow proves connected intent through authoritative outcome, bow-body animation, one equipment-free rendered bow and visual arrow, hit feedback, monster damage/death, Combat diagnostics and a native end-to-end run.
 - M6 Authoritative Mana proves integer Mana configuration, simulation, serialization, exchange, development diagnostics and regeneration independently of spells.
 - M7 Connected Movement Quality v1 proves bounded remote interpolation and local correction diagnostics under deterministic network fixtures.

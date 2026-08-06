@@ -41,7 +41,7 @@ internal sealed class WorldGameplayNetworkHost : INetworkEventHandler, IDisposab
         basicArrow = new WorldBasicArrowExchange(runtime);
         developmentCommands = new WorldDevelopmentCommandDispatcher(
             runtime,
-            [new PingWorldDevelopmentCommandHandler()]);
+            [new PingDevelopmentCommandHandler()]);
         this.timeProvider = timeProvider ?? TimeProvider.System;
     }
 

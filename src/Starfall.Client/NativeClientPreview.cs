@@ -231,7 +231,7 @@ internal static unsafe class NativeClientPreview
                 $"STARFALL_CLIENT_CONTROLS mode={(connectedSession is null ? "local" : "connected")} " +
                 "RightClick=move-intent LeftClick=basic-arrow-connected-only " +
                 "KPPlus/KPMinus=local-speed " +
-                "F1-F7=view Tab=next-view Up/Down=F1-distance F12=debug-ui Escape=close");
+                "F1-F7=view Tab=next-view Up/Down=F1-distance T=command-console F12=debug-ui Escape=close");
             if (connectedSession is null)
                 Console.WriteLine($"STARFALL_LOCAL_MONSTERS count={localMonsterSnapshots.Count} source=CONTENT-0007");
             SetWindowTitle(CreateWindowTitle(connectedSession));
@@ -241,6 +241,7 @@ internal static unsafe class NativeClientPreview
                 throw new InvalidOperationException("SDL returned a zero performance-counter frequency.");
             ulong previousCounter = SDL_GetPerformanceCounter();
             double monsterPresentationSeconds = 0.0;
+            double developmentUiSeconds = 0.0;
 
             bool running = true;
             while (running)
@@ -252,6 +253,7 @@ internal static unsafe class NativeClientPreview
                     ImGuiCaptureState capture = developmentUi?.Capture ?? default;
                     DevelopmentDebugInputOwnership inputOwnership = DevelopmentDebugInputOwnership.Resolve(
                         developmentDebugState?.IsVisible ?? false,
+                        developmentDebugState?.Console.IsInputOpen ?? false,
                         capture.WantsMouse,
                         capture.WantsKeyboard,
                         capture.WantsTextInput);
@@ -265,6 +267,26 @@ internal static unsafe class NativeClientPreview
                     {
                         if (developmentDebugState?.ToggleVisibility(sdlEvent.key.repeat) == true)
                             developmentUi!.SetMouseInputEnabled(developmentDebugState.IsVisible);
+                    }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        sdlEvent.key.key == SDL_Keycode.SDLK_ESCAPE &&
+                        developmentDebugState?.Console.IsInputOpen == true)
+                    {
+                        developmentDebugState.Console.CloseInput();
+                    }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        developmentDebugState?.Console.IsInputOpen == true &&
+                        sdlEvent.key.key is SDL_Keycode.SDLK_UP or SDL_Keycode.SDLK_DOWN)
+                    {
+                        developmentDebugState.Console.NavigateHistory(
+                            sdlEvent.key.key == SDL_Keycode.SDLK_UP ? -1 : 1);
+                    }
+                    else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
+                        sdlEvent.key.key == SDL_Keycode.SDLK_T &&
+                        developmentDebugState?.TryOpenConsole(
+                            sdlEvent.key.repeat,
+                            capture.WantsKeyboard || capture.WantsTextInput) == true)
+                    {
                     }
                     else if (sdlEvent.Type == SDL_EventType.SDL_EVENT_KEY_DOWN &&
                         sdlEvent.key.key == SDL_Keycode.SDLK_ESCAPE &&
@@ -330,6 +352,9 @@ internal static unsafe class NativeClientPreview
                 previousCounter = counter;
                 double presentationElapsed = Math.Min(elapsedSeconds, FixedTickAccumulator.MaximumElapsedSeconds);
                 monsterPresentationSeconds += presentationElapsed;
+                developmentUiSeconds += presentationElapsed;
+                if (connectedSession is not null)
+                    DrainDevelopmentCommandResults(connectedSession, developmentUiSeconds);
                 if (connectedSession is null)
                     fixedTicks.Advance(elapsedSeconds, fixture.AdvanceTick);
                 TechnicalPlayerSnapshot currentSnapshot = connectedSession?.Snapshot ?? fixture.Snapshot;
@@ -351,7 +376,8 @@ internal static unsafe class NativeClientPreview
                         monsterPresentationSeconds,
                         connectedSession is not null,
                         Math.Max(presentationElapsed, 1.0 / 1000.0),
-                        developmentSnapshot);
+                        developmentSnapshot,
+                        developmentUiSeconds);
                 }
                 catch (Exception exception)
                 {
@@ -361,6 +387,7 @@ internal static unsafe class NativeClientPreview
                         $"mode={(connectedSession is null ? "local" : "connected")}).",
                         exception);
                 }
+                DispatchDevelopmentConsoleSubmissions(connectedSession, developmentUiSeconds);
                 SDL_Delay(16);
             }
         }
@@ -483,7 +510,8 @@ internal static unsafe class NativeClientPreview
             double monsterPresentationSeconds,
             bool connectedMonsters,
             double frameDeltaSeconds,
-            DevelopmentDebugSnapshot? developmentSnapshot)
+            DevelopmentDebugSnapshot? developmentSnapshot,
+            double developmentUiSeconds)
         {
             SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
 
@@ -524,7 +552,8 @@ internal static unsafe class NativeClientPreview
                         monsterPresentationSeconds,
                         connectedMonsters,
                         developmentUi,
-                        developmentSnapshot);
+                        developmentSnapshot,
+                        developmentUiSeconds);
                 }
             }
             catch (Exception exception)
@@ -612,7 +641,8 @@ internal static unsafe class NativeClientPreview
             double monsterPresentationSeconds,
             bool connectedMonsters,
             SdlGpuImGuiBackend? developmentUi,
-            DevelopmentDebugSnapshot? developmentSnapshot)
+            DevelopmentDebugSnapshot? developmentSnapshot,
+            double developmentUiSeconds = 0.0)
         {
             bool developmentUiBuilding = developmentUi is not null;
             bool developmentUiPrepared = false;
@@ -624,7 +654,7 @@ internal static unsafe class NativeClientPreview
                 {
                     if (!developmentSnapshot.HasValue || developmentDebugShell is null)
                         throw new InvalidOperationException("Interactive development UI requires a Starfall debug snapshot and shell.");
-                    developmentDebugShell.Draw(developmentSnapshot.Value);
+                    developmentDebugShell.Draw(developmentSnapshot.Value, developmentUiSeconds);
                     developmentUi.PrepareDrawData(command);
                     developmentUiBuilding = false;
                     developmentUiPrepared = true;
@@ -876,6 +906,50 @@ internal static unsafe class NativeClientPreview
             Console.WriteLine(string.Create(
                 CultureInfo.InvariantCulture,
                 $"STARFALL_CLIENT_MOVE_INTENT x={intent.Destination.XMetres:F3} z={intent.Destination.ZMetres:F3}"));
+        }
+
+        private void DrainDevelopmentCommandResults(
+            ConnectedWalkingClientSession connectedSession,
+            double nowSeconds)
+        {
+            DevelopmentConsoleState console = developmentDebugState?.Console ??
+                throw new InvalidOperationException("Interactive development commands require console state.");
+            while (connectedSession.TryDequeueDevelopmentCommandResult(
+                       out ConnectedDevelopmentCommandResult? result))
+            {
+                console.RecordResult(result!, nowSeconds);
+            }
+        }
+
+        private void DispatchDevelopmentConsoleSubmissions(
+            ConnectedWalkingClientSession? connectedSession,
+            double nowSeconds)
+        {
+            DevelopmentConsoleState console = developmentDebugState?.Console ??
+                throw new InvalidOperationException("Interactive development commands require console state.");
+            while (console.TryDequeueSubmission(out DevelopmentConsoleInvocation? invocation))
+            {
+                if (connectedSession is null)
+                {
+                    console.RecordLocalFailure(
+                        invocation!,
+                        "development commands require a connected world session",
+                        nowSeconds);
+                    continue;
+                }
+
+                try
+                {
+                    var sequence = connectedSession.SendDevelopmentCommand(
+                        invocation!.CommandId,
+                        invocation.Arguments);
+                    console.RecordCommandSent(sequence, invocation, nowSeconds);
+                }
+                catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+                {
+                    console.RecordLocalFailure(invocation!, exception.Message, nowSeconds);
+                }
+            }
         }
 
         private void SubmitBasicArrowIntent(

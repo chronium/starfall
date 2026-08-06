@@ -5,6 +5,7 @@ using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Combat;
 using Starfall.Protocol.Compatibility;
+using Starfall.Protocol.Development;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -15,6 +16,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
 {
     internal static readonly TimeSpan ConnectionTimeout = TimeSpan.FromSeconds(10);
     internal const int MaximumOutstandingBasicArrowCommands = 64;
+    internal const int MaximumDevelopmentCommandLifecycles = 64;
     private readonly INetworkTransport transport;
     private readonly WorldJoinRequest request;
     private NetworkPeerId peerId;
@@ -25,6 +27,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
     private string? failure;
     private ulong nextIntentSequence = 1;
     private ulong nextCombatSequence;
+    private ulong nextDevelopmentSequence;
     private ulong lastSentIntentSequence;
     private ulong lastSnapshotSequence;
     private ulong lastTick;
@@ -32,17 +35,23 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
     private ulong lastMonsterTick;
     private ulong? entityId;
     private readonly Dictionary<ulong, SentBasicArrowCommand> basicArrowCommands = [];
+    private readonly Dictionary<ulong, DevelopmentCommandId> developmentCommands = [];
+    private readonly Queue<ConnectedDevelopmentCommandResult> developmentResults = [];
 
     internal ConnectedWalkingClientSession(
         INetworkTransport transport,
         string ticket,
-        ulong initialCombatSequence = 1)
+        ulong initialCombatSequence = 1,
+        ulong initialDevelopmentSequence = 1)
     {
         this.transport = transport ?? throw new ArgumentNullException(nameof(transport));
         if (initialCombatSequence == 0)
             throw new ArgumentOutOfRangeException(nameof(initialCombatSequence));
+        if (initialDevelopmentSequence == 0)
+            throw new ArgumentOutOfRangeException(nameof(initialDevelopmentSequence));
         request = new WorldJoinRequest(StarfallGameplayProtocol.CurrentVersion, ticket);
         nextCombatSequence = initialCombatSequence;
+        nextDevelopmentSequence = initialDevelopmentSequence;
     }
 
     internal GameplaySessionId? SessionId
@@ -134,6 +143,36 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         return sequence;
     }
 
+    internal DevelopmentCommandSequence SendDevelopmentCommand(
+        DevelopmentCommandId commandId,
+        IEnumerable<string> arguments)
+    {
+        if (!IsReady)
+            throw new InvalidOperationException("Connected gameplay session is not ready.");
+        if (nextDevelopmentSequence == 0)
+            throw new InvalidOperationException("Development command sequence space is exhausted.");
+        if (developmentCommands.Count + developmentResults.Count >= MaximumDevelopmentCommandLifecycles)
+        {
+            throw new InvalidOperationException(
+                "Too many development commands are awaiting authoritative correlation or Client consumption.");
+        }
+
+        ulong sequenceValue = nextDevelopmentSequence;
+        nextDevelopmentSequence = sequenceValue == ulong.MaxValue ? 0 : sequenceValue + 1;
+        var sequence = new DevelopmentCommandSequence(sequenceValue);
+        var command = new DevelopmentCommandRequest(sequence, commandId, arguments);
+        transport.Send(
+            peerId,
+            DevelopmentCommandCodec.EncodeRequest(command),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommands);
+        developmentCommands.Add(sequenceValue, commandId);
+        return sequence;
+    }
+
+    internal bool TryDequeueDevelopmentCommandResult(out ConnectedDevelopmentCommandResult? result) =>
+        developmentResults.TryDequeue(out result);
+
     public void Connected(NetworkPeerId connectedPeer, NetworkEndpoint endpoint)
     {
         if (!peerAssigned || connectedPeer != peerId)
@@ -179,6 +218,15 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
                 !TryAcceptBasicArrowOutcome(packet.Span))
             {
                 failure = "World sent malformed, misrouted or inconsistent Basic Arrow outcome data.";
+            }
+            return;
+        }
+        if (channel == StarfallNetworkChannels.DevelopmentCommandResults)
+        {
+            if (!admissionAccepted || delivery != NetworkDelivery.ReliableOrdered ||
+                !TryAcceptDevelopmentCommandResult(packet.Span))
+            {
+                failure = "World sent malformed, misrouted or inconsistent development command result data.";
             }
             return;
         }
@@ -330,6 +378,37 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         };
     }
 
+    private bool TryAcceptDevelopmentCommandResult(ReadOnlySpan<byte> payload)
+    {
+        if (!DevelopmentCommandCodec.TryReadResultPayloadKind(
+                payload,
+                out DevelopmentCommandResultPayloadKind kind))
+        {
+            return false;
+        }
+
+        ConnectedDevelopmentCommandResult? result = kind switch
+        {
+            DevelopmentCommandResultPayloadKind.Succeeded when
+                DevelopmentCommandCodec.TryDecodeSucceeded(payload, out DevelopmentCommandSucceeded? succeeded) =>
+                ConnectedDevelopmentCommandResult.Succeeded(succeeded),
+            DevelopmentCommandResultPayloadKind.Rejected when
+                DevelopmentCommandCodec.TryDecodeRejected(payload, out DevelopmentCommandRejected? rejected) =>
+                ConnectedDevelopmentCommandResult.Rejected(rejected),
+            _ => null,
+        };
+        if (result is null ||
+            !developmentCommands.TryGetValue(result.Sequence.Value, out DevelopmentCommandId expectedCommandId) ||
+            expectedCommandId != result.CommandId)
+        {
+            return false;
+        }
+
+        developmentCommands.Remove(result.Sequence.Value);
+        developmentResults.Enqueue(result);
+        return true;
+    }
+
     private bool TryAccept(BasicArrowAccepted accepted)
     {
         if (!TryGetMatchingCommand(accepted.Sequence, accepted.ActorEntityId, accepted.TargetEntityId, out SentBasicArrowCommand? command) ||
@@ -448,6 +527,34 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
             get; set;
         }
     }
+}
+
+internal enum ConnectedDevelopmentCommandResultKind
+{
+    Succeeded,
+    Rejected,
+}
+
+internal sealed record ConnectedDevelopmentCommandResult(
+    ConnectedDevelopmentCommandResultKind Kind,
+    DevelopmentCommandSequence Sequence,
+    DevelopmentCommandId CommandId,
+    DevelopmentCommandRejectionReason? RejectionReason,
+    string Diagnostic)
+{
+    internal static ConnectedDevelopmentCommandResult Succeeded(DevelopmentCommandSucceeded value) => new(
+        ConnectedDevelopmentCommandResultKind.Succeeded,
+        value.Sequence,
+        value.CommandId,
+        null,
+        value.Diagnostic);
+
+    internal static ConnectedDevelopmentCommandResult Rejected(DevelopmentCommandRejected value) => new(
+        ConnectedDevelopmentCommandResultKind.Rejected,
+        value.Sequence,
+        value.CommandId,
+        value.Reason,
+        value.Diagnostic);
 }
 
 internal enum ConnectedBasicArrowOutcomeKind

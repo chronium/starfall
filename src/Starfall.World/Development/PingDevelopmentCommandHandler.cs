@@ -4,9 +4,9 @@ using Starfall.Protocol.Development;
 
 namespace Starfall.World.Development;
 
-internal sealed class PingWorldDevelopmentCommandHandler : IWorldDevelopmentCommandHandler
+internal sealed class PingDevelopmentCommandHandler : IWorldDevelopmentCommandHandler
 {
-    public DevelopmentCommandId CommandId => DevelopmentCommandIds.PingWorld;
+    public DevelopmentCommandId CommandId => DevelopmentCommandIds.Ping;
 
     public WorldDevelopmentCommandHandlerResult Handle(
         WorldDevelopmentCommandContext context,
@@ -17,7 +17,7 @@ internal sealed class PingWorldDevelopmentCommandHandler : IWorldDevelopmentComm
         {
             return WorldDevelopmentCommandHandlerResult.Reject(
                 DevelopmentCommandRejectionReason.InvalidArguments,
-                "ping_world accepts no arguments");
+                "ping accepts no arguments");
         }
 
         return WorldDevelopmentCommandHandlerResult.Success(string.Create(

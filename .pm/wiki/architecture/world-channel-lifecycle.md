@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-06T15:57:46.0532960Z
+modifiedAt: 2026-08-06T16:32:49.7306510Z
 ---
 
 ## Purpose
@@ -142,7 +142,7 @@ Stop the second command with Ctrl+C and verify the same instance identity appear
 
 ## Deliverable continuations
 
-M4 Development Instrumentation uses one development-only dispatcher bound to admitted gameplay sessions. Every admitted connected player may currently invoke every registered command. SERVER-0015 registers only `ping_world`, consumes sequences monotonically per session and returns correlated results; later feature-owned Mana handlers reuse that dispatcher. This engineering instrumentation has no stable gameplay-protocol compatibility promise, global enablement gate, role system or permission model.
+M4 Development Instrumentation uses one development-only dispatcher bound to admitted gameplay sessions. Every admitted connected player may currently invoke every registered command. SERVER-0015 registers only `ping`, consumes sequences monotonically per session and returns correlated results; later feature-owned Mana handlers reuse that dispatcher. This engineering instrumentation has no stable gameplay-protocol compatibility promise, global enablement gate, role system or permission model.
 
 M6 Authoritative Mana adds per-session checked integer Mana, fixed-tick regeneration, separate Mana facts/serialization, World exchange and feature-owned development commands. Mana exposes a lifecycle seam; a later Player Life integration task defines how the already-established same-entity respawn affects Mana.
 

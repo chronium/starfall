@@ -102,14 +102,16 @@ public sealed class DevelopmentDebugShellTests
     }
 
     [Theory]
-    [InlineData(false, true, true, true, false, false)]
-    [InlineData(true, false, false, false, false, false)]
-    [InlineData(true, true, false, false, true, false)]
-    [InlineData(true, false, true, false, false, true)]
-    [InlineData(true, false, false, true, false, true)]
-    [InlineData(true, true, true, true, true, true)]
+    [InlineData(false, true, true, true, true, false, false)]
+    [InlineData(true, false, false, false, false, false, false)]
+    [InlineData(true, false, true, false, false, true, false)]
+    [InlineData(true, false, false, true, false, false, true)]
+    [InlineData(true, false, false, false, true, false, true)]
+    [InlineData(true, false, true, true, true, true, true)]
+    [InlineData(true, true, false, false, false, true, true)]
     public void Input_ownership_suppresses_only_visible_captured_domains(
         bool visible,
+        bool consoleInputOpen,
         bool wantsMouse,
         bool wantsKeyboard,
         bool wantsTextInput,
@@ -118,11 +120,31 @@ public sealed class DevelopmentDebugShellTests
     {
         DevelopmentDebugInputOwnership ownership = DevelopmentDebugInputOwnership.Resolve(
             visible,
+            consoleInputOpen,
             wantsMouse,
             wantsKeyboard,
             wantsTextInput);
 
         Assert.Equal(expectedMouse, ownership.SuppressMouseGameplay);
         Assert.Equal(expectedKeyboard, ownership.SuppressKeyboardGameplay);
+    }
+
+    [Fact]
+    public void Console_shortcut_respects_master_visibility_capture_and_repeats()
+    {
+        var state = new DevelopmentDebugShellState(initiallyVisible: true);
+
+        Assert.False(state.TryOpenConsole(repeated: true, keyboardOwned: false));
+        Assert.False(state.Console.IsInputOpen);
+        Assert.False(state.TryOpenConsole(repeated: false, keyboardOwned: true));
+        Assert.False(state.Console.IsInputOpen);
+        Assert.True(state.TryOpenConsole(repeated: false, keyboardOwned: false));
+        Assert.True(state.Console.IsInputOpen);
+        Assert.False(state.TryOpenConsole(repeated: false, keyboardOwned: false));
+
+        state.ToggleVisibility(repeated: false);
+        Assert.False(state.IsVisible);
+        Assert.False(state.Console.IsInputOpen);
+        Assert.False(state.TryOpenConsole(repeated: false, keyboardOwned: false));
     }
 }

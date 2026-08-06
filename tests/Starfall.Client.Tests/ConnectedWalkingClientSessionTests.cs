@@ -5,6 +5,7 @@ using Starfall.Content.Zones;
 using Starfall.Protocol.Admission;
 using Starfall.Protocol.Combat;
 using Starfall.Protocol.Compatibility;
+using Starfall.Protocol.Development;
 using Starfall.Protocol.Monsters;
 using Starfall.Protocol.Movement;
 using Starfall.Protocol.Networking;
@@ -492,12 +493,131 @@ public sealed class ConnectedWalkingClientSessionTests
         Assert.Throws<InvalidOperationException>(() => bounded.SendBasicArrowIntent(new WorldEntityId(1000)));
     }
 
+    [Fact]
+    public void Session_sends_development_commands_and_correlates_success_and_rejection_results()
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+
+        DevelopmentCommandSequence first = session.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []);
+        DevelopmentCommandSequence second = session.SendDevelopmentCommand(DevelopmentCommandIds.Ping, ["extra"]);
+        SentPacket[] packets = transport.Sent
+            .Where(static packet => packet.Channel == StarfallNetworkChannels.DevelopmentCommands)
+            .ToArray();
+        Assert.Equal(2, packets.Length);
+        Assert.All(packets, static packet => Assert.Equal(NetworkDelivery.ReliableOrdered, packet.Delivery));
+        Assert.True(DevelopmentCommandCodec.TryDecodeRequest(packets[0].Payload, out DevelopmentCommandRequest? request));
+        Assert.Equal(first, request!.Sequence);
+        Assert.Equal(DevelopmentCommandIds.Ping, request.CommandId);
+
+        session.PacketReceived(
+            transport.Peer,
+            DevelopmentCommandCodec.EncodeSucceeded(new DevelopmentCommandSucceeded(
+                first, DevelopmentCommandIds.Ping, "pong")),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommandResults);
+        session.PacketReceived(
+            transport.Peer,
+            DevelopmentCommandCodec.EncodeRejected(new DevelopmentCommandRejected(
+                second,
+                DevelopmentCommandIds.Ping,
+                DevelopmentCommandRejectionReason.InvalidArguments,
+                "ping accepts no arguments")),
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommandResults);
+
+        Assert.True(session.TryDequeueDevelopmentCommandResult(out ConnectedDevelopmentCommandResult? succeeded));
+        Assert.Equal(ConnectedDevelopmentCommandResultKind.Succeeded, succeeded!.Kind);
+        Assert.Equal("pong", succeeded.Diagnostic);
+        Assert.True(session.TryDequeueDevelopmentCommandResult(out ConnectedDevelopmentCommandResult? rejected));
+        Assert.Equal(ConnectedDevelopmentCommandResultKind.Rejected, rejected!.Kind);
+        Assert.Equal(DevelopmentCommandRejectionReason.InvalidArguments, rejected.RejectionReason);
+        Assert.False(session.TryDequeueDevelopmentCommandResult(out _));
+        Assert.False(session.IsDisconnected);
+    }
+
+    [Theory]
+    [InlineData(false, NetworkDelivery.Sequenced)]
+    [InlineData(true, NetworkDelivery.ReliableOrdered)]
+    public void Session_rejects_misdelivered_or_inconsistently_correlated_development_results(
+        bool wrongCommand,
+        NetworkDelivery delivery)
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+        DevelopmentCommandSequence sequence = session.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []);
+        DevelopmentCommandId commandId = wrongCommand
+            ? new DevelopmentCommandId("unknown")
+            : DevelopmentCommandIds.Ping;
+        session.PacketReceived(
+            transport.Peer,
+            DevelopmentCommandCodec.EncodeSucceeded(new DevelopmentCommandSucceeded(
+                sequence, commandId, "result")),
+            delivery,
+            StarfallNetworkChannels.DevelopmentCommandResults);
+
+        InvalidOperationException exception = Assert.Throws<InvalidOperationException>(session.Poll);
+        Assert.Contains("development command result", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(session.IsDisconnected);
+    }
+
+    [Fact]
+    public void Session_rejects_duplicate_and_malformed_development_results()
+    {
+        ConnectedWalkingClientSession session = CreateReadySession(out ScriptedTransport transport);
+        DevelopmentCommandSequence sequence = session.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []);
+        byte[] result = DevelopmentCommandCodec.EncodeSucceeded(new DevelopmentCommandSucceeded(
+            sequence, DevelopmentCommandIds.Ping, "pong"));
+        session.PacketReceived(
+            transport.Peer,
+            result,
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommandResults);
+        Assert.True(session.TryDequeueDevelopmentCommandResult(out _));
+        session.PacketReceived(
+            transport.Peer,
+            result,
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommandResults);
+        Assert.Throws<InvalidOperationException>(session.Poll);
+
+        ConnectedWalkingClientSession malformed = CreateReadySession(out ScriptedTransport otherTransport);
+        malformed.PacketReceived(
+            otherTransport.Peer,
+            new byte[] { 1, 2, 3 },
+            NetworkDelivery.ReliableOrdered,
+            StarfallNetworkChannels.DevelopmentCommandResults);
+        Assert.Throws<InvalidOperationException>(malformed.Poll);
+    }
+
+    [Fact]
+    public void Development_command_lifecycles_are_bounded_and_sequence_exhaustion_is_explicit()
+    {
+        ConnectedWalkingClientSession bounded = CreateReadySession(out _);
+        for (int index = 0; index < ConnectedWalkingClientSession.MaximumDevelopmentCommandLifecycles; index++)
+            _ = bounded.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []);
+        Assert.Throws<InvalidOperationException>(() =>
+            bounded.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []));
+
+        ConnectedWalkingClientSession exhausted = CreateReadySession(
+            out _,
+            initialDevelopmentSequence: ulong.MaxValue);
+        Assert.Equal(
+            ulong.MaxValue,
+            exhausted.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []).Value);
+        Assert.Throws<InvalidOperationException>(() =>
+            exhausted.SendDevelopmentCommand(DevelopmentCommandIds.Ping, []));
+    }
+
     private static ConnectedWalkingClientSession CreateReadySession(
         out ScriptedTransport transport,
-        ulong initialCombatSequence = 1)
+        ulong initialCombatSequence = 1,
+        ulong initialDevelopmentSequence = 1)
     {
         transport = new ScriptedTransport();
-        var session = new ConnectedWalkingClientSession(transport, "ticket", initialCombatSequence);
+        var session = new ConnectedWalkingClientSession(
+            transport,
+            "ticket",
+            initialCombatSequence,
+            initialDevelopmentSequence);
         ScriptedTransport captured = transport;
         captured.OnPoll = handler =>
         {

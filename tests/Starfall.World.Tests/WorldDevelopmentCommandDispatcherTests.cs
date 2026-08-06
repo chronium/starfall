@@ -15,24 +15,24 @@ public sealed class WorldDevelopmentCommandDispatcherTests
     private static readonly long NowUnixMilliseconds = 1_800_000_000_000;
 
     [Fact]
-    public void Ping_world_returns_exact_session_bound_diagnostic()
+    public void Ping_returns_exact_session_bound_diagnostic()
     {
         using RuntimeScope scope = CreateRuntime();
         WorldGameplaySession session = Admit(scope.Runtime, 1);
         var dispatcher = new WorldDevelopmentCommandDispatcher(
             scope.Runtime,
-            [new PingWorldDevelopmentCommandHandler()]);
+            [new PingDevelopmentCommandHandler()]);
 
         WorldDevelopmentCommandOutcome outcome = dispatcher.Handle(
             session.SessionId,
-            Encode(7, DevelopmentCommandIds.PingWorld));
+            Encode(7, DevelopmentCommandIds.Ping));
 
         Assert.Equal(WorldDevelopmentCommandDisposition.Succeeded, outcome.Disposition);
         Assert.True(DevelopmentCommandCodec.TryDecodeSucceeded(
             outcome.Payload,
             out DevelopmentCommandSucceeded? succeeded));
         Assert.Equal(7UL, succeeded!.Sequence.Value);
-        Assert.Equal(DevelopmentCommandIds.PingWorld, succeeded.CommandId);
+        Assert.Equal(DevelopmentCommandIds.Ping, succeeded.CommandId);
         Assert.Equal(
             $"pong world=world_1 channel=channel_1 tick=0 session={session.SessionId} player={session.PlayerEntityId}",
             succeeded.Diagnostic);
@@ -45,12 +45,12 @@ public sealed class WorldDevelopmentCommandDispatcherTests
         WorldGameplaySession session = Admit(scope.Runtime, 1);
         var dispatcher = new WorldDevelopmentCommandDispatcher(
             scope.Runtime,
-            [new PingWorldDevelopmentCommandHandler()]);
+            [new PingDevelopmentCommandHandler()]);
 
         AssertRejected(
-            dispatcher.Handle(session.SessionId, Encode(1, DevelopmentCommandIds.PingWorld, "extra")),
+            dispatcher.Handle(session.SessionId, Encode(1, DevelopmentCommandIds.Ping, "extra")),
             1,
-            DevelopmentCommandIds.PingWorld,
+            DevelopmentCommandIds.Ping,
             DevelopmentCommandRejectionReason.InvalidArguments);
         var unknownId = new DevelopmentCommandId("unknown");
         AssertRejected(
@@ -68,7 +68,7 @@ public sealed class WorldDevelopmentCommandDispatcherTests
         WorldGameplaySession second = Admit(scope.Runtime, 2);
         var dispatcher = new WorldDevelopmentCommandDispatcher(
             scope.Runtime,
-            [new PingWorldDevelopmentCommandHandler()]);
+            [new PingDevelopmentCommandHandler()]);
         var unknownId = new DevelopmentCommandId("unknown");
 
         AssertRejected(
@@ -77,24 +77,24 @@ public sealed class WorldDevelopmentCommandDispatcherTests
             unknownId,
             DevelopmentCommandRejectionReason.UnknownCommand);
         AssertRejected(
-            dispatcher.Handle(first.SessionId, Encode(5, DevelopmentCommandIds.PingWorld)),
+            dispatcher.Handle(first.SessionId, Encode(5, DevelopmentCommandIds.Ping)),
             5,
-            DevelopmentCommandIds.PingWorld,
+            DevelopmentCommandIds.Ping,
             DevelopmentCommandRejectionReason.StaleOrDuplicateSequence);
         AssertRejected(
-            dispatcher.Handle(first.SessionId, Encode(4, DevelopmentCommandIds.PingWorld)),
+            dispatcher.Handle(first.SessionId, Encode(4, DevelopmentCommandIds.Ping)),
             4,
-            DevelopmentCommandIds.PingWorld,
+            DevelopmentCommandIds.Ping,
             DevelopmentCommandRejectionReason.StaleOrDuplicateSequence);
 
         Assert.Equal(
             WorldDevelopmentCommandDisposition.Succeeded,
-            dispatcher.Handle(second.SessionId, Encode(1, DevelopmentCommandIds.PingWorld)).Disposition);
+            dispatcher.Handle(second.SessionId, Encode(1, DevelopmentCommandIds.Ping)).Disposition);
 
         dispatcher.RemoveSession(first.SessionId);
         Assert.Equal(
             WorldDevelopmentCommandDisposition.Succeeded,
-            dispatcher.Handle(first.SessionId, Encode(1, DevelopmentCommandIds.PingWorld)).Disposition);
+            dispatcher.Handle(first.SessionId, Encode(1, DevelopmentCommandIds.Ping)).Disposition);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class WorldDevelopmentCommandDispatcherTests
     {
         using RuntimeScope scope = CreateRuntime();
         WorldGameplaySession session = Admit(scope.Runtime, 1);
-        var ping = new PingWorldDevelopmentCommandHandler();
+        var ping = new PingDevelopmentCommandHandler();
         var dispatcher = new WorldDevelopmentCommandDispatcher(scope.Runtime, [ping]);
 
         Assert.Equal(
@@ -142,9 +142,9 @@ public sealed class WorldDevelopmentCommandDispatcherTests
             dispatcher.Handle(session.SessionId, [1, 2, 3]).Disposition);
         Assert.Equal(
             WorldDevelopmentCommandDisposition.UnknownSession,
-            dispatcher.Handle(new GameplaySessionId(Guid.NewGuid()), Encode(1, DevelopmentCommandIds.PingWorld)).Disposition);
+            dispatcher.Handle(new GameplaySessionId(Guid.NewGuid()), Encode(1, DevelopmentCommandIds.Ping)).Disposition);
         Assert.Throws<ArgumentException>(() =>
-            new WorldDevelopmentCommandDispatcher(scope.Runtime, [ping, new PingWorldDevelopmentCommandHandler()]));
+            new WorldDevelopmentCommandDispatcher(scope.Runtime, [ping, new PingDevelopmentCommandHandler()]));
     }
 
     private static byte[] Encode(

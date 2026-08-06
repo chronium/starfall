@@ -313,7 +313,7 @@ public sealed class WorldGameplayNetworkHostTests
     }
 
     [Fact]
-    public void Every_admitted_session_can_dispatch_correlated_ping_world_commands()
+    public void Every_admitted_session_can_dispatch_correlated_ping_commands()
     {
         using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
         var transport = new RecordingTransport();
@@ -328,12 +328,12 @@ public sealed class WorldGameplayNetworkHostTests
 
         host.PacketReceived(
             firstPeer,
-            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            EncodeDevelopment(1, DevelopmentCommandIds.Ping),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.DevelopmentCommands);
         host.PacketReceived(
             secondPeer,
-            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            EncodeDevelopment(1, DevelopmentCommandIds.Ping),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.DevelopmentCommands);
 
@@ -357,12 +357,12 @@ public sealed class WorldGameplayNetworkHostTests
 
         host.PacketReceived(
             peer,
-            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld, "extra"),
+            EncodeDevelopment(1, DevelopmentCommandIds.Ping, "extra"),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.DevelopmentCommands);
         host.PacketReceived(
             peer,
-            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            EncodeDevelopment(1, DevelopmentCommandIds.Ping),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.DevelopmentCommands);
 
@@ -394,7 +394,7 @@ public sealed class WorldGameplayNetworkHostTests
 
         host.PacketReceived(
             peer,
-            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            EncodeDevelopment(1, DevelopmentCommandIds.Ping),
             delivery,
             StarfallNetworkChannels.DevelopmentCommands);
 
@@ -439,7 +439,7 @@ public sealed class WorldGameplayNetworkHostTests
 
         sendHost.PacketReceived(
             sendPeer,
-            EncodeDevelopment(1, DevelopmentCommandIds.PingWorld),
+            EncodeDevelopment(1, DevelopmentCommandIds.Ping),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.DevelopmentCommands);
         Assert.Contains(sendPeer, sendTransport.Disconnected);
@@ -554,7 +554,7 @@ public sealed class WorldGameplayNetworkHostTests
             packet.Payload,
             out DevelopmentCommandSucceeded? succeeded));
         Assert.Equal(sequence, succeeded!.Sequence.Value);
-        Assert.Equal(DevelopmentCommandIds.PingWorld, succeeded.CommandId);
+        Assert.Equal(DevelopmentCommandIds.Ping, succeeded.CommandId);
         Assert.Contains($"session={sessionId}", succeeded.Diagnostic, StringComparison.Ordinal);
     }
 
