@@ -1,7 +1,7 @@
 ---
 title: Basic Arrow Presentation Inputs
 createdAt: 2026-08-06T17:15:11.4897310Z
-modifiedAt: 2026-08-07T08:35:56.3824590Z
+modifiedAt: 2026-08-07T08:57:01.1171960Z
 ---
 
 ## Status and ownership
@@ -50,6 +50,8 @@ The connected Basic Arrow body sequence now follows the authoritative action fac
 The action layer is exactly the `spine_01` subtree, 53 of 65 joints. Root, pelvis and legs remain byte-for-byte the locomotion pose, so authoritative movement and the existing idle/walk policy continue underneath the upper-body action. One resulting pose drives both GPU skinning and the existing left-hand bow socket.
 
 The body release marker remains presentation evidence only. Completed `CLIENT-0018` uses it for right-hand nocking, detachment, deterministic 150 ms client-only travel and impact. That synthetic path is historical presentation evidence and never decides collision, damage, death or success. Planned `CLIENT-0037` preserves the asset, socket and rendering work while replacing synthetic travel with authoritative projectile spawn and terminal facts after `CONTENT-0017`, `SIM-0013`, `PROTOCOL-0016` and `SERVER-0017` complete. The authoritative successor contract is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles`. `Bow_Aim_Up` and `Bow_RapidShoot_Loop` remain unselected Arrow Rain candidates. `Idle_No_Loop`, `Yes`, `Sword_Attack` and the rest of the 134-clip UAL2 library remain excluded.
+
+For the planned authoritative successor, the first 12 ticks remain the established notch/aim preparation. `Bow_Shoot` begins at start tick plus 12, exactly six ticks before the start-plus-18 release. Its 100 ms frame-3 marker aligns with the authoritative projectile spawn, but the Client must keep the arrow nocked until that matching spawn fact exists; animation time alone never authorizes detachment.
 
 Coordinator evidence: `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/assets/quaternius-ual2-source-bow-evaluation`.
 

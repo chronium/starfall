@@ -1,7 +1,7 @@
 ---
 title: Connected Basic Arrow Protocol
 createdAt: 2026-08-06T08:30:27.7701150Z
-modifiedAt: 2026-08-07T08:35:56.3984530Z
+modifiedAt: 2026-08-07T08:57:01.1248140Z
 ---
 
 ## Purpose
@@ -89,7 +89,7 @@ Arrows, flight and impact remain client-owned presentation of an authoritative f
 
 ## Approved authoritative-projectile successor
 
-The sections above preserve the implemented fixed-tick Basic Arrow protocol as historical evidence. Planned `PROTOCOL-0016` replaces the Basic Arrow layouts in place with accepted/canceled, projectile-spawn and projectile-terminal facts after the bounded authoritative straight-projectile behavior is proven. The terminal reasons are Hit, Blocked and TravelExhausted; Hit carries impact evidence for presentation and diagnostics, not permission for the Client to mutate canonical monster health.
+The sections above preserve the implemented fixed-tick Basic Arrow protocol as historical evidence. Planned `PROTOCOL-0016` preserves the actor-free command and `BasicArrowRejected` with its existing decision timing, validation and bounded rejection reasons; it retains accepted/pre-release canceled semantics and replaces the resolved outcome with projectile-spawn and projectile-terminal facts after the bounded authoritative straight-projectile behavior is proven. The terminal reasons are Hit, Blocked and TravelExhausted; Hit carries impact evidence for presentation and diagnostics, not permission for the Client to mutate canonical monster health.
 
 The negotiated gameplay protocol remains version 1. There is no independently deployed compatibility population, replay or external consumer that justifies retaining the old development-only layouts, so no compatibility decoder remains. A later version change requires a separate owner-approved real Client/World compatibility boundary.
 

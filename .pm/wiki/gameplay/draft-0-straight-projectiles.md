@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Authoritative Straight Projectiles
 createdAt: 2026-08-07T08:32:43.1791170Z
-modifiedAt: 2026-08-07T08:32:43.1791170Z
+modifiedAt: 2026-08-07T08:57:01.1088480Z
 ---
 
 ## Status
@@ -65,6 +65,7 @@ A released projectile is an independent World entity. It continues after shooter
 Newly released projectiles begin advancing on the following simulation tick. At 60 Hz and 60 metres/second, each full tick advances at most one metre.
 
 - Move monsters before release validation and projectile advancement.
+- Validate releases due on the same tick and allocate projectile identities in ascending actor-entity order; the lower actor identity receives the lower projectile identity.
 - Advance projectiles in ascending projectile identity.
 - Use continuous swept ground-plane collision against the currently live monster circles expanded by projectile radius and the approved static graybox boundaries/proxy footprints.
 - Resolve the earliest contact.
@@ -86,6 +87,7 @@ The negotiated gameplay protocol remains version 1. Basic Arrow layouts are repl
 The replacement lifecycle contains:
 
 - actor-free command;
+- preserved `BasicArrowRejected` fact with its existing decision timing, validation and bounded rejection-reason semantics;
 - accepted fact with actor, original target, start tick and release tick;
 - pre-release canceled fact;
 - projectile-spawn fact with correlation, positive projectile identity, actor, original target, release tick, finite origin, normalized direction and required trajectory inputs;
@@ -93,7 +95,7 @@ The replacement lifecycle contains:
 
 Only `Hit` carries contacted monster, requested/effective damage and defeat evidence. Those fields support presentation and diagnostics; the Client must not use them to mutate canonical health or death. Monster snapshots and tombstones remain authoritative state.
 
-Spawn and terminal facts use the existing reliable ordered combat-outcome path. No projectile snapshot stream is introduced. Client presentation reconstructs the straight trajectory and tolerates independent ordering of monster snapshots/tombstones.
+Accepted, rejected, canceled, spawn and terminal facts use the existing reliable ordered combat-outcome path. No projectile snapshot stream is introduced. Client presentation preserves the first 12 ticks of notch/aim preparation, starts `Bow_Shoot` six ticks before authoritative release and aligns its 100 ms frame-3 marker with the start-plus-18 projectile spawn. The arrow remains visibly nocked until the matching spawn fact exists; animation time alone can never detach it. Presentation reconstructs the straight trajectory and tolerates independent ordering of monster snapshots/tombstones.
 
 ## Fire Arrow continuity and exclusions
 
