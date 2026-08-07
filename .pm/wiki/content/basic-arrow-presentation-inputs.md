@@ -1,7 +1,7 @@
 ---
 title: Basic Arrow Presentation Inputs
 createdAt: 2026-08-06T17:15:11.4897310Z
-modifiedAt: 2026-08-06T17:15:11.4897310Z
+modifiedAt: 2026-08-07T05:24:51.9623420Z
 ---
 
 ## Status and ownership
@@ -70,6 +70,22 @@ The matching pack licence is `assets/Quaternius/Medieval Weapons Pack by @Quater
 Read-only Blender inspection found one identity-transformed mesh per source file. The Blend scenes declare no physical unit system; their dimensions use the same numbers with the exporter's Y/Z axis bridge. A uniform `0.25` metres-per-source-unit conversion is the explicit first acquisition candidate, producing a roughly 1.36-metre bow and 0.68-metre arrow. `ASSET-0006` must verify and freeze or reject that conversion through deterministic cooking and native human-scale review. Selection does not claim the source units are metres.
 
 OBJ/MTL is selected over FBX or a new GLB export because the existing shared static cooker already supports exact OBJ/MTL inputs. No manual conversion or new importer is required. The bow remains rigid; no bow/string animation is selected.
+
+## Provisional Starfall attachment
+
+`CLIENT-0011` consumes the staged `quaternius-medieval-weapons-bow-wooden.cfmesh` as a client-only presentation asset. Its Starfall-owned semantic socket is `basic-bow-left-hand` on the selected 65-joint skeleton joint `hand_l`.
+
+The owner-validated provisional bow-local transform is:
+
+- grip offset: `0.09` metres;
+- palm-depth offset: `+0.03` metres;
+- twist: `80` degrees;
+- roll: `-70` degrees;
+- rigid identity scale.
+
+With the established row-vector convention, the transform is composed as `bowLocal * socketModel * characterWorld`. One evaluated global pose feeds both the skinning palette and socket evaluation, so the rigid bow follows the exact left-hand pose used to deform the technical mannequin. Starfall uploads and draws the bow through the shared static renderer in the same caller-owned SDL GPU pass and depth target as the character.
+
+The client uses the shared proof's warm technical colour `(0.90, 0.65, 0.12)` for this provisional integration. Material mapping, bow/string deformation, body-action sequencing, arrow nocking and release, projectiles, aiming, off-hand IK, equipment and generalized attachment definitions remain separate work. The historical graybox capture suite intentionally remains unchanged; native macOS ARM64 idle and walking placement were validated directly by the owner.
 
 ## Downstream ownership and exclusions
 

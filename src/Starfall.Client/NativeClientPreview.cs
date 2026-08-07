@@ -34,6 +34,7 @@ internal static unsafe class NativeClientPreview
         ConfigureNativeSdl();
         using var session = new PreviewSession(
             content.Cooked.Asset.Mesh,
+            content.Bow.Mesh,
             visible: true,
             enableDevelopmentUi: true,
             developmentUiInitiallyVisible);
@@ -47,6 +48,7 @@ internal static unsafe class NativeClientPreview
         ConfigureNativeSdl();
         using var session = new PreviewSession(
             content.Cooked.Asset.Mesh,
+            content.Bow.Mesh,
             visible: false,
             enableDevelopmentUi: false,
             developmentUiInitiallyVisible: false);
@@ -89,6 +91,7 @@ internal static unsafe class NativeClientPreview
         private readonly IReadOnlyList<Draft0MonsterPresentationSnapshot> localMonsterSnapshots;
         private readonly Draft0ConnectedMonsterPresentation connectedMonsterPresentation = new();
         private readonly ConnectedBasicArrowSelection basicArrowSelection = new();
+        private readonly ProvisionalBasicBowAttachment basicBowAttachment;
         private readonly GroundBounds validGround;
         private readonly SDL_GPUTextureFormat colorFormat;
         private SDL_Window* window;
@@ -99,6 +102,7 @@ internal static unsafe class NativeClientPreview
         private SdlGpuStaticMeshRenderer? staticRenderer;
         private SdlGpuStaticMesh? staticMesh;
         private SdlGpuStaticMesh? monsterMesh;
+        private SdlGpuStaticMesh? bowMesh;
         private SdlGpuImGuiBackend? developmentUi;
         private DevelopmentDebugShellState? developmentDebugState;
         private DevelopmentDebugShell? developmentDebugShell;
@@ -110,11 +114,14 @@ internal static unsafe class NativeClientPreview
 
         internal PreviewSession(
             SkinnedMeshDefinition sourceMesh,
+            StaticMeshDefinition sourceBowMesh,
             bool visible,
             bool enableDevelopmentUi,
             bool developmentUiInitiallyVisible)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
+            ArgumentNullException.ThrowIfNull(sourceBowMesh);
+            basicBowAttachment = new ProvisionalBasicBowAttachment(sourceMesh.Skin.Skeleton);
             Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
             validGround = layout.Specification.Bounds;
             cameras = new Draft0GrayboxCameraController();
@@ -186,6 +193,7 @@ internal static unsafe class NativeClientPreview
                     monsterMesh = staticRenderer.UploadMesh(
                         uploadCommand,
                         Draft0MonsterPlaceholderMesh.Create());
+                    bowMesh = staticRenderer.UploadMesh(uploadCommand, sourceBowMesh);
                     Exception? submissionFailure = TrySubmitCommand(ref uploadCommand, "mesh upload");
                     if (submissionFailure is not null)
                         throw submissionFailure;
@@ -487,6 +495,8 @@ internal static unsafe class NativeClientPreview
             staticMesh = null;
             monsterMesh?.Dispose();
             monsterMesh = null;
+            bowMesh?.Dispose();
+            bowMesh = null;
             staticRenderer?.Dispose();
             staticRenderer = null;
             if (device is not null)
@@ -513,7 +523,9 @@ internal static unsafe class NativeClientPreview
             DevelopmentDebugSnapshot? developmentSnapshot,
             double developmentUiSeconds)
         {
-            SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
+            SkeletonGlobalPose globalPose = SkeletonPoseEvaluator.EvaluateGlobal(pose);
+            SkinningPalette sourcePalette = SkeletonPoseEvaluator.CreateSkinningPalette(skin, globalPose);
+            ProvisionalBasicBowFrame bowFrame = basicBowAttachment.Evaluate(globalPose, presentation.World);
 
             SDL_GPUCommandBuffer* command = AcquireCommand();
             bool requiresSubmission = false;
@@ -553,7 +565,8 @@ internal static unsafe class NativeClientPreview
                         connectedMonsters,
                         developmentUi,
                         developmentSnapshot,
-                        developmentUiSeconds);
+                        developmentUiSeconds,
+                        bowFrame.BowWorldTransform);
                 }
             }
             catch (Exception exception)
@@ -588,7 +601,8 @@ internal static unsafe class NativeClientPreview
             double monsterPresentationSeconds)
         {
             SkeletonPose pose = AnimationSampler.Sample(animation, sampleTime, AnimationPlaybackMode.Loop);
-            SkinningPalette sourcePalette = EvaluatePalette(pose, skin);
+            SkeletonGlobalPose globalPose = SkeletonPoseEvaluator.EvaluateGlobal(pose);
+            SkinningPalette sourcePalette = SkeletonPoseEvaluator.CreateSkinningPalette(skin, globalPose);
             SDL_GPUCommandBuffer* command = AcquireCommand();
             try
             {
@@ -604,7 +618,8 @@ internal static unsafe class NativeClientPreview
                     monsterPresentationSeconds,
                     connectedMonsters: false,
                     developmentUi: null,
-                    developmentSnapshot: null);
+                    developmentSnapshot: null,
+                    bowWorld: null);
             }
             catch (Exception exception)
             {
@@ -642,7 +657,8 @@ internal static unsafe class NativeClientPreview
             bool connectedMonsters,
             SdlGpuImGuiBackend? developmentUi,
             DevelopmentDebugSnapshot? developmentSnapshot,
-            double developmentUiSeconds = 0.0)
+            double developmentUiSeconds = 0.0,
+            Matrix4x4? bowWorld = null)
         {
             bool developmentUiBuilding = developmentUi is not null;
             bool developmentUiPrepared = false;
@@ -761,6 +777,19 @@ internal static unsafe class NativeClientPreview
                                 new Vector3(-0.35f, -0.70f, -0.62f)));
                     }
 
+                    if (bowWorld is Matrix4x4 resolvedBowWorld)
+                    {
+                        staticRenderer!.Draw(
+                            command,
+                            pass,
+                            bowMesh!,
+                            new StaticMeshDraw(
+                                resolvedBowWorld,
+                                viewProjection,
+                                new Vector3(0.90f, 0.65f, 0.12f),
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
+
                 }
                 finally
                 {
@@ -851,12 +880,6 @@ internal static unsafe class NativeClientPreview
             {
                 return exception;
             }
-        }
-
-        private static SkinningPalette EvaluatePalette(SkeletonPose pose, SkinDefinition skin)
-        {
-            SkeletonGlobalPose global = SkeletonPoseEvaluator.EvaluateGlobal(pose);
-            return SkeletonPoseEvaluator.CreateSkinningPalette(skin, global);
         }
 
         private SDL_GPUCommandBuffer* AcquireCommand()

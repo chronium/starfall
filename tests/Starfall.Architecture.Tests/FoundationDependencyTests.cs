@@ -182,7 +182,8 @@ public sealed class FoundationDependencyTests
         Assert.Equal(0, result.ExitCode);
         Assert.Equal(
             "STARFALL_CLIENT_CHARACTER_CONTENT_READY asset=quaternius-ual1-standard " +
-            $"joints=65 clips=Idle_Loop,Walk_Loop,Sword_Attack{Environment.NewLine}",
+            "joints=65 clips=Idle_Loop,Walk_Loop,Sword_Attack " +
+            $"bow=quaternius-medieval-weapons-bow-wooden{Environment.NewLine}",
             result.StandardOutput);
         Assert.Empty(result.StandardError);
     }
@@ -607,6 +608,10 @@ public sealed class FoundationDependencyTests
 
         Assert.True(File.Exists(Path.Combine(content, "quaternius-ual1-standard.cfskel")));
         Assert.True(File.Exists(Path.Combine(content, "quaternius-ual1-standard.provenance.json")));
+        Assert.True(File.Exists(Path.Combine(content, "quaternius-medieval-weapons-bow-wooden.cfmesh")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "quaternius-medieval-weapons-bow-wooden.provenance.json")));
         Assert.True(File.Exists(Path.Combine(
             content,
             "licenses",
@@ -617,6 +622,11 @@ public sealed class FoundationDependencyTests
             "licenses",
             "quaternius-ual1-standard",
             "README.txt")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "licenses",
+            "quaternius-medieval-weapons",
+            "License.txt")));
 
         string[] contentFiles = Directory
             .EnumerateFiles(content, "*", SearchOption.AllDirectories)
@@ -625,8 +635,11 @@ public sealed class FoundationDependencyTests
             .ToArray();
         Assert.Equal(
         [
+            Path.Combine("licenses", "quaternius-medieval-weapons", "License.txt"),
             Path.Combine("licenses", "quaternius-ual1-standard", "License.txt"),
             Path.Combine("licenses", "quaternius-ual1-standard", "README.txt"),
+            "quaternius-medieval-weapons-bow-wooden.cfmesh",
+            "quaternius-medieval-weapons-bow-wooden.provenance.json",
             "quaternius-ual1-standard.cfskel",
             "quaternius-ual1-standard.provenance.json",
         ],

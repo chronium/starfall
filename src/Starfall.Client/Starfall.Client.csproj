@@ -35,11 +35,20 @@
     <None Include="$(StarfallCharacterStageRoot)quaternius-ual1-standard.provenance.json"
           Link="content/chronofall/character-presentation/client/quaternius-ual1-standard.provenance.json"
           CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)quaternius-medieval-weapons-bow-wooden.cfmesh"
+          Link="content/chronofall/character-presentation/client/quaternius-medieval-weapons-bow-wooden.cfmesh"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)quaternius-medieval-weapons-bow-wooden.provenance.json"
+          Link="content/chronofall/character-presentation/client/quaternius-medieval-weapons-bow-wooden.provenance.json"
+          CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/License.txt"
           Link="content/chronofall/character-presentation/client/licenses/quaternius-ual1-standard/License.txt"
           CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/README.txt"
           Link="content/chronofall/character-presentation/client/licenses/quaternius-ual1-standard/README.txt"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)licenses/quaternius-medieval-weapons/License.txt"
+          Link="content/chronofall/character-presentation/client/licenses/quaternius-medieval-weapons/License.txt"
           CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
@@ -54,8 +63,14 @@
            Text="Starfall character content is not staged. From the ChronoFall coordinator root run: scripts/cook-character-presentation-for-client.sh --project-id prj_pkIpzx0fzFD4URjvqBuYrGZF" />
     <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-ual1-standard.provenance.json')"
            Text="Starfall character provenance is not staged. Re-run the stable-ID coordinator staging command." />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-medieval-weapons-bow-wooden.cfmesh')"
+           Text="Starfall Basic bow content is not staged. Re-run the stable-ID coordinator staging command." />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-medieval-weapons-bow-wooden.provenance.json')"
+           Text="Starfall Basic bow provenance is not staged. Re-run the stable-ID coordinator staging command." />
     <Error Condition="!Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/License.txt') Or !Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/README.txt')"
            Text="Starfall character CC0 evidence is incomplete. Re-run the stable-ID coordinator staging command." />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)licenses/quaternius-medieval-weapons/License.txt')"
+           Text="Starfall Basic bow CC0 evidence is incomplete. Re-run the stable-ID coordinator staging command." />
   </Target>
 
   <Target Name="CopyChronoFallCharacterPresentationShaders" AfterTargets="Build">

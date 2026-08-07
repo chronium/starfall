@@ -22,7 +22,8 @@ internal static class ClientApplication
                 CharacterPresentationContent content = CharacterPresentationContent.LoadFromRuntimeOutput();
                 Console.WriteLine(
                     $"STARFALL_CLIENT_PRESENTATION_START asset={content.Cooked.Descriptor.AssetId} " +
-                    $"joints={content.Cooked.Asset.Mesh.Skin.Skeleton.JointCount} clip={content.IdleAnimation.Name}");
+                    $"joints={content.Cooked.Asset.Mesh.Skin.Skeleton.JointCount} " +
+                    $"clip={content.IdleAnimation.Name} bow={content.Bow.Descriptor.AssetId}");
                 NativeClientPreview.Run(
                     content,
                     developmentUiInitiallyVisible: developmentUi.InitiallyVisible);
@@ -78,10 +79,12 @@ internal static class ClientApplication
 
 internal sealed record CharacterPresentationContent(
     CookedSkeletalCharacterAsset Cooked,
+    CookedStaticMeshAsset Bow,
     AnimationClip IdleAnimation,
     AnimationClip WalkAnimation)
 {
     private const string ExpectedAssetId = "quaternius-ual1-standard";
+    private const string ExpectedBowAssetId = "quaternius-medieval-weapons-bow-wooden";
     private const string ExpectedIdleClip = "Idle_Loop";
     private const string ExpectedWalkClip = "Walk_Loop";
     private const int ExpectedJointCount = 65;
@@ -105,15 +108,27 @@ internal sealed record CharacterPresentationContent(
         string assetPath = Path.Combine(RuntimeContentRoot, "quaternius-ual1-standard.cfskel");
         if (!File.Exists(assetPath))
             throw new FileNotFoundException($"Staged Starfall character asset was not found: {assetPath}", assetPath);
+        string bowPath = Path.Combine(RuntimeContentRoot, "quaternius-medieval-weapons-bow-wooden.cfmesh");
+        if (!File.Exists(bowPath))
+            throw new FileNotFoundException($"Staged Starfall Basic bow asset was not found: {bowPath}", bowPath);
 
         CookedSkeletalCharacterAsset cooked;
         using (FileStream stream = File.OpenRead(assetPath))
             cooked = SkeletalAssetCookedFormat.Read(stream);
 
+        CookedStaticMeshAsset bow;
+        using (FileStream stream = File.OpenRead(bowPath))
+            bow = StaticMeshCookedFormat.Read(stream);
+
         if (!string.Equals(cooked.Descriptor.AssetId, ExpectedAssetId, StringComparison.Ordinal))
         {
             throw new InvalidDataException(
                 $"Expected cooked asset '{ExpectedAssetId}', received '{cooked.Descriptor.AssetId}'.");
+        }
+        if (!string.Equals(bow.Descriptor.AssetId, ExpectedBowAssetId, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                $"Expected cooked Basic bow asset '{ExpectedBowAssetId}', received '{bow.Descriptor.AssetId}'.");
         }
 
         int jointCount = cooked.Asset.Mesh.Skin.Skeleton.JointCount;
@@ -135,11 +150,11 @@ internal sealed record CharacterPresentationContent(
             clip => string.Equals(clip.Name, ExpectedIdleClip, StringComparison.Ordinal));
         AnimationClip walk = cooked.Asset.Animations.Single(
             clip => string.Equals(clip.Name, ExpectedWalkClip, StringComparison.Ordinal));
-        return new CharacterPresentationContent(cooked, idle, walk);
+        return new CharacterPresentationContent(cooked, bow, idle, walk);
     }
 
     internal string CreateValidationSummary() =>
         $"STARFALL_CLIENT_CHARACTER_CONTENT_READY asset={Cooked.Descriptor.AssetId} " +
         $"joints={Cooked.Asset.Mesh.Skin.Skeleton.JointCount} " +
-        $"clips={string.Join(",", ExpectedClips)}";
+        $"clips={string.Join(",", ExpectedClips)} bow={Bow.Descriptor.AssetId}";
 }
