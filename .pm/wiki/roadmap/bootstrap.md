@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-07T08:36:59.6601110Z
+modifiedAt: 2026-08-07T19:32:01.8367400Z
 ---
 
 ## Execution standard
@@ -9,6 +9,22 @@ modifiedAt: 2026-08-07T08:36:59.6601110Z
 Tasks own one primary behavior/contract, focused validation and one task-scoped commit. Milestones organize capability; actual execution follows dependency and evidence order rather than finishing every earlier-labelled task first.
 
 No feature task activates automatically. Every task requires a fresh owner-directed Plan-mode pass.
+
+## Milestone lifecycle and activation
+
+M0 Repository Foundation, M1 Shared Character Presentation, and M4 Development Instrumentation are formally delivered capabilities. M2 remains an undelivered legacy planning bucket whose completed tasks preserve their own evidence. The empty initiative-shaped M3 milestone has been removed; transformations, wings, mounts, and companions remain milestone-free roadmap inputs until a concrete deliverable is approved.
+
+M5 Connected Basic Arrow remains active without a global Development Instrumentation gate so its presentation and authority work can overlap intentionally. Its terminal diagnostic proof retains the narrow `CLIENT-0019 -> CLIENT-0031` dependency.
+
+M6 Authoritative Mana is active because all three capability triggers are latched:
+
+- `development_instrumentation_available`: delivered M4;
+- `gameplay_protocol_v1_available`: completed `PROTOCOL-0015`;
+- `connected_world_available`: completed `SERVER-0005` and `CLIENT-0009`.
+
+M7 Connected Movement Quality v1 is active through `connected_snapshot_presentation_available`, backed by completed `CLIENT-0009` and `CLIENT-0023`.
+
+Milestone triggers represent these capability prerequisites once. Tasks inside M6 and M7 retain only real internal ordering. The migration removed six redundant cross-milestone edges: `PROTOCOL-0014 -> PROTOCOL-0015`, `SERVER-0016 -> SERVER-0005`, `SERVER-0016 -> SERVER-0015`, `CLIENT-0032 -> CLIENT-0031`, `CLIENT-0033 -> CLIENT-0023`, and `CLIENT-0034 -> CLIENT-0009`. Task and wiki contracts name the exact delivered seams consumed; dependencies are not used as citations.
 
 ## M0 — Completed foundation history
 
@@ -171,10 +187,10 @@ CONTENT-0003
   -> SIM-0012      authoritative Mana behavior
   -> PROTOCOL-0014 Mana facts + serialization
 
-SERVER-0005 + SIM-0012 + PROTOCOL-0014 + SERVER-0015
-  -> SERVER-0016  authoritative Mana exchange
-CLIENT-0031 + PROTOCOL-0014 + SERVER-0016
-  -> CLIENT-0032  Resource diagnostics and native Mana proof
+SIM-0012 + PROTOCOL-0014
+  -> SERVER-0016  authoritative Mana exchange using delivered World/dispatcher seams
+PROTOCOL-0014 + SERVER-0016
+  -> CLIENT-0032  Resource diagnostics using the delivered debug shell/console/result path
 ~~~
 
 The approved straight-projectile successor and deferred spell consumers are:

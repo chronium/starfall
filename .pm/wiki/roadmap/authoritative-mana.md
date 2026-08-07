@@ -1,7 +1,7 @@
 ---
 title: Authoritative Mana
 createdAt: 2026-08-06T06:46:50.1027990Z
-modifiedAt: 2026-08-06T06:46:50.1027990Z
+modifiedAt: 2026-08-07T19:32:02.1428060Z
 ---
 
 ## Deliverable
@@ -10,22 +10,40 @@ Configured integer Mana initializes, consumes, clamps, regenerates, restores, se
 
 This is milestone M6. Mana is independent of spells and the permanent player HUD.
 
-## Dependency path
+## Activation and internal dependency path
+
+M6 becomes eligible from three capability triggers:
+
+~~~text
+delivered M4
+  -> development_instrumentation_available
+
+completed PROTOCOL-0015
+  -> gameplay_protocol_v1_available
+
+completed SERVER-0005 + completed CLIENT-0009
+  -> connected_world_available
+
+all three active triggers
+  -> M6 Authoritative Mana active
+~~~
+
+Those delivered capabilities guarantee the debug shell/console/result path, connection-level gameplay-protocol-v1 negotiation, and admitted connected-World exchange. M6 tasks name and consume those seams without repeating cross-milestone dependency edges.
+
+Internal implementation order remains explicit:
 
 ~~~text
 CONTENT-0003
   -> CONTENT-0016  provisional Mana inputs
   -> SIM-0012      authoritative state, consumption and regeneration
   -> PROTOCOL-0014 deterministic Mana facts and serialization
-
-SERVER-0005 + SIM-0012 + PROTOCOL-0014 + SERVER-0015
   -> SERVER-0016  session Mana exchange and feature-owned debug handlers
-
-CLIENT-0031 + PROTOCOL-0014 + SERVER-0016
   -> CLIENT-0032  Resource diagnostics and native proof
 ~~~
 
-Fire Arrow later consumes SIM-0012, PROTOCOL-0014 and SERVER-0016. Arrow Rain consumes the established Mana and combat-action seams. Neither owns Mana capacity, regeneration or lifecycle behavior.
+`PROTOCOL-0014` consumes the delivered protocol-v1 negotiation contract. `SERVER-0016` consumes the delivered admitted World/session exchange and common development-command dispatcher. `CLIENT-0032` consumes the delivered debug shell, console, and correlated-result path while retaining Mana-owned diagnostics.
+
+Fire Arrow later consumes the delivered Mana capability; its future activation must not recreate per-layer Mana dependency fans. Arrow Rain consumes the established Mana and combat-action capabilities. Neither owns Mana capacity, regeneration, or lifecycle behavior.
 
 ## Numerical and lifecycle boundary
 

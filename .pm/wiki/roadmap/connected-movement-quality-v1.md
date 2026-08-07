@@ -1,28 +1,27 @@
 ---
 title: Connected Movement Quality v1
 createdAt: 2026-08-06T06:46:50.1079220Z
-modifiedAt: 2026-08-06T06:46:50.1079220Z
+modifiedAt: 2026-08-07T19:32:02.2417400Z
 ---
 
 ## Deliverable
 
 Connected Movement Quality v1 is a completable quality milestone, not an ongoing bucket. It proves bounded remote interpolation and explicit local correction diagnostics under deterministic network conditions.
 
-## Dependency path
+## Activation and internal dependency path
+
+Completed `CLIENT-0009` and `CLIENT-0023` activate `connected_snapshot_presentation_available`. M7 requires that trigger, so its tasks may consume the delivered local-player and remote-monster snapshot-to-presentation adapters without repeating cross-milestone task dependencies.
+
+Internal implementation order remains:
 
 ~~~text
-CLIENT-0023
-  -> CLIENT-0033  remote snapshot buffering and interpolation
-
-CLIENT-0009
-  -> CLIENT-0034  local correction diagnostics
-
-CLIENT-0033 + CLIENT-0034
+CLIENT-0033  remote snapshot buffering and interpolation
+CLIENT-0034  local correction diagnostics
   -> CLIENT-0035  latency/loss/reordering/correction fixtures
   -> CLIENT-0036  macOS before/after native validation
 ~~~
 
-This milestone is independent of Connected Basic Arrow and must not block combat delivery.
+`CLIENT-0033` consumes the delivered remote connected-snapshot adapter. `CLIENT-0034` consumes the delivered local connected-snapshot/correction adapter. This milestone remains independent of Connected Basic Arrow and must not block combat delivery.
 
 ## Policy split
 

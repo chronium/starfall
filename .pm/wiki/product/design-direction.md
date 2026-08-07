@@ -1,7 +1,7 @@
 ---
 title: Product Design Direction
 createdAt: 2026-08-01T05:48:09.1092000Z
-modifiedAt: 2026-08-06T16:32:50.1627730Z
+modifiedAt: 2026-08-07T19:32:01.9362020Z
 ---
 
 ## Approved direction
@@ -35,7 +35,15 @@ Draft 0 remains experimental rather than final content or balance. Authoritative
 
 Starfall selects game-specific characters, equipment, monsters and zone composition. ChronoFall owns only genuinely reusable presentation/cooking contracts, supplied-source provenance and stable-ID staging. The first Basic bow proof is deliberately independent of Inventory, Equipment, starter loadouts and Ranger content.
 
-M3 remains legacy deferred content for transformations, wings, mounts and companions and has no milestone priority. First wings still conclude the distinct eventual public arc. Economy, stands, reputation/PvP, persistence, crafting, multiple zones, final service topology, prestige class, transformations, events and territory remain later design inputs.
+Transformations, wings, mounts and companions remain milestone-free roadmap inputs until the owner activates a concrete deliverable. No empty or initiative-shaped milestone represents them. First wings still conclude the distinct eventual public arc. Economy, stands, reputation/PvP, persistence, crafting, multiple zones, final service topology, prestige class, transformations, events and territory remain later design inputs.
+
+## Activation and dependency rule
+
+Milestone triggers represent accepted capability prerequisites once. Tasks order implementation inside one deliverable or deliberately coordinate overlapping milestones; they do not repeat Simulation-to-Simulation, Protocol-to-Protocol, World-to-World, and Client-to-Client dependency fans merely because a downstream feature consumes delivered seams.
+
+A task contract names the exact API, adapter, dispatcher, codec, or presentation seam it consumes. Cross-milestone task dependencies remain only when milestones intentionally overlap and one task must wait, when a trigger does not guarantee the needed capability, or when canonical cross-project ownership must remain explicit.
+
+Future Fire Arrow, Arrow Rain, permanent HUD, Player Life, Progression, Inventory, Equipment, Physical Drops, Editor, and Pressure Cooker grooming must apply this rule rather than recreate the superseded fan-out.
 
 Draft 0: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/product/first-playable-zone-draft-0`.
 

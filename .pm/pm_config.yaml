@@ -21,50 +21,142 @@ tracks:
 milestones:
   M0:
     title: Repository foundation
-    description: ''
+    description: >-
+      - **Outcome:** Starfall has an independently owned, runnable, headless-safe project foundation with defined authority/service boundaries and approved coordinator-family source consumption.
+
+      - **Scope:** repository/project graph, architecture tests, client/world host shells, admission contract, family source policy, and automatic pointer-handoff policy.
+
+      - **Exclusions:** connected gameplay features, final service topology, persistence implementation, content production, and presentation systems.
+
+      - **Evidence:** passing solution/architecture tests, runnable Client and World shells, admission contract tests, documented boundaries, and clean family handoffs.
     priority: low
     requiredActivationTriggers: []
-    delivery: null
+    delivery:
+      at: 2026-08-07T19:29:32.8669180+00:00
+      mode: ordinary
+      acceptedTaskIds: []
   M1:
     title: Shared character presentation
-    description: ''
+    description: >-
+      - **Outcome:** Starfall.Client renders the technical humanoid through the approved coordinator-owned presentation projects while every headless project remains independent of presentation code.
+
+      - **Scope:** the bounded child integration, generated-content staging/validation, native preview, and dependency-isolation tests.
+
+      - **Exclusions:** selected final character content, gameplay animation mapping, equipment, combat presentation, and independent package distribution.
+
+      - **Evidence:** native macOS preview, non-graphical content probe, exact source-reference allowlist, and headless output inspection.
     priority: medium
     requiredActivationTriggers: []
-    delivery: null
+    delivery:
+      at: 2026-08-07T19:29:32.9177160+00:00
+      mode: ordinary
+      acceptedTaskIds: []
   M2:
     title: First playable zone
-    description: ''
+    description: >-
+      - **Outcome:** This milestone preserves historical evidence accumulated by the former broad first-playable planning bucket; it is not one accepted end-to-end deliverable.
+
+      - **Scope:** only its existing completed graybox, movement, connected-monster, camp, combat-simulation, protected-town, and grooming history.
+
+      - **Exclusions:** using M2 delivery as a prerequisite, adding unfinished work, or claiming those capabilities formed one milestone under the current deliverable model.
+
+      - **Evidence:** each completed task and its native/deterministic validation remain the authoritative evidence for its specific capability.
     priority: low
-    requiredActivationTriggers: []
-    delivery: null
-  M3:
-    title: Deferred transformations and companions
-    description: ''
-    priority: none
     requiredActivationTriggers: []
     delivery: null
   M4:
     title: Development Instrumentation
-    description: ''
+    description: >-
+      - **Outcome:** A developer can show/hide concern-specific ImGui instrumentation, issue `ping` through the typed/debug-console path, and receive the correlated authoritative World result without affecting gameplay or headless isolation.
+
+      - **Scope:** shared backend adoption, debug shell/input capture, development command envelope, admitted-session dispatch, console frontend, and World/session diagnostics.
+
+      - **Exclusions:** permanent gameplay UI, stable gameplay-protocol compatibility, feature-specific Mana/combat commands, admin permissions, and observability infrastructure.
+
+      - **Evidence:** deterministic command/codec/dispatch tests, architecture tests, native macOS validation of menu/F12/hidden launch/input capture/`ping`, and owner confirmation.
     priority: medium
     requiredActivationTriggers: []
-    delivery: null
+    delivery:
+      at: 2026-08-07T19:29:32.9692390+00:00
+      mode: ordinary
+      acceptedTaskIds: []
   M5:
     title: Connected Basic Arrow
-    description: ''
+    description: >-
+      - **Outcome:** A connected player issues Basic Arrow against an authoritative monster; the World resolves a frozen-aim, first-contact straight projectile and the Client presents the rendered socketed bow/body action, authoritative spawn/termination, hit feedback, monster damage/death, and Combat diagnostics end to end.
+
+      - **Scope:** the already-completed connected intent/action/presentation evidence plus straight-projectile inputs, deterministic authority/collision, replacement protocol facts/codecs, World lifecycle/exchange, authoritative event-driven Client presentation, and terminal native validation.
+
+      - **Exclusions:** Fire Arrow, Arrow Rain, Mana, permanent damage numbers/target HUD, equipment/inventory, generalized projectile frameworks, and Arrow Rain spatial projectiles.
+
+      - **Evidence:** focused Content/Simulation/Protocol/World/Client tests, deterministic collision/order fixtures, clean headless outputs, and one owner-validated native connected run.
     priority: medium
     requiredActivationTriggers: []
     delivery: null
   M6:
     title: Authoritative Mana
-    description: ''
+    description: >-
+      - **Outcome:** Connected integer Mana initializes, consumes, clamps, regenerates, restores, serializes, exchanges, and is inspectable through authoritative development commands before any spell owns it.
+
+      - **Scope:** explicit inputs, fixed-tick authoritative state, transport-neutral facts/codecs, admitted World exchange, resource diagnostics, development-command handlers, and lifecycle seam.
+
+      - **Exclusions:** Fire Arrow, Arrow Rain, permanent HUD, death/respawn Mana policy, stable development-command compatibility, and floating-point resources.
+
+      - **Evidence:** deterministic resource/codec/exchange tests, headless isolation, and a native World/Client proof of consume, empty, regeneration, refill, rejection, and authoritative correction.
     priority: medium
-    requiredActivationTriggers: []
+    requiredActivationTriggers:
+    - development_instrumentation_available
+    - gameplay_protocol_v1_available
+    - connected_world_available
     delivery: null
   M7:
     title: Connected Movement Quality v1
-    description: ''
+    description: >-
+      - **Outcome:** Remote authoritative movement is visibly smoother under representative network conditions and local-player corrections are diagnosable without silently adding prediction or local interpolation delay.
+
+      - **Scope:** remote snapshot buffering/interpolation, local correction diagnostics, deterministic latency/loss/reordering fixtures, and native before/after comparison.
+
+      - **Exclusions:** mandatory prediction/reconciliation, gameplay authority changes, simulation interpolation, protocol redesign without evidence, and a never-ending quality bucket.
+
+      - **Evidence:** deterministic fixtures/tests, unchanged authoritative outcomes, headless isolation, macOS native comparison, and an explicit decision on whether v1 evidence justifies later prediction/reconciliation.
     priority: low
-    requiredActivationTriggers: []
+    requiredActivationTriggers:
+    - connected_snapshot_presentation_available
     delivery: null
-activationTriggers: {}
+activationTriggers:
+  development_instrumentation_available:
+    title: Development instrumentation available
+    requirements:
+    - kind: milestone
+      source: M4
+    activation:
+      at: 2026-08-07T19:30:20.4849420+00:00
+      mode: automatic
+  gameplay_protocol_v1_available:
+    title: Gameplay protocol v1 negotiation available
+    requirements:
+    - kind: task
+      source: PROTOCOL-0015
+    activation:
+      at: 2026-08-07T19:30:20.4849420+00:00
+      mode: automatic
+  connected_world_available:
+    title: Connected World exchange available
+    requirements:
+    - kind: task
+      source: SERVER-0005
+    - &o0
+      kind: task
+      source: CLIENT-0009
+    activation:
+      at: 2026-08-07T19:30:20.4849420+00:00
+      mode: automatic
+  connected_snapshot_presentation_available:
+    title: Connected snapshot presentation available
+    requirements:
+    - *o0
+    - kind: task
+      source: CLIENT-0023
+    activation:
+      at: 2026-08-07T19:30:20.4849420+00:00
+      mode: automatic
