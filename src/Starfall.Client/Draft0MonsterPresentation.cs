@@ -6,6 +6,7 @@ using ChronoFall.CharacterPresentation;
 using Starfall.Content.Monsters;
 using Starfall.Content.Zones;
 using Starfall.Protocol.Monsters;
+using Starfall.Protocol.Movement;
 
 namespace Starfall.Client;
 
@@ -454,6 +455,38 @@ internal sealed class Draft0ConnectedMonsterPresentation
             }
         }
         return states.ToImmutable();
+    }
+
+    internal bool TryGetLiveWorldCentre(
+        WorldEntityId entityId,
+        double presentationSeconds,
+        out Vector3 worldCentre)
+    {
+        string identity = ToPresentationIdentity(entityId.Value);
+        if (!live.TryGetValue(identity, out LivePresentation state))
+        {
+            worldCentre = default;
+            return false;
+        }
+
+        Draft0MonsterPresentationState presentation = Draft0MonsterPresentationAdapter.Adapt(
+            state.Snapshot,
+            presentationSeconds,
+            state.LungeStartedAtSeconds,
+            state.HitStartedAtSeconds);
+        worldCentre = presentation.World.Translation;
+        return true;
+    }
+
+    internal bool TriggerHitFlash(WorldEntityId entityId, double presentationSeconds)
+    {
+        if (!double.IsFinite(presentationSeconds) || presentationSeconds < 0.0)
+            throw new ArgumentOutOfRangeException(nameof(presentationSeconds));
+        string identity = ToPresentationIdentity(entityId.Value);
+        if (!live.TryGetValue(identity, out LivePresentation state))
+            return false;
+        live[identity] = state with { HitStartedAtSeconds = presentationSeconds };
+        return true;
     }
 
     private static Draft0MonsterPresentationSnapshot Map(LiveMonsterSnapshot source, ulong tick) =>

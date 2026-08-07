@@ -184,6 +184,7 @@ public sealed class FoundationDependencyTests
             "STARFALL_CLIENT_CHARACTER_CONTENT_READY asset=quaternius-ual1-standard " +
             "joints=65 clips=Idle_Loop,Walk_Loop,Sword_Attack " +
             "bow=quaternius-medieval-weapons-bow-wooden " +
+            "arrow=quaternius-medieval-weapons-arrow " +
             "bowBody=quaternius-ual2-source-bow-shot-body " +
             $"bowBodyClips=Bow_Notch,Bow_Aim_Neutral,Bow_Shoot{Environment.NewLine}",
             result.StandardOutput);
@@ -618,6 +619,10 @@ public sealed class FoundationDependencyTests
         Assert.True(File.Exists(Path.Combine(
             content,
             "quaternius-medieval-weapons-bow-wooden.provenance.json")));
+        Assert.True(File.Exists(Path.Combine(content, "quaternius-medieval-weapons-arrow.cfmesh")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "quaternius-medieval-weapons-arrow.provenance.json")));
         Assert.True(File.Exists(Path.Combine(
             content,
             "licenses",
@@ -656,6 +661,8 @@ public sealed class FoundationDependencyTests
             Path.Combine("licenses", "quaternius-ual1-standard", "README.txt"),
             Path.Combine("licenses", "quaternius-ual2-source", "License.txt"),
             Path.Combine("licenses", "quaternius-ual2-source", "README.txt"),
+            "quaternius-medieval-weapons-arrow.cfmesh",
+            "quaternius-medieval-weapons-arrow.provenance.json",
             "quaternius-medieval-weapons-bow-wooden.cfmesh",
             "quaternius-medieval-weapons-bow-wooden.provenance.json",
             "quaternius-ual1-standard.cfskel",

@@ -47,6 +47,12 @@
     <None Include="$(StarfallCharacterStageRoot)quaternius-medieval-weapons-bow-wooden.provenance.json"
           Link="content/chronofall/character-presentation/client/quaternius-medieval-weapons-bow-wooden.provenance.json"
           CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)quaternius-medieval-weapons-arrow.cfmesh"
+          Link="content/chronofall/character-presentation/client/quaternius-medieval-weapons-arrow.cfmesh"
+          CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(StarfallCharacterStageRoot)quaternius-medieval-weapons-arrow.provenance.json"
+          Link="content/chronofall/character-presentation/client/quaternius-medieval-weapons-arrow.provenance.json"
+          CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/License.txt"
           Link="content/chronofall/character-presentation/client/licenses/quaternius-ual1-standard/License.txt"
           CopyToOutputDirectory="PreserveNewest" />
@@ -81,6 +87,10 @@
            Text="Starfall Basic bow content is not staged. Re-run the stable-ID coordinator staging command." />
     <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-medieval-weapons-bow-wooden.provenance.json')"
            Text="Starfall Basic bow provenance is not staged. Re-run the stable-ID coordinator staging command." />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-medieval-weapons-arrow.cfmesh')"
+           Text="Starfall Basic Arrow content is not staged. Re-run the stable-ID coordinator staging command." />
+    <Error Condition="!Exists('$(StarfallCharacterStageRoot)quaternius-medieval-weapons-arrow.provenance.json')"
+           Text="Starfall Basic Arrow provenance is not staged. Re-run the stable-ID coordinator staging command." />
     <Error Condition="!Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/License.txt') Or !Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual1-standard/README.txt')"
            Text="Starfall character CC0 evidence is incomplete. Re-run the stable-ID coordinator staging command." />
     <Error Condition="!Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual2-source/License.txt') Or !Exists('$(StarfallCharacterStageRoot)licenses/quaternius-ual2-source/README.txt')"

@@ -257,6 +257,9 @@ public sealed class Draft0MonsterPresentationTests
 
         Draft0MonsterPresentationState effectStart = Assert.Single(presentation.CreateLiveStates(1.0));
         Assert.Equal(Vector3.One, effectStart.BaseColor);
+        Assert.True(presentation.TryGetLiveWorldCentre(new WorldEntityId(2), 1.0, out Vector3 liveCentre));
+        Assert.Equal(effectStart.World.Translation, liveCentre);
+        Assert.False(presentation.TryGetLiveWorldCentre(new WorldEntityId(999), 1.0, out _));
         Draft0MonsterPresentationState lungePeak = Assert.Single(presentation.CreateLiveStates(1.1));
         Assert.InRange(
             lungePeak.World.M43 - lungePeak.Snapshot.Position.ZMetres,
@@ -282,6 +285,10 @@ public sealed class Draft0MonsterPresentationTests
         Draft0MonsterPresentationState expired = Assert.Single(presentation.CreateLiveStates(2.0));
         Assert.Equal(expired.Snapshot.Position.ZMetres, expired.World.M43);
         Assert.Equal(Draft0MonsterPresentationAdapter.LightColor, expired.BaseColor);
+
+        Assert.True(presentation.TriggerHitFlash(new WorldEntityId(2), 2.0));
+        Assert.Equal(Vector3.One, Assert.Single(presentation.CreateLiveStates(2.0)).BaseColor);
+        Assert.False(presentation.TriggerHitFlash(new WorldEntityId(999), 2.0));
 
         Assert.True(presentation.Accept(Snapshot(
             sequence: 4,

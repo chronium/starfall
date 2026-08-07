@@ -35,6 +35,7 @@ internal static unsafe class NativeClientPreview
         using var session = new PreviewSession(
             content.Cooked.Asset.Mesh,
             content.Bow.Mesh,
+            content.Arrow.Mesh,
             visible: true,
             enableDevelopmentUi: true,
             developmentUiInitiallyVisible);
@@ -49,6 +50,7 @@ internal static unsafe class NativeClientPreview
         using var session = new PreviewSession(
             content.Cooked.Asset.Mesh,
             content.Bow.Mesh,
+            content.Arrow.Mesh,
             visible: false,
             enableDevelopmentUi: false,
             developmentUiInitiallyVisible: false);
@@ -92,6 +94,7 @@ internal static unsafe class NativeClientPreview
         private readonly Draft0ConnectedMonsterPresentation connectedMonsterPresentation = new();
         private readonly ConnectedBasicArrowSelection basicArrowSelection = new();
         private readonly ProvisionalBasicBowAttachment basicBowAttachment;
+        private readonly ProvisionalBasicArrowNockAttachment basicArrowNockAttachment;
         private readonly GroundBounds validGround;
         private readonly SDL_GPUTextureFormat colorFormat;
         private SDL_Window* window;
@@ -103,6 +106,7 @@ internal static unsafe class NativeClientPreview
         private SdlGpuStaticMesh? staticMesh;
         private SdlGpuStaticMesh? monsterMesh;
         private SdlGpuStaticMesh? bowMesh;
+        private SdlGpuStaticMesh? arrowMesh;
         private SdlGpuImGuiBackend? developmentUi;
         private DevelopmentDebugShellState? developmentDebugState;
         private DevelopmentDebugShell? developmentDebugShell;
@@ -115,13 +119,16 @@ internal static unsafe class NativeClientPreview
         internal PreviewSession(
             SkinnedMeshDefinition sourceMesh,
             StaticMeshDefinition sourceBowMesh,
+            StaticMeshDefinition sourceArrowMesh,
             bool visible,
             bool enableDevelopmentUi,
             bool developmentUiInitiallyVisible)
         {
             ArgumentNullException.ThrowIfNull(sourceMesh);
             ArgumentNullException.ThrowIfNull(sourceBowMesh);
+            ArgumentNullException.ThrowIfNull(sourceArrowMesh);
             basicBowAttachment = new ProvisionalBasicBowAttachment(sourceMesh.Skin.Skeleton);
+            basicArrowNockAttachment = new ProvisionalBasicArrowNockAttachment(sourceMesh.Skin.Skeleton);
             Draft0GrayboxLayout layout = Draft0GrayboxCatalog.FirstPlayable;
             validGround = layout.Specification.Bounds;
             cameras = new Draft0GrayboxCameraController();
@@ -194,6 +201,7 @@ internal static unsafe class NativeClientPreview
                         uploadCommand,
                         Draft0MonsterPlaceholderMesh.Create());
                     bowMesh = staticRenderer.UploadMesh(uploadCommand, sourceBowMesh);
+                    arrowMesh = staticRenderer.UploadMesh(uploadCommand, sourceArrowMesh);
                     Exception? submissionFailure = TrySubmitCommand(ref uploadCommand, "mesh upload");
                     if (submissionFailure is not null)
                         throw submissionFailure;
@@ -239,6 +247,9 @@ internal static unsafe class NativeClientPreview
                     content.BowNotchAnimation,
                     content.BowAimAnimation,
                     content.BowShootAnimation);
+            ConnectedBasicArrowProjectilePresentationController? basicArrowProjectile = connectedSession is null
+                ? null
+                : new ConnectedBasicArrowProjectilePresentationController(content.Arrow.Mesh);
             ConnectedBasicArrowBodyPhase reportedBasicArrowPhase = ConnectedBasicArrowBodyPhase.Locomotion;
 
             Console.WriteLine(
@@ -382,14 +393,40 @@ internal static unsafe class NativeClientPreview
                     presentationElapsed,
                     presentation.Snapshot.VelocityMetresPerSecond.Length());
                 SkeletonPose locomotionPose = playback.CreatePose();
-                if (connectedSession is not null && basicArrowBody is not null)
+                if (connectedSession is not null && basicArrowBody is not null && basicArrowProjectile is not null)
                 {
+                    if (basicArrowProjectile.ActiveTarget is { } observedTarget &&
+                        connectedMonsterPresentation.TryGetLiveWorldCentre(
+                            observedTarget,
+                            monsterPresentationSeconds,
+                            out Vector3 observedTargetPoint))
+                    {
+                        basicArrowProjectile.ObserveLiveTarget(observedTarget, observedTargetPoint);
+                    }
                     while (connectedSession.TryDequeueBasicArrowOutcome(
                                out ConnectedBasicArrowOutcome outcome))
                     {
+                        Vector3? targetPoint = connectedMonsterPresentation.TryGetLiveWorldCentre(
+                            outcome.TargetEntityId,
+                            monsterPresentationSeconds,
+                            out Vector3 liveTargetPoint)
+                                ? liveTargetPoint
+                                : null;
                         basicArrowBody.HandleOutcome(outcome, locomotionPose);
+                        basicArrowProjectile.HandleOutcome(outcome, targetPoint);
                     }
                     basicArrowBody.Advance(presentationElapsed, locomotionPose);
+                    basicArrowProjectile.Advance(presentationElapsed);
+                    while (basicArrowProjectile.TryDequeueImpact(out BasicArrowPresentationImpact impact))
+                    {
+                        bool flashed = connectedMonsterPresentation.TriggerHitFlash(
+                            impact.TargetEntityId,
+                            monsterPresentationSeconds);
+                        Console.WriteLine(
+                            $"STARFALL_CLIENT_BASIC_ARROW_IMPACT sequence={impact.Sequence} " +
+                            $"target={impact.TargetEntityId} flashed={flashed} " +
+                            $"point=({impact.WorldPoint.X:F3},{impact.WorldPoint.Y:F3},{impact.WorldPoint.Z:F3})");
+                    }
                     if (basicArrowBody.Phase != reportedBasicArrowPhase)
                     {
                         reportedBasicArrowPhase = basicArrowBody.Phase;
@@ -397,15 +434,6 @@ internal static unsafe class NativeClientPreview
                             $"STARFALL_CLIENT_BASIC_ARROW_BODY phase={basicArrowBody.Phase} " +
                             $"sequence={basicArrowBody.ActiveSequence?.ToString() ?? "none"} " +
                             $"sample={basicArrowBody.CurrentSampleTime:F3}");
-                    }
-                    while (basicArrowBody.TryDequeueReleaseMarker(
-                               out BasicArrowPresentationReleaseMarker release))
-                    {
-                        Console.WriteLine(
-                            $"STARFALL_CLIENT_BASIC_ARROW_RELEASE sequence={release.Sequence} " +
-                            $"actor={release.ActorEntityId} target={release.TargetEntityId} " +
-                            $"clip=Bow_Shoot sample={release.ShootSampleTime:F3} " +
-                            $"frame={release.ShootSampleFrame}");
                     }
                 }
                 SkeletonPose presentationPose = basicArrowBody?.CreatePose(locomotionPose) ?? locomotionPose;
@@ -419,7 +447,9 @@ internal static unsafe class NativeClientPreview
                         connectedSession is not null,
                         Math.Max(presentationElapsed, 1.0 / 1000.0),
                         developmentSnapshot,
-                        developmentUiSeconds);
+                        developmentUiSeconds,
+                        basicArrowBody,
+                        basicArrowProjectile);
                 }
                 catch (Exception exception)
                 {
@@ -531,6 +561,8 @@ internal static unsafe class NativeClientPreview
             monsterMesh = null;
             bowMesh?.Dispose();
             bowMesh = null;
+            arrowMesh?.Dispose();
+            arrowMesh = null;
             staticRenderer?.Dispose();
             staticRenderer = null;
             if (device is not null)
@@ -555,11 +587,30 @@ internal static unsafe class NativeClientPreview
             bool connectedMonsters,
             double frameDeltaSeconds,
             DevelopmentDebugSnapshot? developmentSnapshot,
-            double developmentUiSeconds)
+            double developmentUiSeconds,
+            ConnectedBasicArrowBodyPresentationController? basicArrowBody,
+            ConnectedBasicArrowProjectilePresentationController? basicArrowProjectile)
         {
             SkeletonGlobalPose globalPose = SkeletonPoseEvaluator.EvaluateGlobal(pose);
             SkinningPalette sourcePalette = SkeletonPoseEvaluator.CreateSkinningPalette(skin, globalPose);
             ProvisionalBasicBowFrame bowFrame = basicBowAttachment.Evaluate(globalPose, presentation.World);
+            Matrix4x4? arrowWorld = null;
+            if (basicArrowBody is not null && basicArrowProjectile is not null)
+            {
+                Vector3 nockWorldPoint = basicArrowNockAttachment.EvaluateWorldPoint(globalPose, presentation.World);
+                while (basicArrowBody.TryDequeueReleaseMarker(
+                           out BasicArrowPresentationReleaseMarker release))
+                {
+                    bool started = basicArrowProjectile.HandleRelease(release, nockWorldPoint);
+                    Console.WriteLine(
+                        $"STARFALL_CLIENT_BASIC_ARROW_RELEASE sequence={release.Sequence} " +
+                        $"actor={release.ActorEntityId} target={release.TargetEntityId} " +
+                        $"clip=Bow_Shoot sample={release.ShootSampleTime:F3} " +
+                        $"frame={release.ShootSampleFrame} projectileStarted={started}");
+                }
+                if (basicArrowProjectile.TryCreateFrame(nockWorldPoint, out BasicArrowProjectileFrame arrowFrame))
+                    arrowWorld = arrowFrame.World;
+            }
 
             SDL_GPUCommandBuffer* command = AcquireCommand();
             bool requiresSubmission = false;
@@ -600,7 +651,8 @@ internal static unsafe class NativeClientPreview
                         developmentUi,
                         developmentSnapshot,
                         developmentUiSeconds,
-                        bowFrame.BowWorldTransform);
+                        bowFrame.BowWorldTransform,
+                        arrowWorld);
                 }
             }
             catch (Exception exception)
@@ -653,7 +705,8 @@ internal static unsafe class NativeClientPreview
                     connectedMonsters: false,
                     developmentUi: null,
                     developmentSnapshot: null,
-                    bowWorld: null);
+                    bowWorld: null,
+                    arrowWorld: null);
             }
             catch (Exception exception)
             {
@@ -692,7 +745,8 @@ internal static unsafe class NativeClientPreview
             SdlGpuImGuiBackend? developmentUi,
             DevelopmentDebugSnapshot? developmentSnapshot,
             double developmentUiSeconds = 0.0,
-            Matrix4x4? bowWorld = null)
+            Matrix4x4? bowWorld = null,
+            Matrix4x4? arrowWorld = null)
         {
             bool developmentUiBuilding = developmentUi is not null;
             bool developmentUiPrepared = false;
@@ -821,6 +875,19 @@ internal static unsafe class NativeClientPreview
                                 resolvedBowWorld,
                                 viewProjection,
                                 new Vector3(0.90f, 0.65f, 0.12f),
+                                new Vector3(-0.35f, -0.70f, -0.62f)));
+                    }
+
+                    if (arrowWorld is Matrix4x4 resolvedArrowWorld)
+                    {
+                        staticRenderer!.Draw(
+                            command,
+                            pass,
+                            arrowMesh!,
+                            new StaticMeshDraw(
+                                resolvedArrowWorld,
+                                viewProjection,
+                                ConnectedBasicArrowProjectilePresentationController.ArrowColor,
                                 new Vector3(-0.35f, -0.70f, -0.62f)));
                     }
 
