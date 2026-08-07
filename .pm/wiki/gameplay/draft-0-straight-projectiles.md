@@ -1,12 +1,12 @@
 ---
 title: Draft 0 Authoritative Straight Projectiles
 createdAt: 2026-08-07T08:32:43.1791170Z
-modifiedAt: 2026-08-07T08:57:01.1088480Z
+modifiedAt: 2026-08-07T11:07:22.6780660Z
 ---
 
 ## Status
 
-This is the owner-approved successor to the completed connected Basic Arrow baseline. It is a planned contract, not current runtime behavior.
+This is the owner-approved successor to the completed connected Basic Arrow baseline. `CONTENT-0017` freezes its bounded Content inputs; authoritative projectile simulation, exchange and presentation remain planned rather than current runtime behavior.
 
 Completed `CLIENT-0018` remains historical evidence for exact arrow acquisition, right-hand nocking, Bow_Shoot frame-3 detachment, static rendering, deterministic 150 ms client-only travel and impact feedback. `CLIENT-0037` will remove only that synthetic flight after the authoritative Content, Simulation, Protocol and World prerequisites complete.
 
@@ -42,7 +42,9 @@ The implementation is a narrowly parameterized Draft 0 straight-projectile primi
 - cadence: 48 ticks;
 - ammunition: unlimited and not represented as inventory.
 
-Spatial inputs are finite single-precision ground-plane metres at the simulation boundary. Discrete resources remain integers and time remains fixed ticks.
+These values are exposed by the immutable `Draft0StraightProjectileCatalog.BasicArrow` definition. It references the existing canonical `Draft0ActionDefinition`, so identity, selected-entity targeting, 300-unit damage and Mana policy are not duplicated. The bounded definition can be instantiated later for Fire Arrow without becoming a generalized projectile framework.
+
+Spatial inputs are finite positive single-precision ground-plane metres at the simulation boundary. Maximum travel must reach the complete accepted selection range. Facing is stored as the inclusive 45-degree minimum dot threshold. Discrete resources remain integers and time remains non-zero fixed ticks.
 
 ## Acceptance, frozen aim and release
 

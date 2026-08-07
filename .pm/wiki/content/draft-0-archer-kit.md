@@ -1,7 +1,7 @@
 ---
 title: Draft 0 Archer Kit
 createdAt: 2026-08-05T06:16:02.6168200Z
-modifiedAt: 2026-08-07T08:57:01.0999340Z
+modifiedAt: 2026-08-07T11:07:22.6844410Z
 ---
 
 ## Status
@@ -36,12 +36,13 @@ Input remains intent. Simulation decides action validity, target or victim set, 
 
 `SIM-0004` freezes the first executable combat inputs: a 12-metre inclusive ground-plane centre-to-centre range, a 12-tick / 0.20-second resolve delay, and a 48-tick / 0.80-second start-to-start cadence at 60 Hz. An accepted request stops current movement, faces the selected monster, and consumes the cadence window. A later accepted movement intent before resolution cancels the shot; rejected movement does not.
 
-Resolution currently occurs only at `startTick + 12`. The actor must still exist, remain stationary, and keep the target within range and an inclusive 45-degree facing cone; the monster must still exist with positive health. The completed baseline applies 300 requested integer damage units, clamps effective health reduction at zero, and marks defeat only on the transition to zero. Cancellation and defeat are deterministic facts. Planned `CONTENT-0017` and `SIM-0013` supersede only the post-acceptance outcome path: aim freezes at acceptance, release occurs after 18 ticks without recalculating range or facing, and a straight authoritative projectile applies the same damage to the first contact. Auto-repeat, ammunition consumption, mana and client authority remain excluded.
+Resolution currently occurs only at `startTick + 12`. The actor must still exist, remain stationary, and keep the target within range and an inclusive 45-degree facing cone; the monster must still exist with positive health. The completed baseline applies 300 requested integer damage units, clamps effective health reduction at zero, and marks defeat only on the transition to zero. Cancellation and defeat are deterministic facts. `CONTENT-0017` freezes the successor's 18-tick release, 60 m/s speed, 0.05-metre radius, 12-metre travel/range, 45-degree facing and 48-tick cadence in `Draft0StraightProjectileCatalog.BasicArrow`. Planned `SIM-0013` will consume that definition and supersede only the post-acceptance outcome path: aim freezes at acceptance, release does not recalculate range or facing, and a straight authoritative projectile applies the same 300-unit damage to the first contact. Auto-repeat, ammunition consumption, mana and client authority remain excluded.
 
 World resolves same-tick actions in ascending actor identity order. Nonlethal hits replace immutable monster state while preserving entity and spawn facts. First defeat removes the monster exactly once through its existing fixed-slot vacancy seam at the resolve tick; the same slot remains eligible for replenishment 600 ticks later.
 
 ## Downstream ownership
 
+- CONTENT-0017 owns the immutable successor inputs while referencing CONTENT-0003's canonical Basic Arrow action rather than duplicating identity, damage, targeting or Mana policy.
 - SIM-0004 owns completed authoritative Basic Arrow range, facing, cadence, movement interruption, windup/start tick, resolve tick, integer monster damage and monster death.
 - PROTOCOL-0006/0007 own Basic-only connected facts and deterministic serialization. The client request carries command sequence and target only; World derives the acting entity from the admitted session.
 - SERVER-0008 exchanges Basic only. SIM-0011 is retained for defeated-player/protected-town action rejection, not player-life transport.
