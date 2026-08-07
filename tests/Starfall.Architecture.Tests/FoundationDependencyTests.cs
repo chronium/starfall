@@ -183,7 +183,9 @@ public sealed class FoundationDependencyTests
         Assert.Equal(
             "STARFALL_CLIENT_CHARACTER_CONTENT_READY asset=quaternius-ual1-standard " +
             "joints=65 clips=Idle_Loop,Walk_Loop,Sword_Attack " +
-            $"bow=quaternius-medieval-weapons-bow-wooden{Environment.NewLine}",
+            "bow=quaternius-medieval-weapons-bow-wooden " +
+            "bowBody=quaternius-ual2-source-bow-shot-body " +
+            $"bowBodyClips=Bow_Notch,Bow_Aim_Neutral,Bow_Shoot{Environment.NewLine}",
             result.StandardOutput);
         Assert.Empty(result.StandardError);
     }
@@ -608,6 +610,10 @@ public sealed class FoundationDependencyTests
 
         Assert.True(File.Exists(Path.Combine(content, "quaternius-ual1-standard.cfskel")));
         Assert.True(File.Exists(Path.Combine(content, "quaternius-ual1-standard.provenance.json")));
+        Assert.True(File.Exists(Path.Combine(content, "quaternius-ual2-source-bow-shot-body.cfskel")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "quaternius-ual2-source-bow-shot-body.provenance.json")));
         Assert.True(File.Exists(Path.Combine(content, "quaternius-medieval-weapons-bow-wooden.cfmesh")));
         Assert.True(File.Exists(Path.Combine(
             content,
@@ -625,6 +631,16 @@ public sealed class FoundationDependencyTests
         Assert.True(File.Exists(Path.Combine(
             content,
             "licenses",
+            "quaternius-ual2-source",
+            "License.txt")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "licenses",
+            "quaternius-ual2-source",
+            "README.txt")));
+        Assert.True(File.Exists(Path.Combine(
+            content,
+            "licenses",
             "quaternius-medieval-weapons",
             "License.txt")));
 
@@ -638,10 +654,14 @@ public sealed class FoundationDependencyTests
             Path.Combine("licenses", "quaternius-medieval-weapons", "License.txt"),
             Path.Combine("licenses", "quaternius-ual1-standard", "License.txt"),
             Path.Combine("licenses", "quaternius-ual1-standard", "README.txt"),
+            Path.Combine("licenses", "quaternius-ual2-source", "License.txt"),
+            Path.Combine("licenses", "quaternius-ual2-source", "README.txt"),
             "quaternius-medieval-weapons-bow-wooden.cfmesh",
             "quaternius-medieval-weapons-bow-wooden.provenance.json",
             "quaternius-ual1-standard.cfskel",
             "quaternius-ual1-standard.provenance.json",
+            "quaternius-ual2-source-bow-shot-body.cfskel",
+            "quaternius-ual2-source-bow-shot-body.provenance.json",
         ],
         contentFiles);
         Assert.DoesNotContain(

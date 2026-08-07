@@ -79,11 +79,16 @@ internal static class ClientApplication
 
 internal sealed record CharacterPresentationContent(
     CookedSkeletalCharacterAsset Cooked,
+    CookedSkeletalCharacterAsset BowBodyCooked,
     CookedStaticMeshAsset Bow,
     AnimationClip IdleAnimation,
-    AnimationClip WalkAnimation)
+    AnimationClip WalkAnimation,
+    AnimationClip BowNotchAnimation,
+    AnimationClip BowAimAnimation,
+    AnimationClip BowShootAnimation)
 {
     private const string ExpectedAssetId = "quaternius-ual1-standard";
+    private const string ExpectedBowBodyAssetId = "quaternius-ual2-source-bow-shot-body";
     private const string ExpectedBowAssetId = "quaternius-medieval-weapons-bow-wooden";
     private const string ExpectedIdleClip = "Idle_Loop";
     private const string ExpectedWalkClip = "Walk_Loop";
@@ -94,6 +99,13 @@ internal sealed record CharacterPresentationContent(
         "Idle_Loop",
         "Walk_Loop",
         "Sword_Attack",
+    ];
+
+    private static readonly string[] ExpectedBowBodyClips =
+    [
+        "Bow_Notch",
+        "Bow_Aim_Neutral",
+        "Bow_Shoot",
     ];
 
     internal static string RuntimeContentRoot => Path.Combine(
@@ -111,6 +123,13 @@ internal sealed record CharacterPresentationContent(
         string bowPath = Path.Combine(RuntimeContentRoot, "quaternius-medieval-weapons-bow-wooden.cfmesh");
         if (!File.Exists(bowPath))
             throw new FileNotFoundException($"Staged Starfall Basic bow asset was not found: {bowPath}", bowPath);
+        string bowBodyPath = Path.Combine(RuntimeContentRoot, "quaternius-ual2-source-bow-shot-body.cfskel");
+        if (!File.Exists(bowBodyPath))
+        {
+            throw new FileNotFoundException(
+                $"Staged Starfall Basic Arrow bow-body animation asset was not found: {bowBodyPath}",
+                bowBodyPath);
+        }
 
         CookedSkeletalCharacterAsset cooked;
         using (FileStream stream = File.OpenRead(assetPath))
@@ -119,6 +138,10 @@ internal sealed record CharacterPresentationContent(
         CookedStaticMeshAsset bow;
         using (FileStream stream = File.OpenRead(bowPath))
             bow = StaticMeshCookedFormat.Read(stream);
+
+        CookedSkeletalCharacterAsset bowBodyCooked;
+        using (FileStream stream = File.OpenRead(bowBodyPath))
+            bowBodyCooked = SkeletalAssetCookedFormat.Read(stream);
 
         if (!string.Equals(cooked.Descriptor.AssetId, ExpectedAssetId, StringComparison.Ordinal))
         {
@@ -129,6 +152,12 @@ internal sealed record CharacterPresentationContent(
         {
             throw new InvalidDataException(
                 $"Expected cooked Basic bow asset '{ExpectedBowAssetId}', received '{bow.Descriptor.AssetId}'.");
+        }
+        if (!string.Equals(bowBodyCooked.Descriptor.AssetId, ExpectedBowBodyAssetId, StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                $"Expected cooked Basic Arrow body asset '{ExpectedBowBodyAssetId}', " +
+                $"received '{bowBodyCooked.Descriptor.AssetId}'.");
         }
 
         int jointCount = cooked.Asset.Mesh.Skin.Skeleton.JointCount;
@@ -150,11 +179,25 @@ internal sealed record CharacterPresentationContent(
             clip => string.Equals(clip.Name, ExpectedIdleClip, StringComparison.Ordinal));
         AnimationClip walk = cooked.Asset.Animations.Single(
             clip => string.Equals(clip.Name, ExpectedWalkClip, StringComparison.Ordinal));
-        return new CharacterPresentationContent(cooked, bow, idle, walk);
+        AnimationClip[] reboundBowBody = BasicArrowBowAnimationSet.BindExact(
+            bowBodyCooked,
+            cooked.Asset.Mesh.Skin,
+            ExpectedBowBodyClips);
+        return new CharacterPresentationContent(
+            cooked,
+            bowBodyCooked,
+            bow,
+            idle,
+            walk,
+            reboundBowBody.Single(static clip => clip.Name == "Bow_Notch"),
+            reboundBowBody.Single(static clip => clip.Name == "Bow_Aim_Neutral"),
+            reboundBowBody.Single(static clip => clip.Name == "Bow_Shoot"));
     }
 
     internal string CreateValidationSummary() =>
         $"STARFALL_CLIENT_CHARACTER_CONTENT_READY asset={Cooked.Descriptor.AssetId} " +
         $"joints={Cooked.Asset.Mesh.Skin.Skeleton.JointCount} " +
-        $"clips={string.Join(",", ExpectedClips)} bow={Bow.Descriptor.AssetId}";
+        $"clips={string.Join(",", ExpectedClips)} bow={Bow.Descriptor.AssetId} " +
+        $"bowBody={BowBodyCooked.Descriptor.AssetId} " +
+        $"bowBodyClips={string.Join(",", ExpectedBowBodyClips)}";
 }

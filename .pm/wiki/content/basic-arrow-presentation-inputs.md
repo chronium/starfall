@@ -1,7 +1,7 @@
 ---
 title: Basic Arrow Presentation Inputs
 createdAt: 2026-08-06T17:15:11.4897310Z
-modifiedAt: 2026-08-07T05:24:51.9623420Z
+modifiedAt: 2026-08-07T06:59:36.3145840Z
 ---
 
 ## Status and ownership
@@ -35,11 +35,21 @@ Basic Arrow selects only:
 | `Bow_Aim_Neutral` | 2.500000 s | 76 | neutral held-aim body motion |
 | `Bow_Shoot` | 0.666667 s | 21 | release and body recovery |
 
-The clips are non-root-motion, use 30 Hz LINEAR TRS channels, and target the same ordered 65-joint hierarchy as the UAL1 technical mannequin. Ordered joint names, parents, local rest transforms and inverse-bind matrices match exactly, so the proven combination requires no retargeting.
+The clips are non-root-motion, use 30 Hz LINEAR TRS channels, and target the same ordered 65-joint hierarchy as the UAL1 technical mannequin. Ordered joint names, parents, local rest transforms and inverse-bind matrices match exactly. The Client performs an exact contract-checked skeleton rebind of only these three selected clips onto the already loaded UAL1 skeleton instance; this is not a generic retargeter.
 
-`Bow_Shoot` frame 3 at 100 ms is the owner-reviewed provisional body-release marker. It remains presentation evidence only and must be revalidated with the real rigid bow and arrow visible. No distinct recovery clip is selected; later presentation returns from `Bow_Shoot` into the current idle or locomotion state.
+The connected Basic Arrow body sequence now follows the authoritative action facts:
 
-The 2.5-second authored notch clip does not fit the authoritative Basic Arrow 12-tick / 0.20-second windup unchanged. `CLIENT-0007` owns the later task-planned sampling, cropping, acceleration or blending policy. This selection does not change gameplay timing. `Bow_Aim_Up` and `Bow_RapidShoot_Loop` remain unselected Arrow Rain candidates. `Idle_No_Loop`, `Yes`, `Sword_Attack` and the rest of the 134-clip UAL2 library are excluded.
+- an accepted 12-tick / 0.20-second windup starts from the currently displayed pose;
+- the first nine ticks sample the complete clamped `Bow_Notch` clip, and the final three ticks blend its endpoint into `Bow_Aim_Neutral`;
+- if resolution has not arrived, the body holds the neutral aim pose;
+- a matching resolved fact starts `Bow_Shoot` at 1x cadence;
+- `Bow_Shoot` frame 3 at 100 ms emits exactly one presentation-only release marker;
+- cancellation blends back without a release marker, rejection does not interrupt the active sequence, and recovery returns into the current locomotion pose over 0.15 seconds;
+- a repeated accepted action begins from the currently displayed layered pose rather than snapping to locomotion first.
+
+The action layer is exactly the `spine_01` subtree, 53 of 65 joints. Root, pelvis and legs remain byte-for-byte the locomotion pose, so authoritative movement and the existing idle/walk policy continue underneath the upper-body action. One resulting pose drives both GPU skinning and the existing left-hand bow socket.
+
+The body release marker remains presentation evidence only. It neither creates an authoritative projectile nor decides collision, damage, death or success. `CLIENT-0018` owns later arrow nocking, visual detachment, travel, impact and stale-presentation cleanup. `Bow_Aim_Up` and `Bow_RapidShoot_Loop` remain unselected Arrow Rain candidates. `Idle_No_Loop`, `Yes`, `Sword_Attack` and the rest of the 134-clip UAL2 library remain excluded.
 
 Coordinator evidence: `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/assets/quaternius-ual2-source-bow-evaluation`.
 

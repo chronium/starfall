@@ -365,7 +365,6 @@ public sealed class ConnectedWalkingClientSessionTests
                 sequence, new WorldEntityId(1), new WorldEntityId(10), 5, 17)),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.BasicArrowOutcomes);
-        Assert.Equal(ConnectedBasicArrowOutcomeKind.Accepted, session.LastBasicArrowOutcome!.Kind);
 
         session.PacketReceived(
             transport.Peer,
@@ -386,10 +385,14 @@ public sealed class ConnectedWalkingClientSessionTests
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.BasicArrowOutcomes);
 
-        ConnectedBasicArrowOutcome resolved = Assert.IsType<ConnectedBasicArrowOutcome>(session.LastBasicArrowOutcome);
+        Assert.True(session.TryDequeueBasicArrowOutcome(out ConnectedBasicArrowOutcome accepted));
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Accepted, accepted.Kind);
+        ConnectedBasicArrowOutcome resolved = Assert.IsType<ConnectedBasicArrowOutcome>(
+            AssertBasicArrowOutcome(session));
         Assert.Equal(ConnectedBasicArrowOutcomeKind.Resolved, resolved.Kind);
         Assert.Equal(300, resolved.EffectiveDamageUnits);
         Assert.False(resolved.TargetDefeated);
+        Assert.False(session.TryDequeueBasicArrowOutcome(out _));
         Assert.False(session.IsDisconnected);
     }
 
@@ -418,8 +421,6 @@ public sealed class ConnectedWalkingClientSessionTests
                 BasicArrowRejectionReason.ActionAlreadyPending)),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.BasicArrowOutcomes);
-        Assert.Equal(ConnectedBasicArrowOutcomeKind.Rejected, session.LastBasicArrowOutcome!.Kind);
-
         session.PacketReceived(
             transport.Peer,
             ConnectedBasicArrowCodec.EncodeCanceled(new BasicArrowCanceled(
@@ -432,8 +433,12 @@ public sealed class ConnectedWalkingClientSessionTests
                 BasicArrowCancellationReason.CanceledByMovement)),
             NetworkDelivery.ReliableOrdered,
             StarfallNetworkChannels.BasicArrowOutcomes);
-        Assert.Equal(ConnectedBasicArrowOutcomeKind.Canceled, session.LastBasicArrowOutcome!.Kind);
-        Assert.Equal(BasicArrowCancellationReason.CanceledByMovement, session.LastBasicArrowOutcome.CancellationReason);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Accepted, AssertBasicArrowOutcome(session).Kind);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Rejected, AssertBasicArrowOutcome(session).Kind);
+        ConnectedBasicArrowOutcome canceled = AssertBasicArrowOutcome(session);
+        Assert.Equal(ConnectedBasicArrowOutcomeKind.Canceled, canceled.Kind);
+        Assert.Equal(BasicArrowCancellationReason.CanceledByMovement, canceled.CancellationReason);
+        Assert.False(session.TryDequeueBasicArrowOutcome(out _));
     }
 
     [Fact]
@@ -639,6 +644,13 @@ public sealed class ConnectedWalkingClientSessionTests
         };
         session.ConnectAndAwaitInitialSnapshot(new(IPAddress.Loopback, 7777, "unused"));
         return session;
+    }
+
+    private static ConnectedBasicArrowOutcome AssertBasicArrowOutcome(
+        ConnectedWalkingClientSession session)
+    {
+        Assert.True(session.TryDequeueBasicArrowOutcome(out ConnectedBasicArrowOutcome outcome));
+        return outcome;
     }
 
     private static byte[] Snapshot(ulong sequence, ulong tick, MovementIntentSequence? acknowledged) =>

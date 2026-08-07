@@ -1,7 +1,7 @@
 ---
 title: Client World Presentation Adapter
 createdAt: 2026-08-04T07:46:57.3592710Z
-modifiedAt: 2026-08-04T17:26:13.4791450Z
+modifiedAt: 2026-08-07T06:59:58.2064880Z
 ---
 
 ## Ownership and purpose
@@ -56,3 +56,19 @@ The CLIENT-0024 seven-view capture suite remains historical graybox evidence. It
 Local no-argument preview remains available with its 60 Hz fixture and Numpad speed tuning. Connected mode disables that tuning, preserves F1-F7/Tab and F1 Up/Down camera controls, and reports entity, latest tick and camera distance in the title. A disconnect or protocol failure ends connected mode; window close performs a clean disconnect.
 
 If native observation later exposes snapshot stepping, a focused Client presentation-smoothing task should interpolate between authoritative samples while preserving corrections as authoritative replacement facts. That work must not add client movement authority or make the stateless adapter responsible for network reconciliation.
+
+## Connected Basic Arrow action presentation
+
+`CLIENT-0007` extends the connected presentation path without changing the movement adapter. The network session retains decoded Basic Arrow accepted, rejected, canceled and resolved facts in arrival order. The native Client drains those facts after producing the current locomotion pose, then applies one Client-owned upper-body action controller before skinning and socket evaluation.
+
+The action controller:
+
+- treats an accepted fact as permission to begin visual notch/aim sequencing;
+- preserves the authoritative start and resolve ticks and never decides whether the action succeeds;
+- begins `Bow_Shoot` only after a matching resolved fact, holding aim if that fact arrives late;
+- emits the reviewed 100 ms / frame 3 body-release marker exactly once for later projectile presentation;
+- returns canceled actions without a release and ignores rejections for unrelated active sequences;
+- layers only the `spine_01` subtree, leaving the movement-produced root, pelvis and legs unchanged;
+- feeds one final pose to both the GPU skinning palette and the existing left-hand bow socket.
+
+This remains presentation state, not protocol or gameplay state. There is no authoritative spatial arrow, projectile collision, damage decision, Fire Arrow behavior, Arrow Rain behavior, off-hand IK, aim offset or general animation graph. The no-connection local fixture and deterministic capture suite continue to use locomotion only.

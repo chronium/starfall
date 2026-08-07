@@ -38,7 +38,7 @@ internal static unsafe class NativeClientPreview
             visible: true,
             enableDevelopmentUi: true,
             developmentUiInitiallyVisible);
-        session.Run(content.IdleAnimation, content.WalkAnimation, content.Cooked.Asset.Mesh.Skin, connectedSession);
+        session.Run(content, connectedSession);
     }
 
     internal static void CaptureSuite(CharacterPresentationContent content, string outputDirectory)
@@ -219,14 +219,13 @@ internal static unsafe class NativeClientPreview
         }
 
         internal void Run(
-            AnimationClip idleAnimation,
-            AnimationClip walkAnimation,
-            SkinDefinition skin,
+            CharacterPresentationContent content,
             ConnectedWalkingClientSession? connectedSession)
         {
-            ArgumentNullException.ThrowIfNull(idleAnimation);
-            ArgumentNullException.ThrowIfNull(walkAnimation);
-            ArgumentNullException.ThrowIfNull(skin);
+            ArgumentNullException.ThrowIfNull(content);
+            AnimationClip idleAnimation = content.IdleAnimation;
+            AnimationClip walkAnimation = content.WalkAnimation;
+            SkinDefinition skin = content.Cooked.Asset.Mesh.Skin;
             if (!ReferenceEquals(idleAnimation.Skeleton, skin.Skeleton) ||
                 !ReferenceEquals(walkAnimation.Skeleton, skin.Skeleton))
             {
@@ -234,6 +233,13 @@ internal static unsafe class NativeClientPreview
             }
 
             var playback = new TechnicalPlayerLocomotionPlayback(idleAnimation, walkAnimation);
+            ConnectedBasicArrowBodyPresentationController? basicArrowBody = connectedSession is null
+                ? null
+                : new ConnectedBasicArrowBodyPresentationController(
+                    content.BowNotchAnimation,
+                    content.BowAimAnimation,
+                    content.BowShootAnimation);
+            ConnectedBasicArrowBodyPhase reportedBasicArrowPhase = ConnectedBasicArrowBodyPhase.Locomotion;
 
             Console.WriteLine(
                 $"STARFALL_CLIENT_CONTROLS mode={(connectedSession is null ? "local" : "connected")} " +
@@ -375,10 +381,38 @@ internal static unsafe class NativeClientPreview
                 playback.Advance(
                     presentationElapsed,
                     presentation.Snapshot.VelocityMetresPerSecond.Length());
+                SkeletonPose locomotionPose = playback.CreatePose();
+                if (connectedSession is not null && basicArrowBody is not null)
+                {
+                    while (connectedSession.TryDequeueBasicArrowOutcome(
+                               out ConnectedBasicArrowOutcome outcome))
+                    {
+                        basicArrowBody.HandleOutcome(outcome, locomotionPose);
+                    }
+                    basicArrowBody.Advance(presentationElapsed, locomotionPose);
+                    if (basicArrowBody.Phase != reportedBasicArrowPhase)
+                    {
+                        reportedBasicArrowPhase = basicArrowBody.Phase;
+                        Console.WriteLine(
+                            $"STARFALL_CLIENT_BASIC_ARROW_BODY phase={basicArrowBody.Phase} " +
+                            $"sequence={basicArrowBody.ActiveSequence?.ToString() ?? "none"} " +
+                            $"sample={basicArrowBody.CurrentSampleTime:F3}");
+                    }
+                    while (basicArrowBody.TryDequeueReleaseMarker(
+                               out BasicArrowPresentationReleaseMarker release))
+                    {
+                        Console.WriteLine(
+                            $"STARFALL_CLIENT_BASIC_ARROW_RELEASE sequence={release.Sequence} " +
+                            $"actor={release.ActorEntityId} target={release.TargetEntityId} " +
+                            $"clip=Bow_Shoot sample={release.ShootSampleTime:F3} " +
+                            $"frame={release.ShootSampleFrame}");
+                    }
+                }
+                SkeletonPose presentationPose = basicArrowBody?.CreatePose(locomotionPose) ?? locomotionPose;
                 try
                 {
                     RenderFrame(
-                        playback.CreatePose(),
+                        presentationPose,
                         skin,
                         presentation,
                         monsterPresentationSeconds,

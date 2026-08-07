@@ -35,6 +35,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
     private ulong lastMonsterTick;
     private ulong? entityId;
     private readonly Dictionary<ulong, SentBasicArrowCommand> basicArrowCommands = [];
+    private readonly Queue<ConnectedBasicArrowOutcome> basicArrowOutcomes = [];
     private readonly Dictionary<ulong, DevelopmentCommandId> developmentCommands = [];
     private readonly Queue<ConnectedDevelopmentCommandResult> developmentResults = [];
 
@@ -67,10 +68,6 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         get; private set;
     }
     internal BoundedMonsterSnapshot? MonsterSnapshot
-    {
-        get; private set;
-    }
-    internal ConnectedBasicArrowOutcome? LastBasicArrowOutcome
     {
         get; private set;
     }
@@ -172,6 +169,9 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
 
     internal bool TryDequeueDevelopmentCommandResult(out ConnectedDevelopmentCommandResult? result) =>
         developmentResults.TryDequeue(out result);
+
+    internal bool TryDequeueBasicArrowOutcome(out ConnectedBasicArrowOutcome outcome) =>
+        basicArrowOutcomes.TryDequeue(out outcome!);
 
     public void Connected(NetworkPeerId connectedPeer, NetworkEndpoint endpoint)
     {
@@ -420,8 +420,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
 
         DiscardSupersededUnaccepted(accepted.Sequence.Value);
         command.Accepted = true;
-        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Accepted(accepted);
-        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        EnqueueBasicArrowOutcome(ConnectedBasicArrowOutcome.Accepted(accepted));
         return true;
     }
 
@@ -436,8 +435,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
 
         DiscardSupersededUnaccepted(rejected.Sequence.Value);
         basicArrowCommands.Remove(rejected.Sequence.Value);
-        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Rejected(rejected);
-        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        EnqueueBasicArrowOutcome(ConnectedBasicArrowOutcome.Rejected(rejected));
         return true;
     }
 
@@ -451,8 +449,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         }
 
         basicArrowCommands.Remove(canceled.Sequence.Value);
-        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Canceled(canceled);
-        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        EnqueueBasicArrowOutcome(ConnectedBasicArrowOutcome.Canceled(canceled));
         return true;
     }
 
@@ -466,8 +463,7 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         }
 
         basicArrowCommands.Remove(resolved.Sequence.Value);
-        LastBasicArrowOutcome = ConnectedBasicArrowOutcome.Resolved(resolved);
-        WriteBasicArrowOutcomeDiagnostic(LastBasicArrowOutcome);
+        EnqueueBasicArrowOutcome(ConnectedBasicArrowOutcome.Resolved(resolved));
         return true;
     }
 
@@ -513,6 +509,12 @@ internal sealed class ConnectedWalkingClientSession : INetworkEventHandler, IDis
         Console.WriteLine(
             $"STARFALL_CLIENT_BASIC_ARROW_OUTCOME kind={outcome.Kind} sequence={outcome.Sequence} " +
             $"actor={outcome.ActorEntityId} target={outcome.TargetEntityId} {details}");
+    }
+
+    private void EnqueueBasicArrowOutcome(ConnectedBasicArrowOutcome outcome)
+    {
+        basicArrowOutcomes.Enqueue(outcome);
+        WriteBasicArrowOutcomeDiagnostic(outcome);
     }
 
     private sealed class SentBasicArrowCommand(WorldEntityId targetEntityId)
