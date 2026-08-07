@@ -1,7 +1,7 @@
 ---
 title: First Playable Zone — Draft 0
 createdAt: 2026-08-02T15:54:34.7409020Z
-modifiedAt: 2026-08-06T11:31:55.9135620Z
+modifiedAt: 2026-08-07T08:35:56.4136040Z
 ---
 
 ## Status and purpose
@@ -128,7 +128,7 @@ The rule requests 300 integer damage units. A light monster reaches zero on the 
 
 The first connected proof is intentionally end to end rather than presentation-complete. On left-click, CLIENT-0012 selects the nearest positive ray-hit live monster from the latest authoritative snapshot using bounded vertical presentation cylinders based on authoritative collision radii, with entity identity breaking equal-distance ties, and sends only a sequenced target command. A miss clears selection and sends nothing; right-click retains movement. The admitted World session supplies the actor. PROTOCOL-0006/0007 and SERVER-0008 carry authoritative Basic start, resolve, rejection, cancellation, damage and monster-defeat facts. Player health, defeat, restoration and respawn remain outside the Basic transport contract. CLIENT-0023 already presents authoritative monster health changes, hit flash and defeat tombstones.
 
-Basic Arrow and Fire Arrow create no authoritative spatial projectile, server-side travel, projectile collision or line-of-sight query. Arrow Rain likewise resolves an explicitly ordered victim set and damage at an authoritative tick. PROTOCOL-0011/SERVER-0013/CLIENT-0027 later add Fire Arrow; PROTOCOL-0012/SERVER-0014/CLIENT-0028 separately add Arrow Rain. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success.
+The completed Basic Arrow baseline and `CLIENT-0018` prove fixed-tick damage plus a synthetic 150 ms client-only arrow. The approved successor chain `CONTENT-0017 -> SIM-0013 -> PROTOCOL-0016 -> SERVER-0017 -> CLIENT-0037` replaces that outcome path with one bounded authoritative straight projectile using frozen aim, first-contact collision and authoritative Hit, Blocked or TravelExhausted termination. Fire Arrow later reuses that primitive; Arrow Rain continues to resolve an explicitly ordered victim set and damage at an authoritative tick. Client-rendered arrows, flight, falling arrows, impacts and effects never decide collision, victims, damage, mana or success. Durable planned contract: `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles`.
 
 Cursor styling and movement-target feedback remain deferred to CLIENT-0025/0026 and do not enter the Basic Arrow proof.
 

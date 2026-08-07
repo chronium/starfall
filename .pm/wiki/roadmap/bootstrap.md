@@ -1,7 +1,7 @@
 ---
 title: Bootstrap Roadmap
 createdAt: 2026-08-01T05:48:09.1150770Z
-modifiedAt: 2026-08-06T16:32:50.0565230Z
+modifiedAt: 2026-08-07T08:36:59.6601110Z
 ---
 
 ## Execution standard
@@ -177,33 +177,46 @@ CLIENT-0031 + PROTOCOL-0014 + SERVER-0016
   -> CLIENT-0032  Resource diagnostics and native Mana proof
 ~~~
 
-Fire Arrow and Arrow Rain remain separately deferred consumers:
+The approved straight-projectile successor and deferred spell consumers are:
 
 ~~~text
-SIM-0004 + CONTENT-0003 + SIM-0012
-  -> SIM-0009  Fire-specific behavior
-PROTOCOL-0007 + PROTOCOL-0014 + SIM-0009
-  -> PROTOCOL-0011  Fire facts + serialization
-SERVER-0008 + SERVER-0016 + PROTOCOL-0011 + SIM-0009
-  -> SERVER-0013  Fire exchange
-CLIENT-0012 + PROTOCOL-0011 + SERVER-0013
-  -> CLIENT-0027  key-1 Fire intent
+CONTENT-0003
+  -> CONTENT-0017  Draft 0 straight-projectile inputs
+CONTENT-0017 + SIM-0004 + SIM-0010
+  -> SIM-0013      authoritative straight-projectile collision
+SIM-0013 + PROTOCOL-0007 + PROTOCOL-0015
+  -> PROTOCOL-0016 Basic projectile facts + replacement serialization
+SIM-0013 + PROTOCOL-0016 + SERVER-0008
+  -> SERVER-0017   projectile lifecycle + exchange
+CLIENT-0018 + PROTOCOL-0016 + SERVER-0017
+  -> CLIENT-0037   authoritative Basic projectile presentation
+CLIENT-0012 + CLIENT-0007 + CLIENT-0011 + CLIENT-0037 + CLIENT-0031
+  -> CLIENT-0019   terminal Basic diagnostics + native proof
+
+SIM-0013 + CONTENT-0003 + SIM-0012
+  -> SIM-0009      Fire-specific behavior
+SIM-0009 + PROTOCOL-0016 + PROTOCOL-0014
+  -> PROTOCOL-0011 Fire facts + serialization
+SERVER-0017 + SERVER-0016 + PROTOCOL-0011 + SIM-0009
+  -> SERVER-0013   Fire exchange
+CLIENT-0012 + CLIENT-0037 + PROTOCOL-0011 + SERVER-0013
+  -> CLIENT-0027   key-1 Fire intent + reused projectile presentation
 
 SIM-0004 + CONTENT-0003 + SIM-0012 + SIM-0009
-  -> SIM-0007  Rain-specific behavior
+  -> SIM-0007      Rain-specific behavior
 PROTOCOL-0007 + SIM-0007
-  -> PROTOCOL-0012  Rain facts + serialization
+  -> PROTOCOL-0012 Rain facts + serialization
 SERVER-0008 + SERVER-0016 + PROTOCOL-0012 + SIM-0007
-  -> SERVER-0014  Rain exchange
+  -> SERVER-0014   Rain exchange
 CLIENT-0012 + PROTOCOL-0012 + SERVER-0014
-  -> CLIENT-0028  key-2 ground-target intent
+  -> CLIENT-0028   key-2 ground-target intent
 ~~~
 
-CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. SIM-0004 owns Basic Arrow; SIM-0012 owns Mana; SIM-0009 owns only Fire-specific cost/range/facing/cadence/interruption/timing; SIM-0007 owns only Rain-specific cost/target/radius/cadence/interruption/timing/order.
+CONTENT-0003 supplies stable identities, ordered actions, integer health/damage and unlimited-ammunition semantics. CONTENT-0017 and SIM-0013 own the bounded Basic/Fire straight-projectile inputs and authority semantics; SIM-0012 owns Mana; SIM-0009 owns only Fire-specific cost/damage/range/facing/cadence/interruption/release timing; SIM-0007 owns only Rain-specific cost/target/radius/cadence/interruption/timing/order.
 
-For M5 presentation, CLIENT-0007 owns Basic bow-body animation, CLIENT-0011 owns one provisional semantic hand socket and rendered bow, CLIENT-0018 owns the Basic-only visual arrow and impact, and CLIENT-0019 owns Combat diagnostics plus terminal native Basic validation. Fire presentation is allocated only when Fire activates. CLIENT-0010 remains the later terminal Rain targeting/effects task. CLIENT-0025/0026 remain separately deferred cursor and movement-marker work.
+For M5 presentation, CLIENT-0007 owns Basic bow-body animation, CLIENT-0011 owns one provisional semantic hand socket and rendered bow, and completed CLIENT-0018 preserves the synthetic Basic-only visual arrow and impact as historical evidence. The approved successor chain is CONTENT-0017 -> SIM-0013 -> PROTOCOL-0016 -> SERVER-0017 -> CLIENT-0037; CLIENT-0019 now waits on CLIENT-0037 for Combat diagnostics and terminal native Basic validation. Fire reuses the bounded straight-projectile contract through SIM-0009, PROTOCOL-0011, SERVER-0013 and CLIENT-0027. CLIENT-0010 remains the later terminal Rain targeting/effects task. CLIENT-0025/0026 remain separately deferred cursor and movement-marker work.
 
-No authoritative spatial projectile exists. Basic/Fire arrows and Rain effects remain presentation; World decides action validity, timing, resource expenditure, victims, damage and defeat.
+The completed runtime still resolves Basic Arrow at a fixed tick while CLIENT-0018 presents synthetic travel. The allocated successor replaces that path with World-owned straight projectiles, frozen aim, first-contact collision and authoritative terminal facts. Arrow Rain remains a fixed-tick victim-set action. World remains the authority for validity, timing, resource expenditure, collision, victims, damage and defeat. Durable successor contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles.
 
 Durable catalog: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/content/draft-0-archer-kit
 
@@ -283,7 +296,7 @@ Durable roadmap: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/roadmap/developm
 
 ### M5 — Connected Basic Arrow
 
-M5 converges the already-proven Basic simulation with connected intent/outcomes, bow-body animation, one provisional socketed bow, one client-only visual arrow and impact, exact Combat diagnostics, connected monster damage/death and native owner validation. It excludes Mana, Fire Arrow, Arrow Rain, equipment, Ranger loadouts, player respawn presentation and permanent combat UI.
+M5 converges connected Basic Arrow intent with authoritative straight-projectile spawn/terminal outcomes, bow-body animation, one provisional socketed bow and arrow, exact Combat diagnostics, connected monster damage/death and native owner validation. Completed CLIENT-0018 preserves the synthetic-flight implementation that exposed the authority gap; CLIENT-0037 supersedes it for the milestone proof. M5 excludes Mana, Fire Arrow, Arrow Rain, equipment, Ranger loadouts, player respawn presentation and permanent combat UI.
 
 ### M6 — Authoritative Mana
 

@@ -1,7 +1,7 @@
 ---
 title: Basic Arrow Presentation Inputs
 createdAt: 2026-08-06T17:15:11.4897310Z
-modifiedAt: 2026-08-07T06:59:36.3145840Z
+modifiedAt: 2026-08-07T08:35:56.3824590Z
 ---
 
 ## Status and ownership
@@ -49,7 +49,7 @@ The connected Basic Arrow body sequence now follows the authoritative action fac
 
 The action layer is exactly the `spine_01` subtree, 53 of 65 joints. Root, pelvis and legs remain byte-for-byte the locomotion pose, so authoritative movement and the existing idle/walk policy continue underneath the upper-body action. One resulting pose drives both GPU skinning and the existing left-hand bow socket.
 
-The body release marker remains presentation evidence only. It neither creates an authoritative projectile nor decides collision, damage, death or success. `CLIENT-0018` owns later arrow nocking, visual detachment, travel, impact and stale-presentation cleanup. `Bow_Aim_Up` and `Bow_RapidShoot_Loop` remain unselected Arrow Rain candidates. `Idle_No_Loop`, `Yes`, `Sword_Attack` and the rest of the 134-clip UAL2 library remain excluded.
+The body release marker remains presentation evidence only. Completed `CLIENT-0018` uses it for right-hand nocking, detachment, deterministic 150 ms client-only travel and impact. That synthetic path is historical presentation evidence and never decides collision, damage, death or success. Planned `CLIENT-0037` preserves the asset, socket and rendering work while replacing synthetic travel with authoritative projectile spawn and terminal facts after `CONTENT-0017`, `SIM-0013`, `PROTOCOL-0016` and `SERVER-0017` complete. The authoritative successor contract is `pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles`. `Bow_Aim_Up` and `Bow_RapidShoot_Loop` remain unselected Arrow Rain candidates. `Idle_No_Loop`, `Yes`, `Sword_Attack` and the rest of the 134-clip UAL2 library remain excluded.
 
 Coordinator evidence: `pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/wiki/assets/quaternius-ual2-source-bow-evaluation`.
 
@@ -104,6 +104,7 @@ The client uses the shared proof's warm technical colour `(0.90, 0.65, 0.12)` fo
 - `SHARED-0020`: prove the reusable socketed-static-render boundary with a harness-local transform.
 - `CLIENT-0007`: map authoritative Basic facts into the selected body-animation sequence.
 - `CLIENT-0011`: define Starfall's provisional semantic hand socket and local bow transform, then validate native placement.
-- `CLIENT-0018`: own arrow nocking, visual detachment, travel, impact and stale-presentation cleanup.
+- `CLIENT-0018`: completed synthetic arrow nocking, visual detachment, 150 ms client-only travel, impact and stale-presentation cleanup as historical evidence.
+- `CLIENT-0037`: later replace synthetic travel with authoritative spawn/terminal-driven presentation while preserving the proven asset, socket and rendering work.
 
 This task selects no socket transform, grip, off-hand IK, aiming system, equipment state, ammunition inventory, projectile authority, effects library, monster art, cursor, HUD or final character assets.

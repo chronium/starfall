@@ -1,7 +1,7 @@
 ---
 title: Connected Basic Arrow Protocol
 createdAt: 2026-08-06T08:30:27.7701150Z
-modifiedAt: 2026-08-06T11:01:35.9148220Z
+modifiedAt: 2026-08-07T08:35:56.3984530Z
 ---
 
 ## Purpose
@@ -86,3 +86,11 @@ The binary contract does not assign channels, delivery, replay or monotonic-sequ
 It also does not define client controls, animation, bow or arrow rendering, spatial projectile entities, line-of-sight, Fire Arrow, Arrow Rain, Mana, player health, player defeat/restoration/respawn, chat or persistence.
 
 Arrows, flight and impact remain client-owned presentation of an authoritative fixed-tick result.
+
+## Approved authoritative-projectile successor
+
+The sections above preserve the implemented fixed-tick Basic Arrow protocol as historical evidence. Planned `PROTOCOL-0016` replaces the Basic Arrow layouts in place with accepted/canceled, projectile-spawn and projectile-terminal facts after the bounded authoritative straight-projectile behavior is proven. The terminal reasons are Hit, Blocked and TravelExhausted; Hit carries impact evidence for presentation and diagnostics, not permission for the Client to mutate canonical monster health.
+
+The negotiated gameplay protocol remains version 1. There is no independently deployed compatibility population, replay or external consumer that justifies retaining the old development-only layouts, so no compatibility decoder remains. A later version change requires a separate owner-approved real Client/World compatibility boundary.
+
+Durable planned contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles.

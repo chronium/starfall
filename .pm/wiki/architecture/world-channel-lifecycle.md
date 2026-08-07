@@ -1,7 +1,7 @@
 ---
 title: World and Channel Lifecycle
 createdAt: 2026-08-04T08:25:28.2799600Z
-modifiedAt: 2026-08-06T16:32:49.7306510Z
+modifiedAt: 2026-08-07T08:35:56.4220660Z
 ---
 
 ## Purpose
@@ -163,3 +163,11 @@ Bounded monster behavior and requested-damage attack facts remain inside World/S
 ## Non-goals
 
 This contract does not create a generic entity/component framework, ECS, character controller, navigation/pathfinding framework, message-framing system or generic exchange host. Connected mode creates one bounded loopback development socket and exposes only the approved admission and walking exchanges. It does not provision production verification keys, support protected non-loopback transport, persist sessions or player state, expose health endpoints, configure logging/metrics, supervise processes, call identity/chat/operations, or decide final physical deployment topology. Loading the single immutable provisional catalog is not a general map, terrain, scene, streaming or asset format.
+
+## Planned authoritative projectile scheduling
+
+The runtime above records the completed fixed-tick Basic Arrow baseline. Planned `CONTENT-0017`, `SIM-0013`, `PROTOCOL-0016` and `SERVER-0017` replace its post-acceptance resolution with a bounded World-owned straight-projectile lifecycle.
+
+The approved order is monster movement, release validation, then projectile advancement in ascending projectile identity. Each projectile queries the currently live monster set after earlier projectile damage that tick. Static collision wins an exact static/monster tie; equal monster contacts use ascending monster identity; contact exactly at maximum travel wins over TravelExhausted. Projectile damage resolves before monster attacks, and an already-generated attack is discarded if its attacker was killed by a projectile. Released projectiles are independent of the original target, shooter and session.
+
+This is planned behavior, not the current runtime. `SIM-0008` remains the Box3D source prerequisite; the successor does not create a generic projectile framework. Durable contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles.

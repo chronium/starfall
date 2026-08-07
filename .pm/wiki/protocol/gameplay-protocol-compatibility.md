@@ -1,7 +1,7 @@
 ---
 title: Gameplay Protocol Compatibility
 createdAt: 2026-08-06T10:28:11.1704800Z
-modifiedAt: 2026-08-06T15:57:45.8321160Z
+modifiedAt: 2026-08-07T08:35:56.4296350Z
 ---
 
 ## Purpose
@@ -77,3 +77,9 @@ Gameplay protocol version 1 makes no assertion about executable builds, content 
 If Starfall later supports multiple connection versions simultaneously, admission must expose an explicit supported-version policy and the World must choose genuinely version-specific codecs from the recorded session version. Old decoders and upgrade behavior require their own reviewed task and fixtures.
 
 Per-message versions are introduced only if one accepted connection genuinely needs to distinguish multiple layouts for the same message kind. A constant that merely rejects every value except the current one is not compatibility support.
+
+## Planned Basic Arrow layout replacement
+
+`PROTOCOL-0016` will replace the current development-only Basic Arrow layouts in place with the authoritative-projectile fact family while keeping gameplay protocol version 1. No independently deployed consumer, replay or external tool benefits from distinguishing the obsolete layout, so no dual decoder or compatibility branch is retained.
+
+The version changes only when a real accepted Client/World compatibility population can no longer communicate correctly. The `sfjt1` ticket and persisted formats remain independently versioned. Durable planned projectile contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles.

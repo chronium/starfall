@@ -1,7 +1,7 @@
 ---
 title: Client World Presentation Adapter
 createdAt: 2026-08-04T07:46:57.3592710Z
-modifiedAt: 2026-08-07T06:59:58.2064880Z
+modifiedAt: 2026-08-07T08:35:56.3911720Z
 ---
 
 ## Ownership and purpose
@@ -72,3 +72,11 @@ The action controller:
 - feeds one final pose to both the GPU skinning palette and the existing left-hand bow socket.
 
 This remains presentation state, not protocol or gameplay state. There is no authoritative spatial arrow, projectile collision, damage decision, Fire Arrow behavior, Arrow Rain behavior, off-hand IK, aim offset or general animation graph. The no-connection local fixture and deterministic capture suite continue to use locomotion only.
+
+## Planned authoritative projectile adoption
+
+Completed `CLIENT-0018` extends the connected presentation path with a synthetic 150 ms frozen-target visual flight after the reviewed body release marker. It is valid historical evidence for arrow loading, nocking, detachment, rendering, impact and stale-state cleanup; it remains client-only and does not decide collision or damage.
+
+The approved successor is `CLIENT-0037`. It will preserve that presentation work while replacing the synthetic timer with authoritative projectile spawn and terminal facts produced by `CONTENT-0017`, `SIM-0013`, `PROTOCOL-0016` and `SERVER-0017`. The Client reconstructs the straight visual trajectory from authoritative facts and presents Hit, Blocked or TravelExhausted termination. A terminal Hit is presentation evidence only; monster snapshots and tombstones remain canonical health and defeat state.
+
+Durable planned contract: pm://project/prj_pkIpzx0fzFD4URjvqBuYrGZF/wiki/gameplay/draft-0-straight-projectiles.
