@@ -19,19 +19,52 @@ tracks:
   EDITOR: Editor and Balance Lab
   GAME: MMO vertical slice
 milestones:
-  M0: Repository foundation
-  M1: Shared character presentation
-  M2: First playable zone
-  M3: Deferred transformations and companions
-  M4: Development Instrumentation
-  M5: Connected Basic Arrow
-  M6: Authoritative Mana
-  M7: Connected Movement Quality v1
-milestonePriorities:
-  M0: low
-  M1: medium
-  M2: low
-  M4: medium
-  M5: medium
-  M6: medium
-  M7: low
+  M0:
+    title: Repository foundation
+    description: ''
+    priority: low
+    requiredActivationTriggers: []
+    delivery: null
+  M1:
+    title: Shared character presentation
+    description: ''
+    priority: medium
+    requiredActivationTriggers: []
+    delivery: null
+  M2:
+    title: First playable zone
+    description: ''
+    priority: low
+    requiredActivationTriggers: []
+    delivery: null
+  M3:
+    title: Deferred transformations and companions
+    description: ''
+    priority: none
+    requiredActivationTriggers: []
+    delivery: null
+  M4:
+    title: Development Instrumentation
+    description: ''
+    priority: medium
+    requiredActivationTriggers: []
+    delivery: null
+  M5:
+    title: Connected Basic Arrow
+    description: ''
+    priority: medium
+    requiredActivationTriggers: []
+    delivery: null
+  M6:
+    title: Authoritative Mana
+    description: ''
+    priority: medium
+    requiredActivationTriggers: []
+    delivery: null
+  M7:
+    title: Connected Movement Quality v1
+    description: ''
+    priority: low
+    requiredActivationTriggers: []
+    delivery: null
+activationTriggers: {}
