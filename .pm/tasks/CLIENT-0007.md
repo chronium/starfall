@@ -9,7 +9,7 @@ dependsOn:
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/SHARED-0009
 - pm://project/prj_E7QP3LUocfY7k3PYM-EQOlqc/task/ASSET-0004
 createdAt: 2026-08-01T05:46:49.7988710Z
-modifiedAt: 2026-08-07T07:00:17.3245630Z
+modifiedAt: 2026-08-07T07:06:50.7769090Z
 ---
 
 Present connected locomotion and Basic Arrow bow-body animation through the shared character boundary.
@@ -42,3 +42,12 @@ Acceptance criteria:
   - Native macOS ARM64 connected World/Client validation exercised idle/walk, accepted Basic Arrow, notch/aim, release, recovery and repeated attacks. The owner confirmed that it works well.
   - The World drained and stopped cleanly after the native check.
   - No screenshot was retained: this was motion/transition validation rather than a useful still-image project-history checkpoint.
+- 2026-08-07 07:06 UTC - Owner-approved visual-history continuation.
+
+  - Preserved the complete 26.135-second connected Basic Arrow sequence as `docs/project-history/2026-08-07-connected-basic-arrow-animation/connected-basic-arrow-animation.mp4`.
+  - Remuxed the owner's ReplayKit MOV into MP4 with FFmpeg 8.0.1 using stream copy; no video decoding, scaling, cropping or re-encoding occurred.
+  - Removed source creation and ReplayKit metadata and enabled fast-start playback.
+  - Verified that source and derivative H.264 elementary-stream SHA-256 values are identical: `efc594966fc34a1a05042926e25fac44d7ff9870eb161456e3d05d6fafe905f9`.
+  - Curated MP4 SHA-256: `18482c60011de5877c7cb5df3af1e85d2487c62f7c3cca785c0d7dee5dadaf80`.
+  - Added task ownership, architecture/wiki references, Quaternius CC0/runtime provenance, generation instructions, technical metadata and the Starfall project-history timeline entry.
+  - The raw owner recording remains outside source control.
